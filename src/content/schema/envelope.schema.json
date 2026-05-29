@@ -1,0 +1,244 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://chess-academy/schema/envelope/v1",
+  "title": "Content envelope (schemaVersion 1)",
+  "type": "object",
+  "required": ["schemaVersion", "kind", "id", "title", "body"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "enum": ["lesson", "glossary", "puzzleSet", "reference"] },
+    "id": {
+      "type": "string",
+      "description": "Permanent path-shaped slug; also the route and progress key.",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$"
+    },
+    "track": { "enum": ["classics", "habits", "reference"] },
+    "title": { "type": "string", "minLength": 1 },
+    "subtitle": { "type": "string" },
+    "summary": { "type": "string" },
+    "estMinutes": { "type": "number", "minimum": 0 },
+    "prereqs": { "type": "array", "items": { "type": "string" } },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "license": { "type": "string" },
+    "attribution": { "type": "string" },
+    "body": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "lesson" } } },
+      "then": { "properties": { "body": { "$ref": "#/definitions/lessonBody" } } }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "glossary" } } },
+      "then": { "properties": { "body": { "$ref": "#/definitions/glossaryBody" } } }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "puzzleSet" } } },
+      "then": { "properties": { "body": { "$ref": "#/definitions/puzzleSetBody" } } }
+    }
+  ],
+  "definitions": {
+    "square": { "type": "string", "pattern": "^[a-h][1-8]$" },
+    "arrow": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 3,
+      "items": { "type": "string" }
+    },
+    "annotations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "highlight": { "type": "array", "items": { "$ref": "#/definitions/square" } },
+        "highlightStyle": { "enum": ["good", "bad", "neutral"] },
+        "arrows": { "type": "array", "items": { "$ref": "#/definitions/arrow" } }
+      }
+    },
+    "hint": {
+      "type": "object",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string", "minLength": 1 },
+        "arrows": { "type": "array", "items": { "$ref": "#/definitions/arrow" } }
+      }
+    },
+    "feedback": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "correct": { "type": "string" },
+        "wrong": { "type": "string" }
+      }
+    },
+    "stepCommon": {
+      "type": "object",
+      "required": ["id", "type", "markdown"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "type": { "enum": ["prose", "single-move", "line", "choose", "free-explore"] },
+        "title": { "type": "string" },
+        "orientation": { "enum": ["white", "black"] },
+        "fen": { "type": "string", "minLength": 1 },
+        "markdown": { "type": "string", "minLength": 1 },
+        "annotations": { "$ref": "#/definitions/annotations" },
+        "hints": { "type": "array", "items": { "$ref": "#/definitions/hint" } },
+        "feedback": { "$ref": "#/definitions/feedback" }
+      }
+    },
+    "lessonBody": {
+      "type": "object",
+      "required": ["steps"],
+      "additionalProperties": false,
+      "properties": {
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/step" }
+        }
+      }
+    },
+    "step": {
+      "allOf": [{ "$ref": "#/definitions/stepCommon" }],
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": { "type": { "const": "prose" } },
+          "required": ["fen"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "single-move" },
+            "solution": {
+              "type": "object",
+              "required": ["san"],
+              "additionalProperties": false,
+              "properties": {
+                "san": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+              }
+            }
+          },
+          "required": ["fen", "solution"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "line" },
+            "mainline": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+            "acceptableAt": {
+              "type": "object",
+              "patternProperties": {
+                "^[0-9]+$": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+              },
+              "additionalProperties": false
+            },
+            "opponentReplies": {
+              "type": "object",
+              "patternProperties": { "^[0-9]+$": { "type": "string" } },
+              "additionalProperties": false
+            }
+          },
+          "required": ["fen", "mainline"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "choose" },
+            "options": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "required": ["id", "label", "correct"],
+                "additionalProperties": false,
+                "properties": {
+                  "id": { "type": "string" },
+                  "label": { "type": "string", "minLength": 1 },
+                  "correct": { "type": "boolean" },
+                  "explain": { "type": "string" }
+                }
+              }
+            }
+          },
+          "required": ["options"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "free-explore" },
+            "engine": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "hints": { "type": "boolean" },
+                "showBestReply": { "type": "boolean" }
+              }
+            }
+          },
+          "required": ["fen"]
+        }
+      ]
+    },
+    "glossaryBody": {
+      "type": "object",
+      "required": ["entries"],
+      "additionalProperties": false,
+      "properties": {
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["term", "short"],
+            "additionalProperties": false,
+            "properties": {
+              "term": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+              "aliases": { "type": "array", "items": { "type": "string" } },
+              "short": { "type": "string", "minLength": 1 },
+              "markdown": { "type": "string" },
+              "example": {
+                "type": "object",
+                "required": ["fen"],
+                "additionalProperties": false,
+                "properties": {
+                  "fen": { "type": "string" },
+                  "orientation": { "enum": ["white", "black"] },
+                  "annotations": { "$ref": "#/definitions/annotations" }
+                }
+              },
+              "seeAlso": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "puzzleSetBody": {
+      "type": "object",
+      "required": ["puzzles"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string" },
+        "license": { "type": "string" },
+        "puzzles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "fen", "moves", "playerColor"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "fen": { "type": "string" },
+              "moves": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+              "rating": { "type": "number" },
+              "themes": { "type": "array", "items": { "type": "string" } },
+              "playerColor": { "enum": ["white", "black"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

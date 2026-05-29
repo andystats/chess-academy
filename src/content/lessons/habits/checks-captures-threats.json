@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "kind": "lesson",
+  "id": "habits/checks-captures-threats",
+  "track": "habits",
+  "title": "Checks, Captures, Threats",
+  "subtitle": "A routine for every move",
+  "summary": "Train the habit every strong player uses: before you move, look at the checks, captures, and threats.",
+  "estMinutes": 7,
+  "tags": ["calculation", "tactics", "thinking"],
+  "attribution": "Original prose; a widely-taught beginner thinking routine.",
+  "body": {
+    "steps": [
+      {
+        "id": "intro",
+        "type": "prose",
+        "title": "Before every move",
+        "orientation": "white",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "markdown": "Strong players run a quick checklist before moving: look at every **[[check]]**, every **[[capture]]**, and every **[[threat]]** — for *both* sides. It only takes a few seconds and it stops most blunders. Let's practise."
+      },
+      {
+        "id": "find-the-mate",
+        "type": "single-move",
+        "title": "Checks first",
+        "orientation": "white",
+        "fen": "6k1/5ppp/8/8/8/8/8/R3K3 w - - 0 1",
+        "markdown": "Always look at [[check|checks]] first — a check can end the game. Black's king is stuck behind its own pawns. Find the checkmate with your rook!",
+        "solution": { "san": ["Ra8"] },
+        "hints": [
+          { "text": "Which empty line can your rook reach the back rank on?" },
+          { "text": "Slide the rook all the way up.", "arrows": [["a1", "a8", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Checkmate! The king is trapped by its own pawns — a classic back-rank mate.",
+          "wrong": "Look for a check the king can't escape. Your rook can reach the 8th rank."
+        }
+      },
+      {
+        "id": "win-the-queen",
+        "type": "single-move",
+        "title": "Then captures",
+        "orientation": "white",
+        "fen": "4k3/8/8/3q4/4P3/8/8/4K3 w - - 0 1",
+        "markdown": "No checks here, so look at [[capture|captures]]. Black's queen has wandered next to your pawn. Take is a mistake — *unless* it wins material. This time it does!",
+        "solution": { "san": ["exd5"] },
+        "hints": [{ "text": "Your e4 pawn can capture diagonally.", "arrows": [["e4", "d5", "good"]] }],
+        "feedback": {
+          "correct": "Yes! A pawn just won a queen. Always check whether a capture wins material.",
+          "wrong": "Look at what your pawn can capture diagonally."
+        }
+      },
+      {
+        "id": "to-take-is-a-mistake",
+        "type": "choose",
+        "title": "\"To take is a mistake\"",
+        "orientation": "white",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "markdown": "There's an old saying: *to take is a mistake*. It doesn't mean never capture — it means **stop and think first**. When you spot a tempting [[capture]], what should you ask?",
+        "options": [
+          { "id": "a", "label": "Is it really free, or is it a trap?", "correct": true, "explain": "Exactly. Check what recaptures, and whether grabbing it loses time or walks into a fork." },
+          { "id": "b", "label": "Nothing — always grab free material", "correct": false, "explain": "Careful! Many 'free' pawns are bait. Always look at your opponent's reply first." }
+        ]
+      },
+      {
+        "id": "wrap-up",
+        "type": "prose",
+        "title": "Make it a habit",
+        "orientation": "white",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "markdown": "From now on, before every move, whisper it to yourself: **[[check|checks]], [[capture|captures]], [[threat|threats]]** — for both sides. Do that and you'll spot the wins and dodge the traps."
+      }
+    ]
+  }
+}
