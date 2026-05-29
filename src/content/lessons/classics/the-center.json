@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "kind": "lesson",
+  "id": "classics/the-center",
+  "track": "classics",
+  "title": "The Center",
+  "subtitle": "Staking your claim",
+  "summary": "Meet the four central squares and learn why grabbing them is the first job of the opening.",
+  "estMinutes": 6,
+  "tags": ["opening", "center", "development"],
+  "attribution": "Original prose; ideas after Nimzowitsch, My System (public domain).",
+  "body": {
+    "steps": [
+      {
+        "id": "intro",
+        "type": "prose",
+        "title": "Meet the center",
+        "orientation": "white",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "markdown": "The four squares in the middle — **e4, d4, e5, and d5** — are the [[center]]. Pieces standing here reach the most squares, so the player who controls the center usually controls the game. Your very first job in a game is to fight for it.",
+        "annotations": { "highlight": ["e4", "d4", "e5", "d5"], "highlightStyle": "good" }
+      },
+      {
+        "id": "grab-center",
+        "type": "single-move",
+        "title": "Grab a center square",
+        "orientation": "white",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "markdown": "Push one of your center pawns two squares forward to claim space. Either the king's pawn or the queen's pawn does the job.",
+        "solution": { "san": ["e4", "d4"] },
+        "hints": [
+          { "text": "A pawn move is best — knights and bishops come next." },
+          { "text": "Try the pawn in front of your king.", "arrows": [["e2", "e4", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Yes! You've planted a pawn in the center and opened lines for your pieces.",
+          "wrong": "That move doesn't fight for the center yet. Push a center pawn forward."
+        }
+      },
+      {
+        "id": "develop",
+        "type": "line",
+        "title": "Build a healthy opening",
+        "orientation": "white",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "markdown": "Now play out a classic opening. Take the center, then [[development|develop]] a knight to attack, then a bishop, gaining [[tempo]]. The computer answers for Black.",
+        "mainline": ["e4", "e5", "Nf3", "Nc6", "Bb5"],
+        "acceptableAt": { "2": ["Bc4"] },
+        "hints": [
+          { "text": "Knights before bishops. Aim your pieces at the center." },
+          { "text": "Your knight belongs on f3, attacking e5.", "arrows": [["g1", "f3", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Great — every move develops a piece toward the center.",
+          "wrong": "Develop a piece toward the center (a knight or bishop), don't push a random pawn."
+        }
+      },
+      {
+        "id": "whats-the-threat",
+        "type": "choose",
+        "title": "Read the position",
+        "orientation": "white",
+        "fen": "r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3",
+        "markdown": "You've reached a famous position (the Ruy Lopez). Your bishop just pinned... no — it eyes the knight on c6. What is your main idea here?",
+        "options": [
+          { "id": "a", "label": "Pressure the knight that guards e5", "correct": true, "explain": "Right! Bxc6 followed by Nxe5 is the point — you're chipping at Black's center pawn." },
+          { "id": "b", "label": "Deliver checkmate right now", "correct": false, "explain": "Not yet — there's no mate in the position. Good opening play is about small advantages." },
+          { "id": "c", "label": "Castle the bishop to safety", "correct": false, "explain": "Bishops can't castle — only the king does, with a rook. You'll castle your king soon, though!" }
+        ]
+      },
+      {
+        "id": "wrap-up",
+        "type": "prose",
+        "title": "What you learned",
+        "orientation": "white",
+        "fen": "r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3",
+        "markdown": "Three ideas to keep forever: **fight for the center**, **develop a piece every move**, and **knights before bishops**. Do that and you'll have a healthy position out of every opening."
+      }
+    ]
+  }
+}

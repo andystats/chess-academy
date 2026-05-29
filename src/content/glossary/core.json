@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "kind": "glossary",
+  "id": "glossary/core",
+  "title": "Core terms",
+  "license": "CC-BY-SA-4.0",
+  "body": {
+    "entries": [
+      {
+        "term": "center",
+        "aliases": ["the center", "central squares"],
+        "short": "The four squares in the middle of the board: e4, d4, e5, and d5.",
+        "example": {
+          "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+          "orientation": "white",
+          "annotations": { "highlight": ["e4", "d4", "e5", "d5"], "highlightStyle": "good" }
+        },
+        "seeAlso": ["development"]
+      },
+      {
+        "term": "development",
+        "aliases": ["develop", "developing"],
+        "short": "Bringing your knights and bishops off the back row to active squares early in the game."
+      },
+      {
+        "term": "tempo",
+        "short": "A single move thought of as time. You 'gain a tempo' when you make a useful move while also forcing your opponent to react."
+      },
+      {
+        "term": "file",
+        "short": "A column of squares running up and down the board, named a through h."
+      },
+      {
+        "term": "rank",
+        "short": "A row of squares running across the board, numbered 1 through 8."
+      },
+      {
+        "term": "check",
+        "short": "An attack on the king. The player in check must get out of it immediately."
+      },
+      {
+        "term": "capture",
+        "aliases": ["captures", "take", "takes"],
+        "short": "Removing an opponent's piece by moving onto its square."
+      },
+      {
+        "term": "threat",
+        "aliases": ["threats", "threaten"],
+        "short": "A move that, if you were allowed a second move, would win material or deliver checkmate."
+      },
+      {
+        "term": "fork",
+        "aliases": ["forks", "forking"],
+        "short": "One piece attacking two (or more) enemy pieces at the same time.",
+        "example": {
+          "fen": "r3k2r/ppp2ppp/8/3N4/8/8/PPP2PPP/R3K2R w - - 0 1",
+          "orientation": "white",
+          "annotations": { "highlight": ["d5"], "arrows": [["d5", "c7", "good"], ["d5", "e7", "good"]] }
+        }
+      },
+      {
+        "term": "pin",
+        "aliases": ["pinned", "pinning"],
+        "short": "When a piece can't move because doing so would expose a more valuable piece behind it."
+      },
+      {
+        "term": "outpost",
+        "short": "A square deep in the opponent's half where your knight sits safely, protected by a pawn."
+      }
+    ]
+  }
+}

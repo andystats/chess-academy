@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.local
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Copyrighted reference material — personal study only, NEVER commit to the public repo.
+# We use ideas/positions from these books, but author all prose ourselves and ship no book text.
+*.pdf
+/stuff/
+
+# Stockfish engine WASM binaries are fetched/vendored at build time (see THIRD_PARTY.md)
+/public/engine/
