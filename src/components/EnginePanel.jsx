@@ -1,21 +1,15 @@
 import clsx from 'clsx';
 import { RotateCcw, Undo2, Flag, RefreshCw, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import SegmentedControl from './ui/SegmentedControl.jsx';
+import { ENGINE_LEVELS } from '../engine/levels.js';
 
 // The play column for the Practice Arena: status, move list, strength dial, and game controls.
 // Driven entirely by the controller returned from useEngineGame. The board lives in the sibling
 // column (see LessonLayout). When `onSkillLevelChange` is provided a strength selector is shown
 // (free play); scenarios fix the strength and omit it.
 
-// Sublabels are rough Elo approximations — Stockfish Skill Level doesn't map cleanly to a rating,
-// and the short move time here makes it play below its full strength. They're a feel guide, not a gauge.
-const SKILL_LABELS = [
-  { value: 1, label: 'Gentle', sublabel: '~800' },
-  { value: 4, label: 'Casual', sublabel: '~1100' },
-  { value: 8, label: 'Club', sublabel: '~1500' },
-  { value: 14, label: 'Tough', sublabel: '~1900' },
-  { value: 20, label: 'Brutal', sublabel: '~2200' },
-];
+// The strength dial reads from the engine level ladder; ratings are approximate feel, not Elo.
+const SKILL_LABELS = ENGINE_LEVELS.map((l) => ({ value: l.value, label: l.label, sublabel: l.rating }));
 
 function pairMoves(history) {
   const pairs = [];

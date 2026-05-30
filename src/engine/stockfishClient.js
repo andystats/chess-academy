@@ -81,12 +81,13 @@ export function createStockfish() {
     send(`setoption name Skill Level value ${clamped}`);
   }
 
-  // Ask for the best move from `fen`, thinking for ~movetime ms. Resolves to a UCI move
-  // ("e2e4", "a7a8q"), or null if the engine reports no legal move ("bestmove (none)").
-  async function getBestMove(fen, { movetime = 800 } = {}) {
+  // Ask for the best move from `fen`. Limit by `depth` (weak, shallow search) when given, else by
+  // `movetime` ms. Resolves to a UCI move ("e2e4", "a7a8q"), or null if the engine reports no legal
+  // move ("bestmove (none)").
+  async function getBestMove(fen, { depth, movetime = 800 } = {}) {
     if (!worker) await init();
     send(`position fen ${fen}`);
-    send(`go movetime ${Math.round(movetime)}`);
+    send(depth ? `go depth ${depth}` : `go movetime ${Math.round(movetime)}`);
     const line = await waitFor((l) => (l.startsWith('bestmove') ? l : false), MOVE_TIMEOUT_MS, 'a move');
     const uci = line.split(/\s+/)[1];
     return isUci(uci) ? uci : null;

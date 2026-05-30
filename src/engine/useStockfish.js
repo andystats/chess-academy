@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createStockfish } from './stockfishClient.js';
+import { levelConfig } from './levels.js';
 
 // Owns one Stockfish worker for the lifetime of the mounted play surface. The worker is created
 // lazily on the first move request (so a page that never plays never downloads/spawns the engine)
@@ -35,7 +36,7 @@ export function useStockfish(initialStrength = 10) {
         engine.dispose();
         throw err;
       }
-      engine.setStrength(strengthRef.current);
+      engine.setStrength(levelConfig(strengthRef.current).skill);
       engineRef.current = engine;
       if (mountedRef.current) {
         setReady(true);
@@ -47,7 +48,7 @@ export function useStockfish(initialStrength = 10) {
 
   const setStrength = useCallback((level) => {
     strengthRef.current = level;
-    engineRef.current?.setStrength(level);
+    engineRef.current?.setStrength(levelConfig(level).skill);
   }, []);
 
   // Abandon the current computation. Only tears the worker down if it's mid-search, so an idle

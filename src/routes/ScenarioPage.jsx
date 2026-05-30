@@ -22,7 +22,7 @@ export default function ScenarioPage() {
 
 function ScenarioView({ scenario }) {
   const { body } = scenario;
-  const [skillLevel, setSkillLevel] = useState(body.skillLevel ?? 2);
+  const [skillLevel, setSkillLevel] = useState(body.skillLevel ?? 1);
   // The authored key move + its explanation + diagnosed misplays drive the guided phase.
   const guided = useMemo(
     () =>

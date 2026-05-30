@@ -2,6 +2,7 @@ import { useReducer, useRef, useEffect, useMemo, useCallback, useState } from 'r
 import { Chess } from 'chess.js';
 import { applyMove, legalTargets, opposite, acceptableLans, compileToLan, moveToLan, START_FEN } from '../lesson/moves.js';
 import { useStockfish } from './useStockfish.js';
+import { levelConfig } from './levels.js';
 
 const DEFAULT_WRONG = 'Not quite — look for the move the lesson points to and try again.';
 
@@ -16,9 +17,13 @@ const DEFAULT_WRONG = 'Not quite — look for the move the lesson points to and 
 
 const SIDE_CHAR = { white: 'w', black: 'b' };
 
-// Weaker settings think for less time too, so low levels feel snappy as well as beatable.
-function movetimeFor(skillLevel) {
-  return 300 + Math.max(0, Math.min(20, skillLevel)) * 35;
+// A uniformly random legal move (as UCI) for the current position — used to inject blunders at the
+// easy levels, where the engine itself is too strong to lose. Returns null if there are no moves.
+function randomMove(game) {
+  const moves = game.moves({ verbose: true });
+  if (!moves.length) return null;
+  const m = moves[Math.floor(Math.random() * moves.length)];
+  return m.from + m.to + (m.promotion || '');
 }
 
 // Translate a finished game into a result banner, or null while it's still going.
@@ -113,26 +118,31 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
   const [resetNonce, setResetNonce] = useState(0);
 
   const playerChar = SIDE_CHAR[playerSide] ?? 'w';
-  const movetime = useMemo(() => movetimeFor(skillLevel), [skillLevel]);
+  const config = useMemo(() => levelConfig(skillLevel), [skillLevel]);
   const startFen = fen || START_FEN;
 
   // Ask the engine for a move from the current position and apply it, unless the run was superseded.
+  // At easy levels the engine occasionally blunders a random legal move instead (see levels.js).
   const scheduleEngineMove = useCallback(async () => {
     const myRun = runIdRef.current;
     dispatch({ type: 'thinking' });
     let uci;
-    try {
-      uci = await requestMove(gameRef.current.fen(), { movetime });
-    } catch {
-      if (myRun !== runIdRef.current) return; // stale failure
-      dispatch({
-        type: 'sync',
-        fen: gameRef.current.fen(),
-        history: gameRef.current.history(),
-        status: 'over',
-        result: { winner: null, reason: 'The engine is unavailable.' },
-      });
-      return;
+    if (config.blunder && Math.random() < config.blunder) {
+      uci = randomMove(gameRef.current); // intentional blunder — no engine call needed
+    } else {
+      try {
+        uci = await requestMove(gameRef.current.fen(), config.search);
+      } catch {
+        if (myRun !== runIdRef.current) return; // stale failure
+        dispatch({
+          type: 'sync',
+          fen: gameRef.current.fen(),
+          history: gameRef.current.history(),
+          status: 'over',
+          result: { winner: null, reason: 'The engine is unavailable.' },
+        });
+        return;
+      }
     }
     if (myRun !== runIdRef.current) return; // a reset/takeback/resign happened while thinking
     const game = gameRef.current;
@@ -154,7 +164,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
       status: result ? 'over' : 'player-turn',
       result,
     });
-  }, [requestMove, movetime]);
+  }, [requestMove, config]);
 
   // (Re)start the game whenever the position, side, or a New-game click changes. Bumping runId here
   // discards any engine reply still in flight from the previous game.
