@@ -255,7 +255,29 @@
         "skillLevel": { "type": "integer", "minimum": 0, "maximum": 20 },
         "relatedLesson": { "type": "string" },
         "goal": { "type": "string" },
-        "successHint": { "type": "string" }
+        "successHint": { "type": "string" },
+        "solution": {
+          "type": "object",
+          "required": ["san"],
+          "additionalProperties": false,
+          "properties": {
+            "san": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+          }
+        },
+        "explain": { "type": "string" },
+        "wrong": { "type": "string" },
+        "misplays": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["san", "explain"],
+            "additionalProperties": false,
+            "properties": {
+              "san": { "type": "string" },
+              "explain": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
       }
     }
   }

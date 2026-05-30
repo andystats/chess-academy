@@ -63,7 +63,9 @@ export default function BoardPanel({
   const theme = BOARD_THEMES[variant] ?? BOARD_THEMES.academy;
 
   return (
-    <div className={`${className} aspect-square overflow-hidden rounded-2xl ${theme.shell}`}>
+    // No overflow-hidden: it would clip react-chessboard's promotion picker. Square corners also
+    // suit the sharp tao-rwd treatment; the per-variant shell supplies the border/shadow/ring.
+    <div className={`${className} aspect-square ${theme.shell}`}>
       <Chessboard
         position={fen}
         boardOrientation={orientation}

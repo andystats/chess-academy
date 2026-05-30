@@ -147,3 +147,54 @@ describe('useEngineGame', () => {
     expect(result.current.result).toMatchObject({ winner: null });
   });
 });
+
+describe('useEngineGame — guided scenarios', () => {
+  // The pin scenario: e5 is the key move; Bxf6 is a diagnosed misplay.
+  const PIN = 'r1bqkb1r/pppp1ppp/2n2n2/6B1/4P3/2N5/PPPP1PPP/R2QKBNR w KQkq - 0 1';
+  const guided = {
+    solution: ['e5'],
+    explain: 'Right. e5 wins the pinned knight.',
+    wrong: 'Look for the move that wins the pinned knight.',
+    misplays: [{ san: 'Bxf6', explain: 'Bxf6 just trades and releases the pin.' }],
+  };
+  const render = () => renderHook(() => useEngineGame({ fen: PIN, playerSide: 'white', skillLevel: 1, guided }));
+
+  it('solves the scenario on the key move and hands off to the engine', async () => {
+    const { result } = render();
+    expect(result.current.solved).toBe(false);
+    act(() => {
+      result.current.onPieceDrop('e4', 'e5');
+    });
+    expect(result.current.solved).toBe(true);
+    expect(result.current.feedback).toMatchObject({ kind: 'correct' });
+    expect(result.current.status).toBe('engine-thinking');
+    expect(requestMove).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      deferreds[0].resolve('a7a6');
+    });
+    expect(result.current.history).toEqual(['e5', 'a6']);
+  });
+
+  it('diagnoses a known misplay without touching the board', () => {
+    const { result } = render();
+    act(() => {
+      result.current.onPieceDrop('g5', 'f6'); // Bxf6 — a diagnosed misplay
+    });
+    expect(result.current.solved).toBe(false);
+    expect(result.current.history).toEqual([]); // not applied
+    expect(result.current.status).toBe('player-turn');
+    expect(result.current.feedback).toMatchObject({ kind: 'wrong', text: 'Bxf6 just trades and releases the pin.' });
+    expect(requestMove).not.toHaveBeenCalled();
+  });
+
+  it('gives generic feedback for a legal-but-wrong move', () => {
+    const { result } = render();
+    act(() => {
+      result.current.onPieceDrop('g1', 'f3'); // Nf3 — legal, not the idea, not a listed misplay
+    });
+    expect(result.current.solved).toBe(false);
+    expect(result.current.history).toEqual([]);
+    expect(result.current.feedback).toMatchObject({ kind: 'wrong', text: guided.wrong });
+  });
+});

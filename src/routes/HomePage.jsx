@@ -35,12 +35,13 @@ export default function HomePage() {
         </div>
 
         <div className="mt-2 max-w-3xl text-center">
-          <p className="font-mono text-xs font-bold uppercase tracking-wide text-brand-600">An open chess study room</p>
-          <h1 className="mt-3 font-display text-4xl font-extrabold uppercase leading-[1.05] tracking-tight text-foreground md:text-6xl">
-            Learn the idea.{' '}
-            <span className="font-book italic font-semibold normal-case tracking-normal text-brand-500">Then play it.</span>
+          <h1 className="font-display text-4xl font-extrabold uppercase leading-[1.05] tracking-tight text-foreground md:text-6xl">
+            Tao <span className="font-book italic font-semibold normal-case tracking-normal text-brand-500">of Chess</span>
           </h1>
           <div className="gradient-divider mx-auto mt-5 w-20" />
+          <p className="mt-5 text-lg leading-8 text-gray-700">
+            A community-contributed, open-source platform for learning chess.
+          </p>
         </div>
 
         <nav className="mt-10 grid w-full max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -3,17 +3,23 @@
   "kind": "scenario",
   "id": "scenarios/command-the-center",
   "title": "Command the Center",
-  "subtitle": "Turn a big pawn center into an attack",
-  "summary": "You own the center with pawns on d4 and e4. Use the space to push the engine back and open lines.",
+  "subtitle": "Turn a big pawn center into space",
+  "summary": "You own the center with pawns on d4 and e4. Use the space to push the engine back instead of dissolving it.",
   "track": "classics",
   "tags": ["center", "space"],
   "body": {
     "fen": "r1bqkb1r/ppp2ppp/2n2n2/4p3/3PP3/5N2/PPP2PPP/RNBQKB1R w KQkq - 0 1",
     "orientation": "white",
     "playerSide": "white",
-    "skillLevel": 4,
+    "skillLevel": 1,
     "relatedLesson": "classics/the-center",
-    "goal": "Use your central pawns to gain space, develop with threats, and outplay the engine.",
-    "successHint": "Advancing in the center (d5) or resolving the tension gains room for your pieces."
+    "goal": "Find the move that uses your center to gain space with a tempo, then play on against the engine.",
+    "successHint": "A pawn on d5 grabs space and hits a piece at the same time.",
+    "solution": { "san": ["d5"] },
+    "explain": "Right. d5 grabs space and hits the c6 knight, gaining a tempo while your center rolls forward and cramps Black.",
+    "wrong": "That gives up your space. The point of a big center is to advance it with gain of tempo, not to trade it off.",
+    "misplays": [
+      { "san": "dxe5", "explain": "Taking with dxe5 dissolves the center you were trying to use. Keep it intact and expand with d5." }
+    ]
   }
 }

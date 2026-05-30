@@ -1,7 +1,9 @@
 import { useReducer, useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import { Chess } from 'chess.js';
-import { applyMove, legalTargets, opposite, START_FEN } from '../lesson/moves.js';
+import { applyMove, legalTargets, opposite, acceptableLans, compileToLan, moveToLan, START_FEN } from '../lesson/moves.js';
 import { useStockfish } from './useStockfish.js';
+
+const DEFAULT_WRONG = 'Not quite — look for the move the lesson points to and try again.';
 
 // React wrapper for free play / scenario play against Stockfish. Mirrors useChessLesson: the live
 // chess.js game lives in a ref (gameRef), the reducer holds only derived, renderable state.
@@ -41,11 +43,30 @@ const initialState = {
   lastMove: null,
   selectedSquare: null,
   legalTargets: [],
+  // Scenarios start in a 'guided' phase where the player's key move is checked against the
+  // authored solution; once it's right (solved), play continues freely against the engine.
+  phase: 'free', // 'guided' | 'free'
+  solved: false,
+  feedback: null, // { kind: 'correct' | 'wrong', text } — persists so the explanation stays visible
 };
 
 function reducer(state, action) {
   switch (action.type) {
-    case 'sync':
+    case 'reset':
+      return {
+        ...state,
+        fen: action.fen,
+        history: action.history,
+        lastMove: null,
+        status: action.status,
+        result: action.result ?? null,
+        phase: action.phase,
+        solved: false,
+        feedback: null,
+        selectedSquare: null,
+        legalTargets: [],
+      };
+    case 'sync': // a move was committed; feedback is preserved so the "why" stays on screen
       return {
         ...state,
         fen: action.fen,
@@ -56,6 +77,22 @@ function reducer(state, action) {
         selectedSquare: null,
         legalTargets: [],
       };
+    case 'guided-correct':
+      return {
+        ...state,
+        fen: action.fen,
+        history: action.history,
+        lastMove: action.lastMove ?? null,
+        status: action.status,
+        result: action.result ?? null,
+        phase: 'free',
+        solved: true,
+        feedback: { kind: 'correct', text: action.text },
+        selectedSquare: null,
+        legalTargets: [],
+      };
+    case 'guided-wrong': // the live game is untouched; only the feedback changes
+      return { ...state, feedback: { kind: 'wrong', text: action.text }, selectedSquare: null, legalTargets: [] };
     case 'thinking':
       return { ...state, status: 'engine-thinking', selectedSquare: null, legalTargets: [] };
     case 'select':
@@ -67,7 +104,7 @@ function reducer(state, action) {
   }
 }
 
-export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10 }) {
+export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guided = null }) {
   const { ready, error, requestMove, setStrength, interrupt } = useStockfish(skillLevel);
   const gameRef = useRef(null);
   const runIdRef = useRef(0);
@@ -129,20 +166,64 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10 }) {
     setOrientation(playerSide);
     const engineToMove = game.turn() !== playerChar && !game.isGameOver();
     dispatch({
-      type: 'sync',
+      type: 'reset',
       fen: game.fen(),
       history: game.history(),
       status: engineToMove ? 'engine-thinking' : 'player-turn',
       result: gameResult(game),
+      phase: guided ? 'guided' : 'free',
     });
     if (engineToMove) scheduleEngineMove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startFen, playerSide, resetNonce]);
 
+  // In the guided phase, classify the player's move against the authored solution WITHOUT touching
+  // the live game (mirrors useChessLesson): a wrong-but-legal move gets feedback and snaps back; the
+  // right move is committed and play hands off to the engine. Returns true only if the move was made.
+  const attemptGuidedMove = useCallback(
+    (move) => {
+      const game = gameRef.current;
+      const fenBefore = game.fen();
+      let playerLan;
+      try {
+        playerLan = moveToLan(applyMove(new Chess(fenBefore), move)); // classify on a clone
+      } catch {
+        return false; // illegal — snaps back
+      }
+      if (acceptableLans(fenBefore, guided.solution).has(playerLan)) {
+        const m = applyMove(game, move);
+        const result = gameResult(game);
+        dispatch({
+          type: 'guided-correct',
+          fen: game.fen(),
+          history: game.history(),
+          lastMove: { from: m.from, to: m.to },
+          status: result ? 'over' : 'engine-thinking',
+          result,
+          text: guided.explain || 'Correct!',
+        });
+        if (!result) scheduleEngineMove();
+        return true;
+      }
+      // Legal but wrong: use the specific diagnosis if this is a known misplay, else the generic note.
+      const misplay = (guided.misplays ?? []).find((mp) => {
+        try {
+          return compileToLan(fenBefore, mp.san) === playerLan;
+        } catch {
+          return false;
+        }
+      });
+      dispatch({ type: 'guided-wrong', text: misplay ? misplay.explain : guided.wrong || DEFAULT_WRONG });
+      return false; // live game untouched, piece snaps back
+    },
+    [guided, scheduleEngineMove],
+  );
+
   // Apply a legal player move (free play: any legal move is accepted), then hand off to the engine.
   const applyPlayerMove = useCallback(
     (move) => {
       if (state.status !== 'player-turn') return false;
+      if (state.phase === 'guided' && guided) return attemptGuidedMove(move);
       const game = gameRef.current;
       let m;
       try {
@@ -162,7 +243,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10 }) {
       if (!result) scheduleEngineMove();
       return true;
     },
-    [state.status, scheduleEngineMove],
+    [state.status, state.phase, guided, attemptGuidedMove, scheduleEngineMove],
   );
 
   const onPieceDrop = useCallback(
@@ -257,6 +338,9 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10 }) {
     playerSide,
     status: state.status,
     result: state.result,
+    phase: state.phase,
+    solved: state.solved,
+    feedback: state.feedback,
     history: state.history,
     lastMove: state.lastMove,
     selectedSquare: state.selectedSquare,

@@ -11,9 +11,15 @@
     "fen": "6k1/pp3ppp/2p5/8/8/2P5/PP3PPP/3R2K1 w - - 0 1",
     "orientation": "white",
     "playerSide": "white",
-    "skillLevel": 5,
+    "skillLevel": 1,
     "relatedLesson": "classics/open-files",
-    "goal": "Drive your rook down the open file onto the seventh rank, win pawns, and convert.",
-    "successHint": "Rd7 lands the rook on the seventh rank, hitting the f7 and b7 pawns at once."
+    "goal": "Find the rook move that uses the open file best, then convert against the engine.",
+    "successHint": "The seventh rank is where a rook does the most damage. Which square hits two pawns at once?",
+    "solution": { "san": ["Rd7"] },
+    "explain": "Right. Rd7 plants the rook on the seventh rank, hitting f7 and b7 at once. An open file is only worth something when you actually invade on it.",
+    "wrong": "An open file is a road to the enemy camp — drive down it. Look for the most aggressive square for the rook.",
+    "misplays": [
+      { "san": "Rd8", "explain": "Rd8+ looks active, but the king just steps up and your rook gets chased back with nothing won. Rd7 grabs the seventh rank where it attacks two pawns." }
+    ]
   }
 }

@@ -11,9 +11,15 @@
     "fen": "4k3/5ppp/8/7q/8/8/4N1PP/4R1K1 w - - 0 1",
     "orientation": "white",
     "playerSide": "white",
-    "skillLevel": 3,
+    "skillLevel": 1,
     "relatedLesson": "classics/discovered-checks",
-    "goal": "Move the knight so it attacks the queen while the rook delivers check, win the queen, and convert.",
-    "successHint": "Nf4+ hits the queen on h5 and uncovers the rook's check at the same time — the king must move first."
+    "goal": "Find the knight move that wins the queen, then convert against the engine.",
+    "successHint": "Move the knight so the rook gives check AND the knight attacks the queen on h5 at the same time.",
+    "solution": { "san": ["Nf4", "Ng3"] },
+    "explain": "Right. The knight moves with check (uncovering the rook on e8) and attacks the queen on h5 at the same time. The king must move first, then you take the queen.",
+    "wrong": "A discovered check only wins material if the moving piece does damage too. Find the knight move that also hits the queen.",
+    "misplays": [
+      { "san": "Nc3", "explain": "Nc3+ is a discovered check, but the knight attacks nothing — Black just moves the king and keeps the queen. Pick the knight move that also hits h5." }
+    ]
   }
 }

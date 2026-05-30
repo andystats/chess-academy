@@ -1,46 +1,20 @@
 import { Link } from 'react-router-dom';
 import { CheckCircle2, ChevronRight, Clock } from 'lucide-react';
-import BoardPanel from '../components/BoardPanel.jsx';
 import { listTracks } from '../content/registry.js';
 import { useProfile } from '../profile/ProfileContext.jsx';
 
-const SNACKS = [
-  {
-    id: 'checks-captures-threats',
-    title: 'Checks, Captures, Threats',
-    line: 'For every candidate move, scan forcing moves first: checks, captures, then threats for both sides.',
-    fen: '6k1/5ppp/8/8/8/8/8/R3K3 w - - 0 1',
-    arrows: [['a1', 'a8', 'good']],
-    highlights: ['a8', 'g8'],
-    lessonId: 'habits/checks-captures-threats',
-  },
-  {
-    id: 'to-take',
-    title: 'To Take Is a Mistake',
-    line: 'Do not capture just because you can. Ask what changes after the recapture, the tempo, and the next threat.',
-    fen: 'r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3',
-    arrows: [['c6', 'b4', 'bad'], ['c6', 'e5', 'idea']],
-    highlights: ['c6', 'e5'],
-    lessonId: 'habits/checks-captures-threats',
-  },
-  {
-    id: 'threats',
-    title: 'Make Threats Count',
-    line: 'A useful threat either wins time, forces a concession, or improves your worst piece while the opponent responds.',
-    fen: 'rnbqkbnr/pppp1ppp/8/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 2 2',
-    arrows: [['f3', 'f7', 'bad'], ['g8', 'f6', 'good']],
-    highlights: ['f7', 'f6'],
-    lessonId: 'classics/prophylaxis',
-  },
-  {
-    id: 'optimize',
-    title: 'Optimize the Worst Piece',
-    line: 'When no tactic is available, improve the piece with the least future. One quiet improvement often changes the whole board.',
-    fen: 'r1bqk2r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4',
-    arrows: [['b1', 'c3', 'good']],
-    highlights: ['b1', 'c3'],
-    lessonId: 'habits/optimize-worst-piece',
-  },
+// A scannable pre-move checklist. The goal is fewer blunders: run through it before every move.
+const CHECKLIST = [
+  { rule: 'Is the king safe?', note: 'Check yours and his before anything else.' },
+  { rule: 'What did his last move do?', note: 'Read the threat behind it before you reply.' },
+  { rule: 'Scan checks, captures, threats.', note: 'Every forcing move, for both sides.' },
+  { rule: "Don't hang pieces.", note: 'Is each of your pieces defended? Any loose ones?' },
+  { rule: 'Is my move safe?', note: 'After it, what are his checks and captures?' },
+  { rule: 'Look for a tactic.', note: 'Pin, fork, skewer, discovered attack.' },
+  { rule: 'Trade with a reason.', note: 'Swap when ahead; never give a good piece for a bad one.' },
+  { rule: 'Improve your worst piece.', note: 'No tactic? Upgrade the piece doing the least.' },
+  { rule: 'Fight for the center and open files.', note: 'Pieces and rooks want open lines.' },
+  { rule: 'Sit on your hands.', note: "Would you still play it after his best reply? Then move." },
 ];
 
 function LessonCard({ lesson }) {
@@ -74,30 +48,15 @@ function LessonCard({ lesson }) {
   );
 }
 
-function SnackCard({ snack, index }) {
+function ChecklistRow({ item, index }) {
   return (
-    <article className="grid gap-5 border-t border-gray-200 py-7 md:grid-cols-[minmax(0,1fr)_13rem] md:items-start">
+    <li className="flex items-start gap-4 border-t border-gray-200 py-4">
+      <span className="font-mono text-sm font-bold text-brand-500">{String(index + 1).padStart(2, '0')}</span>
       <div>
-        <p className="font-mono text-xs font-bold text-brand-600">{String(index + 1).padStart(2, '0')}</p>
-        <h3 className="mt-2 font-display text-2xl font-bold uppercase tracking-tight text-foreground">{snack.title}</h3>
-        <p className="mt-3 max-w-2xl text-base leading-7 text-gray-700">{snack.line}</p>
-        <Link
-          to={`/lesson/${snack.lessonId}`}
-          className="mt-5 inline-flex text-sm font-semibold text-brand-600 hover:text-gray-950"
-        >
-          Try the board study
-        </Link>
+        <p className="font-display text-lg font-bold text-foreground">{item.rule}</p>
+        <p className="mt-0.5 text-sm leading-6 text-gray-600">{item.note}</p>
       </div>
-      <div className="w-52 max-w-full md:justify-self-end">
-        <BoardPanel
-          fen={snack.fen}
-          highlights={snack.highlights}
-          arrows={snack.arrows}
-          variant="book"
-          className="w-full max-w-[13rem]"
-        />
-      </div>
-    </article>
+    </li>
   );
 }
 
@@ -114,15 +73,20 @@ export default function TrainingPage() {
         </h1>
         <div className="gradient-divider mt-5 w-20" />
         <p className="mt-5 max-w-2xl text-lg leading-8 text-gray-700">
-          Most rating jumps come from fewer blunders, better forcing-move vision, and cleaner piece improvement.
-          These snacks are short enough to repeat before a game.
+          Most rating jumps come from one thing: fewer blunders. Run this checklist before every move
+          until it's automatic.
         </p>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-10">
-        {SNACKS.map((snack, index) => (
-          <SnackCard key={snack.id} snack={snack} index={index} />
-        ))}
+        <div className="tao-card max-w-3xl p-6 sm:p-8">
+          <p className="font-mono text-xs font-bold uppercase tracking-wide text-brand-600">The pre-move checklist</p>
+          <ol className="mt-4">
+            {CHECKLIST.map((item, index) => (
+              <ChecklistRow key={item.rule} item={item} index={index} />
+            ))}
+          </ol>
+        </div>
       </section>
 
       <section className="border-t-3 border-foreground bg-brand-50/40">
@@ -133,7 +97,7 @@ export default function TrainingPage() {
               <h2 className="mt-2 font-display text-3xl font-bold uppercase tracking-tight text-foreground">Train one idea at a time.</h2>
             </div>
             <p className="max-w-xl text-sm leading-6 text-gray-600">
-              The snacks give the route; the lessons make the habits playable.
+              The checklist gives the routine; the lessons make the habits playable.
             </p>
           </div>
 

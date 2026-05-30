@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { RotateCcw, Undo2, Flag, RefreshCw, Loader2 } from 'lucide-react';
+import { RotateCcw, Undo2, Flag, RefreshCw, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import SegmentedControl from './ui/SegmentedControl.jsx';
 
 // The play column for the Practice Arena: status, move list, strength dial, and game controls.
@@ -7,12 +7,14 @@ import SegmentedControl from './ui/SegmentedControl.jsx';
 // column (see LessonLayout). When `onSkillLevelChange` is provided a strength selector is shown
 // (free play); scenarios fix the strength and omit it.
 
+// Sublabels are rough Elo approximations — Stockfish Skill Level doesn't map cleanly to a rating,
+// and the short move time here makes it play below its full strength. They're a feel guide, not a gauge.
 const SKILL_LABELS = [
-  { value: 1, label: 'Gentle' },
-  { value: 4, label: 'Casual' },
-  { value: 8, label: 'Club' },
-  { value: 14, label: 'Tough' },
-  { value: 20, label: 'Brutal' },
+  { value: 1, label: 'Gentle', sublabel: '~800' },
+  { value: 4, label: 'Casual', sublabel: '~1100' },
+  { value: 8, label: 'Club', sublabel: '~1500' },
+  { value: 14, label: 'Tough', sublabel: '~1900' },
+  { value: 20, label: 'Brutal', sublabel: '~2200' },
 ];
 
 function pairMoves(history) {
@@ -28,6 +30,22 @@ function resultHeadline(winner, playerSide) {
   if (winner === 'draw') return 'Draw.';
   if (winner) return 'You lost.';
   return 'Game stopped.';
+}
+
+function Feedback({ feedback }) {
+  if (!feedback) return null;
+  const correct = feedback.kind === 'correct';
+  return (
+    <div
+      className={clsx(
+        'flex items-start gap-2 border-3 px-4 py-3 text-sm font-medium',
+        correct ? 'border-correct bg-green-50 text-green-800' : 'border-retry bg-orange-50 text-orange-800',
+      )}
+    >
+      {correct ? <CheckCircle2 className="mt-0.5 shrink-0" size={18} /> : <XCircle className="mt-0.5 shrink-0" size={18} />}
+      <span>{feedback.text}</span>
+    </div>
+  );
 }
 
 function StatusLine({ game }) {
@@ -73,6 +91,8 @@ export default function EnginePanel({ game, eyebrow, title, children, skillLevel
       </div>
 
       {children}
+
+      <Feedback feedback={game.feedback} />
 
       <StatusLine game={game} />
 

@@ -11,9 +11,16 @@
     "fen": "6k1/5ppp/8/8/3p1N2/8/5PPP/6K1 w - - 0 1",
     "orientation": "white",
     "playerSide": "white",
-    "skillLevel": 4,
+    "skillLevel": 1,
     "relatedLesson": "classics/blockade",
-    "goal": "Blockade the passed pawn on the square in front of it, then win the pawn and the game.",
-    "successHint": "Nd3 sits the knight squarely in front of the pawn — it can never advance past a blockader."
+    "goal": "Find the square that blockades the passed pawn, then win it against the engine.",
+    "successHint": "A passed pawn is stopped by sitting a piece on the square directly in front of it.",
+    "solution": { "san": ["Nd3"] },
+    "explain": "Right. Nd3 sits squarely in front of the pawn. A blockaded passer can never advance, and now you'll win it at your leisure.",
+    "wrong": "That doesn't stop the pawn. A passer is halted by occupying the square right in front of it, not by chasing it.",
+    "misplays": [
+      { "san": "Nd5", "explain": "Nd5 wanders the wrong way and leaves d3 free: ...d3 and the pawn is running. Blockade it with Nd3." },
+      { "san": "Ne2", "explain": "Attacking the pawn with Ne2 lets it advance with tempo — ...d3 kicks your knight. Blockade it first with Nd3." }
+    ]
   }
 }

@@ -142,13 +142,28 @@ function validatePuzzles(file, env) {
 }
 
 function validateScenario(file, env, idToFile) {
-  const { fen, relatedLesson } = env.body;
+  const { fen, relatedLesson, solution, misplays } = env.body;
   if (!assertFen(file, 'scenario', fen)) return;
   // A scenario you "play out" must start from a live position, not a finished game.
   if (new Chess(fen).isGameOver()) fail(file, 'scenario: starting FEN is already game-over');
   // A linked lesson must point at a real lesson envelope (resolved in pass 2 against all ids).
   if (relatedLesson && !idToFile.has(relatedLesson)) {
     fail(file, `scenario: relatedLesson "${relatedLesson}" does not resolve to any content id`);
+  }
+  // Every authored key move and diagnosed misplay must be legal in the starting position.
+  for (const san of solution?.san ?? []) {
+    try {
+      applyMove(new Chess(fen), san);
+    } catch {
+      fail(file, `scenario: solution move "${san}" is illegal`);
+    }
+  }
+  for (const m of misplays ?? []) {
+    try {
+      applyMove(new Chess(fen), m.san);
+    } catch {
+      fail(file, `scenario: misplay move "${m.san}" is illegal`);
+    }
   }
 }
 

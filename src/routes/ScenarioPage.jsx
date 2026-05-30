@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { BookOpen, Target, Lightbulb } from 'lucide-react';
 import { getContent } from '../content/registry.js';
@@ -22,19 +22,26 @@ export default function ScenarioPage() {
 
 function ScenarioView({ scenario }) {
   const { body } = scenario;
-  const game = useEngineGame({
-    fen: body.fen,
-    playerSide: body.playerSide,
-    skillLevel: body.skillLevel ?? 6,
-  });
+  const [skillLevel, setSkillLevel] = useState(body.skillLevel ?? 2);
+  // The authored key move + its explanation + diagnosed misplays drive the guided phase.
+  const guided = useMemo(
+    () =>
+      body.solution
+        ? { solution: body.solution.san, explain: body.explain, wrong: body.wrong, misplays: body.misplays }
+        : null,
+    [body],
+  );
+  const game = useEngineGame({ fen: body.fen, playerSide: body.playerSide, skillLevel, guided });
   const { recordLessonProgress } = useProfile();
   const [showHint, setShowHint] = useState(false);
 
-  // A scenario is "done" once the player wins the game they set out to convert.
+  // A scenario is "done" once the player finds the key idea (guided solved), or — for scenarios with
+  // no authored solution — once they win the game outright.
   const playerWon = game.status === 'over' && game.result?.winner === game.playerSide;
+  const done = game.solved || playerWon;
   useEffect(() => {
-    if (playerWon) recordLessonProgress(scenario, (progress, now) => withLessonComplete(progress, now));
-  }, [playerWon, scenario, recordLessonProgress]);
+    if (done) recordLessonProgress(scenario, (progress, now) => withLessonComplete(progress, now));
+  }, [done, scenario, recordLessonProgress]);
 
   const relatedLesson = body.relatedLesson ? getContent(body.relatedLesson) : null;
 
@@ -44,7 +51,13 @@ function ScenarioView({ scenario }) {
       <EngineGameView
         game={game}
         panel={
-          <EnginePanel game={game} eyebrow="Scenario" title={scenario.title}>
+          <EnginePanel
+            game={game}
+            eyebrow="Scenario"
+            title={scenario.title}
+            skillLevel={skillLevel}
+            onSkillLevelChange={setSkillLevel}
+          >
             {body.goal && (
               <div className="flex items-start gap-2 border-3 border-foreground bg-brand-50 px-4 py-3 text-sm text-gray-700">
                 <Target className="mt-0.5 shrink-0 text-brand-500" size={18} />

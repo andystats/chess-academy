@@ -11,9 +11,15 @@
     "fen": "rnbqkbnr/ppp2ppp/4p3/3pP3/3P4/8/PPP2PPP/RNBQKBNR b KQkq - 0 1",
     "orientation": "black",
     "playerSide": "black",
-    "skillLevel": 4,
+    "skillLevel": 1,
     "relatedLesson": "classics/pawn-chain",
-    "goal": "Attack the base of White's pawn chain, open lines for your pieces, and play on against the engine.",
-    "successHint": "A pawn chain is weakest at its base — hit d4 with ...c5 rather than chipping at the head on e5."
+    "goal": "Find the pawn break that attacks the base of White's chain, then play on against the engine.",
+    "successHint": "A pawn chain is weakest at its base. White's base is on d4 — which pawn can hit it?",
+    "solution": { "san": ["c5"] },
+    "explain": "Right. ...c5 strikes the base of White's chain on d4. Undermine the base and the whole chain becomes loose.",
+    "wrong": "Aim lower. A pawn chain is hardest to defend at its base, so target the pawn the chain stands on.",
+    "misplays": [
+      { "san": "f6", "explain": "...f6 chips at the head of the chain on e5, but the base on d4 is the real target — and ...f6 opens your own king. Hit the base with ...c5." }
+    ]
   }
 }
