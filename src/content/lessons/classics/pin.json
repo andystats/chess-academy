@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "lesson",
+  "id": "classics/pin",
+  "track": "classics",
+  "title": "The Pin",
+  "subtitle": "A piece that cannot freely move",
+  "summary": "Use a line piece to freeze a defender because something more valuable stands behind it.",
+  "estMinutes": 6,
+  "tags": ["strategy", "tactics", "pieces"],
+  "attribution": "Original prose; ideas after Nimzowitsch, My System. No book text reproduced.",
+  "body": {
+    "steps": [
+      {
+        "id": "intro",
+        "type": "prose",
+        "title": "The piece in front is tied down",
+        "orientation": "white",
+        "fen": "4k3/8/2n5/1B6/8/8/8/4K3 w - - 0 1",
+        "markdown": "A [[pin]] happens when a piece cannot move safely because a more valuable piece sits behind it. Here the knight on c6 stands between the bishop and the king.",
+        "annotations": { "highlight": ["b5", "c6", "e8"], "arrows": [["b5", "e8", "bad"]] }
+      },
+      {
+        "id": "take-pinned-piece",
+        "type": "single-move",
+        "title": "Win the pinned piece",
+        "orientation": "white",
+        "fen": "4k3/8/2n5/1B6/8/8/8/4K3 w - - 0 1",
+        "markdown": "The knight is pinned to the king. Capture it before it has a chance to escape.",
+        "solution": { "san": ["Bxc6+"] },
+        "hints": [
+          { "text": "The bishop already attacks the knight." },
+          { "text": "Move the bishop from b5 to c6.", "arrows": [["b5", "c6", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Right. The pinned knight could not move away without exposing the king, so the bishop wins it cleanly.",
+          "wrong": "Use the bishop to capture the piece that is tied to the king."
+        }
+      },
+      {
+        "id": "absolute-or-relative",
+        "type": "choose",
+        "title": "What makes this pin powerful?",
+        "orientation": "white",
+        "fen": "4k3/8/2B5/8/8/8/8/4K3 b - - 0 1",
+        "markdown": "Why was the knight unable to simply move away from the bishop?",
+        "options": [
+          {
+            "id": "a",
+            "label": "Moving it would expose check on the king",
+            "correct": true,
+            "explain": "Yes. A piece pinned to the king is absolutely pinned because exposing the king is illegal."
+          },
+          {
+            "id": "b",
+            "label": "Knights are never allowed to move backward",
+            "correct": false,
+            "explain": "Knights can move in every L-shape direction. The problem was the king behind it."
+          },
+          {
+            "id": "c",
+            "label": "The bishop controls every square on the board",
+            "correct": false,
+            "explain": "The bishop controls one diagonal. That diagonal was enough because the king sat behind the knight."
+          }
+        ]
+      },
+      {
+        "id": "wrap-up",
+        "type": "prose",
+        "title": "Attack the pinned piece again",
+        "orientation": "white",
+        "fen": "4k3/8/2n5/1B6/8/8/8/4K3 w - - 0 1",
+        "markdown": "A pinned piece often becomes a target. First notice what it is tied to. Then ask whether you can add pressure or simply capture it."
+      }
+    ]
+  }
+}

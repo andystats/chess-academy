@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "lesson",
+  "id": "classics/discovered-checks",
+  "track": "classics",
+  "title": "Discovered Checks",
+  "subtitle": "Move one piece, reveal another",
+  "summary": "Learn how a moving piece can uncover a line attack and create a forcing move.",
+  "estMinutes": 6,
+  "tags": ["tactics", "check", "line-pieces"],
+  "attribution": "Original prose; ideas after Nimzowitsch, My System. No book text reproduced.",
+  "body": {
+    "steps": [
+      {
+        "id": "intro",
+        "type": "prose",
+        "title": "The hidden rook",
+        "orientation": "white",
+        "fen": "4k3/8/8/7q/8/8/4N3/4R1K1 w - - 0 1",
+        "markdown": "A discovered check appears when one piece moves away and uncovers a line to the king. The knight on e2 is blocking the rook on e1, while Black's queen sits exposed on h5.",
+        "annotations": { "highlight": ["e1", "e2", "e8", "h5"], "arrows": [["e1", "e8", "idea"], ["e2", "f4", "good"]] }
+      },
+      {
+        "id": "reveal-check",
+        "type": "single-move",
+        "title": "Reveal the check",
+        "orientation": "white",
+        "fen": "4k3/8/8/7q/8/8/4N3/4R1K1 w - - 0 1",
+        "markdown": "Move the knight away with tempo. The rook will give check up the e-file, and the knight can hit the queen.",
+        "solution": { "san": ["Nf4+"] },
+        "hints": [
+          { "text": "The knight must leave the e-file." },
+          { "text": "Nf4+ reveals the rook and attacks the queen on h5.", "arrows": [["e2", "f4", "good"], ["f4", "h5", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Good. The knight moved, the rook gave check, and the knight also attacked the queen.",
+          "wrong": "Move the knight off the e-file so the rook can see the king."
+        }
+      },
+      {
+        "id": "why-forcing",
+        "type": "choose",
+        "title": "Why discovered checks matter",
+        "orientation": "white",
+        "fen": "4k3/8/8/7q/5N2/8/8/4R1K1 b - - 1 1",
+        "markdown": "Why are discovered checks so dangerous?",
+        "options": [
+          {
+            "id": "a",
+            "label": "The opponent must answer the check",
+            "correct": true,
+            "explain": "Exactly. The moving piece can attack something while the uncovered piece forces the king to respond."
+          },
+          {
+            "id": "b",
+            "label": "The checking side gets two turns forever",
+            "correct": false,
+            "explain": "There is no extra turn. The power comes from making one move do two jobs."
+          },
+          {
+            "id": "c",
+            "label": "Only knights can make discovered checks",
+            "correct": false,
+            "explain": "Any piece can move out of the way. The hidden checking piece is usually a rook, bishop, or queen."
+          }
+        ]
+      },
+      {
+        "id": "wrap-up",
+        "type": "prose",
+        "title": "One move, two jobs",
+        "orientation": "white",
+        "fen": "4k3/8/8/7q/5N2/8/8/4R1K1 b - - 1 1",
+        "markdown": "Look for pieces lined up with the enemy king. If one of your own pieces blocks the line, moving it may create a forcing discovered check while the moving piece attacks something else."
+      }
+    ]
+  }
+}

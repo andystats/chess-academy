@@ -16,6 +16,19 @@ const TARGET_STYLE = {
   background: 'radial-gradient(circle, rgba(47,111,237,0.5) 22%, transparent 24%)',
 };
 
+const BOARD_THEMES = {
+  academy: {
+    dark: '#7c9cc4',
+    light: '#eaf0f8',
+    shell: 'shadow-xl ring-1 ring-black/5',
+  },
+  book: {
+    dark: '#1f2933',
+    light: '#f7f3e8',
+    shell: 'border border-black/20 shadow-sm',
+  },
+};
+
 function buildArrows(arrows) {
   return arrows.map(([from, to, color]) => [from, to, ARROW_COLORS[color] ?? DEFAULT_ARROW]);
 }
@@ -39,9 +52,13 @@ export default function BoardPanel({
   highlights = [],
   selectedSquare = null,
   legalTargets = [],
+  variant = 'academy',
+  className = 'w-full max-w-[34rem]',
 }) {
+  const theme = BOARD_THEMES[variant] ?? BOARD_THEMES.academy;
+
   return (
-    <div className="w-full max-w-[34rem] aspect-square rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/5">
+    <div className={`${className} aspect-square overflow-hidden rounded-2xl ${theme.shell}`}>
       <Chessboard
         position={fen}
         boardOrientation={orientation}
@@ -52,8 +69,8 @@ export default function BoardPanel({
         customArrows={buildArrows(arrows)}
         customSquareStyles={buildSquareStyles({ highlights, selectedSquare, legalTargets })}
         customBoardStyle={{ borderRadius: 0 }}
-        customDarkSquareStyle={{ backgroundColor: '#7c9cc4' }}
-        customLightSquareStyle={{ backgroundColor: '#eaf0f8' }}
+        customDarkSquareStyle={{ backgroundColor: theme.dark }}
+        customLightSquareStyle={{ backgroundColor: theme.light }}
         animationDuration={250}
       />
     </div>

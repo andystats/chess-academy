@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping build a friendly place for kids to learn chess! There are two easy ways in:
+Thanks for helping build a friendly place to learn chess! There are two easy ways in:
 
 1. **Write a lesson or glossary entry** — no coding needed (this guide).
 2. **Improve the app** — see [Code contributions](#code-contributions) at the end.
@@ -124,7 +124,7 @@ definition card. Every `[[term]]` must match a glossary entry (the checker enfor
 
 - Lowercase letters, numbers, and dashes, with `/` to group: `classics/the-center`.
 - It must be **unique** and is the lesson's permanent address (it's part of the URL and how a
-  child's progress is saved). **Never rename an `id`** once it's merged — pick carefully.
+  learner's progress is saved). **Never rename an `id`** once it's merged — pick carefully.
 
 ### Annotations (highlights & arrows)
 

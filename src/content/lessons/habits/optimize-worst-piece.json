@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "lesson",
+  "id": "habits/optimize-worst-piece",
+  "track": "habits",
+  "title": "Optimize the Worst Piece",
+  "subtitle": "Improve before you invent",
+  "summary": "When there is no tactic, find the piece with the fewest useful futures and improve it.",
+  "estMinutes": 6,
+  "tags": ["strategy", "planning", "development"],
+  "attribution": "Original prose; a common modern coaching habit.",
+  "body": {
+    "steps": [
+      {
+        "id": "intro",
+        "type": "prose",
+        "title": "No tactic? Improve something",
+        "orientation": "white",
+        "fen": "r1bqk2r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4",
+        "markdown": "If there is no forcing move, ask which piece is doing the least. In this position, the knight on b1 is still asleep while the rest of the position is developing.",
+        "annotations": { "highlight": ["b1", "c3"], "arrows": [["b1", "c3", "good"]] }
+      },
+      {
+        "id": "develop-worst-piece",
+        "type": "single-move",
+        "title": "Improve the quiet piece",
+        "orientation": "white",
+        "fen": "r1bqk2r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4",
+        "markdown": "Find the calm developing move that brings the least active white piece into the game.",
+        "solution": { "san": ["Nc3"] },
+        "hints": [
+          { "text": "Look at the piece that has not moved yet." },
+          { "text": "The b1 knight can join the center.", "arrows": [["b1", "c3", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Yes. Nc3 improves the sleeping knight and adds more control over the center.",
+          "wrong": "Look for the undeveloped piece with the least influence."
+        }
+      },
+      {
+        "id": "what-question",
+        "type": "choose",
+        "title": "The planning question",
+        "orientation": "white",
+        "fen": "r1bqk2r/pppp1ppp/2n2n2/1B2p3/4P3/2N2N2/PPPP1PPP/R1BQK2R b KQkq - 5 4",
+        "markdown": "When no check, capture, or threat works, what question keeps your move useful?",
+        "options": [
+          {
+            "id": "a",
+            "label": "Which piece has the worst future?",
+            "correct": true,
+            "explain": "Right. Improving the worst piece raises the level of the whole position."
+          },
+          {
+            "id": "b",
+            "label": "Can I move the same piece again?",
+            "correct": false,
+            "explain": "Sometimes, but repeated moves need a reason. First find the piece that is least active."
+          },
+          {
+            "id": "c",
+            "label": "Can I make a random pawn move?",
+            "correct": false,
+            "explain": "Pawn moves are permanent. A quiet piece improvement is often safer and more flexible."
+          }
+        ]
+      },
+      {
+        "id": "wrap-up",
+        "type": "prose",
+        "title": "Small improvements compound",
+        "orientation": "white",
+        "fen": "r1bqk2r/pppp1ppp/2n2n2/1B2p3/4P3/2N2N2/PPPP1PPP/R1BQK2R b KQkq - 5 4",
+        "markdown": "Strong players do not need every move to be dramatic. When tactics are absent, improve the piece with the fewest useful options."
+      }
+    ]
+  }
+}

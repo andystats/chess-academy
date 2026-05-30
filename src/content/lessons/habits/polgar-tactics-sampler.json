@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "kind": "lesson",
+  "id": "habits/polgar-tactics-sampler",
+  "track": "habits",
+  "title": "Polgar Tactics Sampler",
+  "subtitle": "Three sharp tournament positions",
+  "summary": "Solve a small set of tactical positions from the Polgar sisters games, with original prompts and explanations.",
+  "estMinutes": 8,
+  "tags": ["tactics", "calculation", "polgar"],
+  "attribution": "Factual chess positions from Laszlo Polgar, Chess: 5334 Problems, Combinations and Games, Polgar sisters tournament-games combinations. Original prompts and feedback.",
+  "body": {
+    "steps": [
+      {
+        "id": "intro",
+        "type": "prose",
+        "title": "Calculate forcing moves",
+        "orientation": "white",
+        "fen": "3r1n2/1R1P2k1/6p1/1pp5/2pbP1B1/8/1P2Q1K1/R7 w - - 0 1",
+        "markdown": "These positions come from the Polgar sisters tournament-games section of the tactics collection. The prompts are new, but the training habit is classic: start with forcing moves: [[check|checks]], [[capture|captures]], and direct threats."
+      },
+      {
+        "id": "back-rank-entry",
+        "type": "single-move",
+        "title": "Use the open file",
+        "orientation": "white",
+        "fen": "3r1n2/1R1P2k1/6p1/1pp5/2pbP1B1/8/1P2Q1K1/R7 w - - 0 1",
+        "markdown": "White's rook on a1 has a clear road. Find the move that invades and overloads Black's defense.",
+        "solution": { "san": ["Ra8"] },
+        "hints": [
+          { "text": "Look for a rook move all the way to the back rank." },
+          { "text": "The a-file is open.", "arrows": [["a1", "a8", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Correct. The rook enters on a8 and Black's pieces are tied down.",
+          "wrong": "Start with the rook that has a clear file."
+        }
+      },
+      {
+        "id": "deflect-queen",
+        "type": "single-move",
+        "title": "Hit the loose piece",
+        "orientation": "white",
+        "fen": "1k1rQ3/2p5/2n4p/1q2P1p1/1pnP4/8/5BPP/1RR3K1 w - - 0 1",
+        "markdown": "Black's queen is active, but one nearby defender is loose. Find White's clean capture.",
+        "solution": { "san": ["Rxb4"] },
+        "hints": [
+          { "text": "Check which black piece on the fourth rank is undefended." },
+          { "text": "The b-file rook can climb to b4.", "arrows": [["b1", "b4", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Good. Rxb4 removes the defender and leaves Black's queen short of good squares.",
+          "wrong": "Look for a rook capture on the b-file."
+        }
+      },
+      {
+        "id": "king-side-shot",
+        "type": "single-move",
+        "title": "Open the king",
+        "orientation": "white",
+        "fen": "rr3b1k/5pp1/p3bN1p/4P3/P7/2N1Q1R1/1q4PP/3R3K w - - 0 1",
+        "markdown": "White has more pieces near the king. Find the forcing capture that starts the attack.",
+        "solution": { "san": ["Qxh6+"] },
+        "hints": [
+          { "text": "Look at every capture near Black's king." },
+          { "text": "The queen can take on h6.", "arrows": [["e3", "h6", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Yes. Qxh6+ pulls open the king's shelter and keeps the attack moving.",
+          "wrong": "The key move is a queen capture with check."
+        }
+      },
+      {
+        "id": "wrap-up",
+        "type": "prose",
+        "title": "The pattern",
+        "orientation": "white",
+        "fen": "rr3b1k/5pp1/p3bN1Q/4P3/P7/2N3R1/1q4PP/3R3K b - - 0 1",
+        "markdown": "In each position, the move was forcing: a rook invasion, a capture, or a check near the king. That is the point of tactics training: make the most forcing candidates visible first."
+      }
+    ]
+  }
+}

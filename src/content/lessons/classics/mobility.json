@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "lesson",
+  "id": "classics/mobility",
+  "track": "classics",
+  "title": "Mobility",
+  "subtitle": "Give pieces useful choices",
+  "summary": "Improve cramped pieces by moving them to squares with more future options.",
+  "estMinutes": 6,
+  "tags": ["strategy", "pieces", "planning"],
+  "attribution": "Original prose; ideas after Nimzowitsch, My System. No book text reproduced.",
+  "body": {
+    "steps": [
+      {
+        "id": "intro",
+        "type": "prose",
+        "title": "A piece needs room to work",
+        "orientation": "white",
+        "fen": "5rk1/8/8/8/8/8/3P4/2B3K1 w - - 0 1",
+        "markdown": "[[mobility|Mobility]] is useful freedom. A piece with mobility has meaningful squares and can join plans quickly. White's bishop is shut in by its own d-pawn, but one move can put it on a long diagonal with tempo.",
+        "annotations": { "highlight": ["c1", "a3", "f8"], "arrows": [["c1", "a3", "good"], ["a3", "f8", "idea"]] }
+      },
+      {
+        "id": "free-bishop",
+        "type": "single-move",
+        "title": "Find the freer square",
+        "orientation": "white",
+        "fen": "5rk1/8/8/8/8/8/3P4/2B3K1 w - - 0 1",
+        "markdown": "Move the bishop to an open diagonal where it immediately attacks the rook.",
+        "solution": { "san": ["Ba3"] },
+        "hints": [
+          { "text": "The bishop's d2-square is blocked by its own pawn." },
+          { "text": "Ba3 opens the a3-f8 diagonal and attacks the rook.", "arrows": [["c1", "a3", "good"], ["a3", "f8", "idea"]] }
+        ],
+        "feedback": {
+          "correct": "Good. Ba3 transforms the bishop from shut-in to active and attacks the rook at the same time.",
+          "wrong": "Look for the bishop move that opens a long diagonal with tempo."
+        }
+      },
+      {
+        "id": "mobility-question",
+        "type": "choose",
+        "title": "What counts as mobility?",
+        "orientation": "white",
+        "fen": "5rk1/8/8/8/8/B7/3P4/6K1 b - - 1 1",
+        "markdown": "What makes a mobile piece valuable?",
+        "options": [
+          {
+            "id": "a",
+            "label": "It has useful squares and can change plans",
+            "correct": true,
+            "explain": "Exactly. Mobility is not just the number of legal moves; the moves must matter."
+          },
+          {
+            "id": "b",
+            "label": "It never needs support",
+            "correct": false,
+            "explain": "Mobile pieces still need coordination and safe squares."
+          },
+          {
+            "id": "c",
+            "label": "It must move every turn",
+            "correct": false,
+            "explain": "A mobile piece is ready to move when needed. It does not have to wander."
+          }
+        ]
+      },
+      {
+        "id": "wrap-up",
+        "type": "prose",
+        "title": "Improve the cramped piece",
+        "orientation": "white",
+        "fen": "5rk1/8/8/8/8/B7/3P4/6K1 b - - 1 1",
+        "markdown": "The best mobility moves do more than run away. They give a cramped piece useful work and force the opponent to respond."
+      }
+    ]
+  }
+}

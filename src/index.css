@@ -4,12 +4,27 @@
 
 @layer base {
   body {
-    @apply font-sans text-gray-800 antialiased;
+    @apply bg-white font-sans text-gray-800 antialiased;
   }
 
   h1,
   h2,
   h3 {
     @apply font-display;
+  }
+}
+
+@layer utilities {
+  .paper-texture {
+    background-image:
+      linear-gradient(rgba(26, 26, 26, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26, 26, 26, 0.025) 1px, transparent 1px);
+    background-size: 28px 28px, 28px 28px;
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.78);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
   }
 }

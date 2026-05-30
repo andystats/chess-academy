@@ -3,7 +3,7 @@ import { createStore } from './storage.js';
 
 // Runs in the node env (no indexedDB), so createStore returns the in-memory fallback. That's the
 // path we need to verify for graceful degradation, plus the per-profile progress key isolation
-// that prevents one child's progress from leaking into another's.
+// that prevents one learner's progress from leaking into another's.
 
 describe('storage (in-memory fallback)', () => {
   it('falls back to a non-persistent store when IndexedDB is unavailable', async () => {

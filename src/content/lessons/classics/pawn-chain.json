@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "lesson",
+  "id": "classics/pawn-chain",
+  "track": "classics",
+  "title": "The Pawn Chain",
+  "subtitle": "Attack the base",
+  "summary": "Read pawn chains by their direction, then attack the base instead of the protected head.",
+  "estMinutes": 6,
+  "tags": ["strategy", "pawns", "structure"],
+  "attribution": "Original prose; ideas after Nimzowitsch, My System. No book text reproduced.",
+  "body": {
+    "steps": [
+      {
+        "id": "intro",
+        "type": "prose",
+        "title": "Pawns point to plans",
+        "orientation": "white",
+        "fen": "4k3/8/4p3/3p1P2/2p1P3/8/8/4K3 w - - 0 1",
+        "markdown": "A [[pawn-chain]] is a diagonal structure of pawns defending each other. Black's chain runs e6-d5-c4: e6 is the base, d5 supports c4, and c4 is the head. The base is usually easier to attack.",
+        "annotations": { "highlight": ["e6", "d5", "c4", "f5"], "arrows": [["f5", "e6", "good"]] }
+      },
+      {
+        "id": "attack-base",
+        "type": "single-move",
+        "title": "Hit the base",
+        "orientation": "white",
+        "fen": "4k3/8/4p3/3p1P2/2p1P3/8/8/4K3 w - - 0 1",
+        "markdown": "Black's chain points toward White's queenside space. Use the white f-pawn to capture the base of the chain.",
+        "solution": { "san": ["fxe6"] },
+        "hints": [
+          { "text": "The base is the pawn farthest back in the chain." },
+          { "text": "Your f-pawn can capture on e6.", "arrows": [["f5", "e6", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Good. Capturing the base weakens the whole pawn chain.",
+          "wrong": "Do not attack the protected head first. Look for the pawn at the base."
+        }
+      },
+      {
+        "id": "why-base",
+        "type": "choose",
+        "title": "Why the base?",
+        "orientation": "white",
+        "fen": "4k3/8/4P3/3p4/2p1P3/8/8/4K3 b - - 0 1",
+        "markdown": "Why is the base of a pawn chain such an important target?",
+        "options": [
+          {
+            "id": "a",
+            "label": "It supports the pawns in front of it",
+            "correct": true,
+            "explain": "Exactly. Remove the support and the advanced pawns become easier to challenge."
+          },
+          {
+            "id": "b",
+            "label": "It is always the strongest pawn",
+            "correct": false,
+            "explain": "It may be important, but it is often vulnerable because it has fewer pawn defenders."
+          },
+          {
+            "id": "c",
+            "label": "It lets every pawn move backward",
+            "correct": false,
+            "explain": "Pawns cannot move backward. That is why pawn structure creates long-term plans."
+          }
+        ]
+      },
+      {
+        "id": "wrap-up",
+        "type": "prose",
+        "title": "Read the direction",
+        "orientation": "white",
+        "fen": "4k3/8/4p3/3p1P2/2p1P3/8/8/4K3 w - - 0 1",
+        "markdown": "A pawn chain tells you where each side has space and where the structure can be undermined. Find the base, then build pressure there."
+      }
+    ]
+  }
+}

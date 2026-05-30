@@ -7,7 +7,7 @@ export default function GlossaryPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="font-display text-3xl font-bold text-gray-900">Glossary</h1>
-      <p className="mt-2 text-gray-600">Plain-language meanings for the chess words you'll meet in lessons.</p>
+      <p className="mt-2 text-gray-600">Plain-language meanings for the chess terms used across lessons and book studies.</p>
 
       {entries.length === 0 ? (
         <p className="mt-8 text-gray-500">Definitions are on their way — check back soon!</p>

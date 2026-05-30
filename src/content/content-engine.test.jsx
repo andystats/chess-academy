@@ -3,6 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { Chess } from 'chess.js';
 import { useChessLesson } from '../lesson/useChessLesson.js';
 import { normalizeStep, playerOrdinalCount, expectedSansAt } from '../lesson/engine.js';
+import { mainlineIndexForPlayerMove } from '../lesson/moves.js';
 import { listByKind } from './registry.js';
 
 // Closes the loop between authored content and the engine: for EVERY shipped lesson, drive the
@@ -34,7 +35,40 @@ function driveStep(result, rawStep) {
   }
 }
 
+function fenAfterMoves(fen, moves) {
+  const game = new Chess(fen);
+  for (const move of moves) game.move(move);
+  return game.fen();
+}
+
 describe('content ↔ engine', () => {
+  it('declares only legal authored moves', () => {
+    for (const lesson of lessons) {
+      for (const step of lesson.body.steps) {
+        if (!step.fen) continue;
+        expect(() => new Chess(step.fen), `${lesson.id}/${step.id} has a valid FEN`).not.toThrow();
+
+        if (step.type === 'single-move') {
+          for (const san of step.solution.san) {
+            expect(() => new Chess(step.fen).move(san), `${lesson.id}/${step.id} accepts ${san}`).not.toThrow();
+          }
+        }
+
+        if (step.type === 'line') {
+          expect(() => fenAfterMoves(step.fen, step.mainline), `${lesson.id}/${step.id} mainline is legal`).not.toThrow();
+
+          for (const [ordinal, sans] of Object.entries(step.acceptableAt ?? {})) {
+            const moveIndex = mainlineIndexForPlayerMove(Number(ordinal), step.hasSetupMove ?? false);
+            const fen = fenAfterMoves(step.fen, step.mainline.slice(0, moveIndex));
+            for (const san of sans) {
+              expect(() => new Chess(fen).move(san), `${lesson.id}/${step.id} accepts alternate ${san}`).not.toThrow();
+            }
+          }
+        }
+      }
+    }
+  });
+
   for (const lesson of lessons) {
     it(`drives every step of "${lesson.id}" to completion`, () => {
       vi.useFakeTimers();

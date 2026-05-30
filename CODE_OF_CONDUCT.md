@@ -2,7 +2,7 @@
 
 ## Our pledge
 
-This is a project for helping children learn chess, and our community reflects that: we are
+This is a project for helping people learn chess, and our community reflects that: we are
 welcoming, patient, and kind. We pledge to make participation a harassment-free experience for
 everyone, regardless of age, experience, background, or identity.
 
@@ -12,12 +12,12 @@ Examples of behavior that helps:
 
 - Being welcoming to newcomers and beginners.
 - Giving and gracefully accepting constructive feedback.
-- Remembering that much of our content is aimed at kids — keep language, examples, and imagery
+- Remembering that much of our content is aimed at learners — keep language, examples, and imagery
   appropriate for a young audience.
 
 Unacceptable behavior includes harassment, insults, personal or political attacks, sexualized
 language or imagery, publishing others' private information, or any conduct that would be
-inappropriate around children.
+inappropriate in a learning environment.
 
 ## Scope & enforcement
 

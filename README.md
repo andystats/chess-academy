@@ -1,16 +1,17 @@
 # Chess Academy
 
-A friendly, open-source chess academy for **kids aged 6–12** (and anyone learning the
-fundamentals). It teaches through short, interactive lessons on a real board you can drag
-or tap pieces on — no account, no ads, works offline-first in the browser.
+An open-source chess study tool for learners building fundamentals and strategic habits. It
+teaches through short, interactive lessons on a real board you can drag or tap pieces on — no
+account, no ads, works offline-first in the browser.
 
 > **Working title.** "Chess Academy" is a placeholder name — rename freely in `package.json`,
 > `index.html`, and `tailwind.config.js`.
 
 ## What's inside
 
-- **Classics** — strategic fundamentals after Nimzowitsch's *My System* (the ideas are public
-  domain; all prose here is written fresh and kid-friendly).
+- **My System study** — a book-like, playable path after Nimzowitsch's *My System* (the ideas are
+  public domain; all prose here is written fresh for this project).
+- **Classics** — strategic fundamentals drawn from the same tradition as standalone lessons.
 - **Thinking habits** — the modern coaching checklists: **C**hecks, **C**aptures, **T**hreats;
   "to take is a mistake"; "optimise your worst piece"; always check your opponent's best reply.
 - **Glossary** — plain-language definitions with little example boards, cross-linked from lessons.
@@ -19,8 +20,9 @@ or tap pieces on — no account, no ads, works offline-first in the browser.
 
 ## Status
 
-Early but real. The lesson engine, content schema + validator, local profiles, and the first
-lessons are built; puzzles and the engine come next. See [`ROADMAP`](#roadmap) below.
+Early but real. The lesson engine, content schema + validator, local profiles, a book-study
+section, and the first lessons are built; puzzles and the engine come next. See
+[`ROADMAP`](#roadmap) below.
 
 ## Quick start
 
@@ -55,7 +57,7 @@ static site to GitHub Pages.
 | 1 | Lesson engine, content schema + validator, profiles, first lessons + glossary |
 | 2 | Puzzle trainer + spaced repetition (Lichess CC0 set) |
 | 3 | Stockfish (WASM) for hints, "best reply", and free-play analysis |
-| 4 | Reference sections, read-aloud, accessibility & kid-UX polish |
+| 4 | Reference sections, read-aloud, accessibility & study-UX polish |
 
 ## Licensing
 

@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "lesson",
+  "id": "classics/prophylaxis",
+  "track": "classics",
+  "title": "Prophylaxis",
+  "subtitle": "Stop the idea before it starts",
+  "summary": "Learn Nimzowitsch's habit of asking what your opponent wants before choosing your own move.",
+  "estMinutes": 7,
+  "tags": ["strategy", "defense", "calculation"],
+  "attribution": "Original prose; ideas after Nimzowitsch, My System. No book text reproduced.",
+  "body": {
+    "steps": [
+      {
+        "id": "intro",
+        "type": "prose",
+        "title": "Ask their question first",
+        "orientation": "white",
+        "fen": "rnbqkbnr/pppp1ppp/8/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 2 2",
+        "markdown": "[[prophylaxis]] means spotting the opponent's idea early and making it fail. Before you chase your own plan, ask: what would they play if they got another free move?",
+        "annotations": { "arrows": [["f3", "f7", "bad"], ["c4", "f7", "bad"]] }
+      },
+      {
+        "id": "block-threat",
+        "type": "single-move",
+        "title": "Meet the threat",
+        "orientation": "black",
+        "fen": "rnbqkbnr/pppp1ppp/8/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 2 2",
+        "markdown": "White is aiming queen and bishop at f7. Black should develop while blocking that line. Find the calm defensive move.",
+        "solution": { "san": ["Nf6"] },
+        "hints": [
+          { "text": "Use a developing move, not a pawn panic." },
+          { "text": "Put a knight between the queen and f7.", "arrows": [["g8", "f6", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Right. Nf6 develops a piece and takes the direct shot at f7 off the board.",
+          "wrong": "Look for a move that develops and interrupts the queen's path to f7."
+        }
+      },
+      {
+        "id": "choose-habit",
+        "type": "choose",
+        "title": "The prophylactic habit",
+        "orientation": "white",
+        "fen": "rnbqkb1r/pppp1ppp/5n2/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 3 3",
+        "markdown": "What is the useful question to ask before every move?",
+        "options": [
+          {
+            "id": "a",
+            "label": "What is my opponent threatening?",
+            "correct": true,
+            "explain": "Yes. Once you see their idea, you can stop it, ignore it safely, or make a stronger threat."
+          },
+          {
+            "id": "b",
+            "label": "Can I make the prettiest move?",
+            "correct": false,
+            "explain": "Pretty moves are useful only when they answer the position's real demands."
+          },
+          {
+            "id": "c",
+            "label": "Can I trade anything?",
+            "correct": false,
+            "explain": "Trades can help, but prophylaxis starts by reading the opponent's plan."
+          }
+        ]
+      },
+      {
+        "id": "wrap-up",
+        "type": "prose",
+        "title": "Quiet moves count",
+        "orientation": "black",
+        "fen": "rnbqkb1r/pppp1ppp/5n2/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 3 3",
+        "markdown": "A prophylactic move is not passive. It is a move that removes the opponent's best idea while improving your own position. Strong players win many games by making danger disappear before it becomes visible."
+      }
+    ]
+  }
+}

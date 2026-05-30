@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "lesson",
+  "id": "classics/open-files",
+  "track": "classics",
+  "title": "Open Files",
+  "subtitle": "Rooks need roads",
+  "summary": "Use open files and the seventh rank to turn rooks into active attacking pieces.",
+  "estMinutes": 6,
+  "tags": ["strategy", "rooks", "activity"],
+  "attribution": "Original prose; ideas after Nimzowitsch, My System. No book text reproduced.",
+  "body": {
+    "steps": [
+      {
+        "id": "intro",
+        "type": "prose",
+        "title": "Give the rook a road",
+        "orientation": "white",
+        "fen": "6k1/pp3ppp/8/8/8/8/5PPP/R5K1 w - - 0 1",
+        "markdown": "A rook is strongest when it has an [[open-file|open file]]: a clear vertical road with no pawns in the way. Once a rook enters the [[seventh-rank|seventh rank]], it can start attacking pawns from the side and restrict the king near home.",
+        "annotations": { "highlight": ["a1", "a7"], "arrows": [["a1", "a7", "good"]] }
+      },
+      {
+        "id": "seventh-rank",
+        "type": "single-move",
+        "title": "Invade the seventh",
+        "orientation": "white",
+        "fen": "6k1/pp3ppp/8/8/8/8/5PPP/R5K1 w - - 0 1",
+        "markdown": "The a-file is open. Move the rook to the seventh rank and win the first loose pawn.",
+        "solution": { "san": ["Rxa7"] },
+        "hints": [
+          { "text": "Use the clear a-file." },
+          { "text": "The pawn on a7 is loose.", "arrows": [["a1", "a7", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Yes. The rook reaches the seventh rank with tempo and starts attacking pawns from behind the enemy lines.",
+          "wrong": "Look for the rook move that uses the open a-file."
+        }
+      },
+      {
+        "id": "what-changed",
+        "type": "choose",
+        "title": "What changed?",
+        "orientation": "white",
+        "fen": "6k1/Rp3ppp/8/8/8/8/5PPP/6K1 b - - 0 1",
+        "markdown": "Why is the rook on a7 more active than it was on a1?",
+        "options": [
+          {
+            "id": "a",
+            "label": "It starts attacking pawns from the side",
+            "correct": true,
+            "explain": "Right. The rook immediately attacks b7. If that pawn falls, the rest of the seventh rank becomes vulnerable."
+          },
+          {
+            "id": "b",
+            "label": "It became a queen",
+            "correct": false,
+            "explain": "It is still a rook. The improvement is activity, not promotion."
+          },
+          {
+            "id": "c",
+            "label": "It blocks its own pawns",
+            "correct": false,
+            "explain": "There are no white pawns on the a-file, so the rook has room to work."
+          }
+        ]
+      },
+      {
+        "id": "wrap-up",
+        "type": "prose",
+        "title": "Activity over decoration",
+        "orientation": "white",
+        "fen": "6k1/Rp3ppp/8/8/8/8/5PPP/6K1 b - - 0 1",
+        "markdown": "Rooks do not belong in the corner forever. Find open files, occupy them, then look for entry squares on the seventh rank."
+      }
+    ]
+  }
+}
