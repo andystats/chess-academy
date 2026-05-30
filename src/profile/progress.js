@@ -1,7 +1,7 @@
 // Pure helpers for per-lesson progress. Kept free of storage and Date so they're easy to test;
 // callers pass timestamps in. Progress is keyed by the stable lesson id and tagged with a content
 // hash: if a lesson's content changes between releases, step-level progress is invalidated (so a
-// child never skips new material or shows false completion) while the record itself is replaced.
+// learner never skips new material or shows false completion) while the record itself is replaced.
 
 // Lesson envelopes are stable module singletons (from the content registry glob), so we can
 // memoize the hash per lesson object and skip re-stringifying on every render.

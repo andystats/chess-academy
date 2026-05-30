@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "lesson",
+  "id": "classics/exchanging",
+  "track": "classics",
+  "title": "Exchanging",
+  "subtitle": "Every trade changes the position",
+  "summary": "Learn to ask what a trade removes, opens, or improves before capturing.",
+  "estMinutes": 6,
+  "tags": ["strategy", "material", "calculation"],
+  "attribution": "Original prose; ideas after Nimzowitsch, My System. No book text reproduced.",
+  "body": {
+    "steps": [
+      {
+        "id": "intro",
+        "type": "prose",
+        "title": "A trade is a decision",
+        "orientation": "white",
+        "fen": "4k3/8/8/8/3q4/1N6/8/4K3 w - - 0 1",
+        "markdown": "An [[exchange]] is not just arithmetic. Before you capture, ask what disappears from the board and what new squares become available.",
+        "annotations": { "highlight": ["b3", "d4"], "arrows": [["b3", "d4", "good"]] }
+      },
+      {
+        "id": "good-exchange",
+        "type": "single-move",
+        "title": "Take the profitable trade",
+        "orientation": "white",
+        "fen": "4k3/8/8/8/3q4/1N6/8/4K3 w - - 0 1",
+        "markdown": "This trade is not subtle: a knight can remove the queen. Find the capture.",
+        "solution": { "san": ["Nxd4"] },
+        "hints": [
+          { "text": "The knight on b3 attacks d4." },
+          { "text": "A knight can jump to the queen.", "arrows": [["b3", "d4", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Right. This exchange wins major material, so the capture is justified.",
+          "wrong": "Look for the knight capture on the queen."
+        }
+      },
+      {
+        "id": "trade-question",
+        "type": "choose",
+        "title": "The exchange question",
+        "orientation": "white",
+        "fen": "4k3/8/8/8/3N4/8/8/4K3 b - - 0 1",
+        "markdown": "What should you ask before making any less obvious exchange?",
+        "options": [
+          {
+            "id": "a",
+            "label": "What changes after both sides capture?",
+            "correct": true,
+            "explain": "Yes. Count material, but also check activity, weak squares, open lines, and defenders."
+          },
+          {
+            "id": "b",
+            "label": "Can I capture something immediately?",
+            "correct": false,
+            "explain": "That is only the start. The opponent's reply matters just as much."
+          },
+          {
+            "id": "c",
+            "label": "Can I remove my active piece from the board?",
+            "correct": false,
+            "explain": "Trading your active piece for a passive one often helps the opponent."
+          }
+        ]
+      },
+      {
+        "id": "wrap-up",
+        "type": "prose",
+        "title": "Trade with a reason",
+        "orientation": "white",
+        "fen": "4k3/8/8/8/3q4/1N6/8/4K3 w - - 0 1",
+        "markdown": "A good exchange wins material, removes a defender, opens a line, or improves your remaining pieces. If a trade does none of those things, slow down."
+      }
+    ]
+  }
+}

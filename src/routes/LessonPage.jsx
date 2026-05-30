@@ -15,7 +15,7 @@ export default function LessonPage() {
     <div>
       <div className="mx-auto max-w-6xl px-4 pt-4">
         <Link to="/" className="inline-flex items-center gap-1 text-sm font-semibold text-gray-500 hover:text-brand-600">
-          <ChevronLeft size={16} /> All lessons
+          <ChevronLeft size={16} /> Atrium
         </Link>
       </div>
       <LessonView key={lesson.id} lesson={lesson} />

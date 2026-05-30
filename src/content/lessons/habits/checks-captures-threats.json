@@ -17,7 +17,7 @@
         "title": "Before every move",
         "orientation": "white",
         "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-        "markdown": "Strong players run a quick checklist before moving: look at every **[[check]]**, every **[[capture]]**, and every **[[threat]]** — for *both* sides. It only takes a few seconds and it stops most blunders. Let's practise."
+        "markdown": "Strong players run a quick checklist before moving: look at every [[check]], every [[capture]], and every [[threat]] for both sides. It only takes a few seconds and it stops most blunders. Let's practise."
       },
       {
         "id": "find-the-mate",
@@ -42,7 +42,7 @@
         "title": "Then captures",
         "orientation": "white",
         "fen": "4k3/8/8/3q4/4P3/8/8/4K3 w - - 0 1",
-        "markdown": "No checks here, so look at [[capture|captures]]. Black's queen has wandered next to your pawn. Take is a mistake — *unless* it wins material. This time it does!",
+        "markdown": "No checks here, so look at [[capture|captures]]. Black's queen has wandered next to your pawn. Take is a mistake unless it wins material. This time it does!",
         "solution": { "san": ["exd5"] },
         "hints": [{ "text": "Your e4 pawn can capture diagonally.", "arrows": [["e4", "d5", "good"]] }],
         "feedback": {
@@ -56,7 +56,7 @@
         "title": "\"To take is a mistake\"",
         "orientation": "white",
         "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-        "markdown": "There's an old saying: *to take is a mistake*. It doesn't mean never capture — it means **stop and think first**. When you spot a tempting [[capture]], what should you ask?",
+        "markdown": "There's an old saying: to take is a mistake. It doesn't mean never capture; it means **stop and think first**. When you spot a tempting [[capture]], what should you ask?",
         "options": [
           { "id": "a", "label": "Is it really free, or is it a trap?", "correct": true, "explain": "Exactly. Check what recaptures, and whether grabbing it loses time or walks into a fork." },
           { "id": "b", "label": "Nothing — always grab free material", "correct": false, "explain": "Careful! Many 'free' pawns are bait. Always look at your opponent's reply first." }
@@ -68,7 +68,7 @@
         "title": "Make it a habit",
         "orientation": "white",
         "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-        "markdown": "From now on, before every move, whisper it to yourself: **[[check|checks]], [[capture|captures]], [[threat|threats]]** — for both sides. Do that and you'll spot the wins and dodge the traps."
+        "markdown": "From now on, before every move, whisper it to yourself: [[check|checks]], [[capture|captures]], [[threat|threats]] for both sides. Do that and you'll spot the wins and dodge the traps."
       }
     ]
   }

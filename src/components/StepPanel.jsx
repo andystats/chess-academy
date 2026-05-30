@@ -30,7 +30,7 @@ function ChooseOptions({ options, chosenOptionId, onChoose }) {
             type="button"
             onClick={() => onChoose(opt.id)}
             className={clsx(
-              'w-full text-left rounded-2xl border-2 px-4 py-3 min-h-touch transition-colors',
+              'min-h-touch w-full rounded-2xl border px-4 py-3 text-left transition-colors',
               chosen && opt.correct && 'border-correct bg-green-50',
               chosen && !opt.correct && 'border-retry bg-orange-50',
               !chosen && 'border-gray-200 hover:border-brand-500 hover:bg-brand-50',
@@ -87,12 +87,12 @@ export default function StepPanel({ lesson, chapterTitle }) {
     <div className="flex flex-col gap-5 w-full max-w-xl">
       <div>
         {chapterTitle && (
-          <p className="text-sm font-bold uppercase tracking-wide text-brand-600">{chapterTitle}</p>
+          <p className="font-mono text-xs font-bold uppercase text-brand-600">{chapterTitle}</p>
         )}
-        <h1 className="text-3xl font-display font-bold text-gray-900">{step.title}</h1>
+        <h1 className="font-display text-3xl font-bold text-gray-950">{step.title}</h1>
       </div>
 
-      <Markdown className="text-lg leading-relaxed text-gray-700" renderTerm={renderTerm}>
+      <Markdown className="text-lg leading-8 text-gray-700" renderTerm={renderTerm}>
         {step.markdown}
       </Markdown>
 
@@ -118,7 +118,7 @@ export default function StepPanel({ lesson, chapterTitle }) {
           type="button"
           onClick={prev}
           disabled={isFirstStep}
-          className="inline-flex items-center gap-1 rounded-2xl border-2 border-gray-200 px-4 min-h-touch font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="inline-flex min-h-touch items-center gap-1 rounded-2xl border border-gray-200 px-4 font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ChevronLeft size={20} /> Back
         </button>
@@ -127,7 +127,7 @@ export default function StepPanel({ lesson, chapterTitle }) {
           <button
             type="button"
             onClick={restartStep}
-            className="inline-flex items-center gap-1 rounded-2xl border-2 border-gray-200 px-4 min-h-touch font-semibold text-gray-700 hover:bg-gray-50"
+            className="inline-flex min-h-touch items-center gap-1 rounded-2xl border border-gray-200 px-4 font-semibold text-gray-700 hover:bg-gray-50"
           >
             <RotateCcw size={18} /> Start over
           </button>
@@ -137,7 +137,7 @@ export default function StepPanel({ lesson, chapterTitle }) {
           <button
             type="button"
             onClick={requestHint}
-            className="inline-flex items-center gap-1 rounded-2xl border-2 border-amber-200 bg-amber-50 px-4 min-h-touch font-semibold text-amber-700 hover:bg-amber-100"
+            className="inline-flex min-h-touch items-center gap-1 rounded-2xl border border-amber-200 bg-amber-50 px-4 font-semibold text-amber-700 hover:bg-amber-100"
           >
             <Lightbulb size={18} /> Hint
           </button>
@@ -147,7 +147,7 @@ export default function StepPanel({ lesson, chapterTitle }) {
           type="button"
           onClick={next}
           disabled={isLastStep || !canAdvance}
-          className="ml-auto inline-flex items-center gap-1 rounded-2xl bg-brand-500 px-6 min-h-touch font-semibold text-white shadow-sm hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="ml-auto inline-flex min-h-touch items-center gap-1 rounded-2xl bg-gray-950 px-6 font-semibold text-white shadow-sm hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isLastStep ? <>Done <Sparkles size={18} /></> : <>Next <ChevronRight size={20} /></>}
         </button>

@@ -28,8 +28,8 @@ export default function PickProfile() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="text-center font-display text-3xl font-bold text-gray-900">Who's playing?</h1>
-      <p className="mt-2 text-center text-gray-600">Pick your player to keep your progress.</p>
+      <h1 className="text-center font-display text-3xl font-bold text-gray-900">Choose a profile</h1>
+      <p className="mt-2 text-center text-gray-600">Keep progress separate for each learner.</p>
 
       {!persistent && (
         <p className="mx-auto mt-4 max-w-md rounded-2xl bg-amber-50 px-4 py-3 text-center text-sm text-amber-800">
@@ -43,7 +43,7 @@ export default function PickProfile() {
             key={p.id}
             type="button"
             onClick={() => selectProfile(p.id)}
-            className="flex w-28 flex-col items-center gap-2 rounded-2xl border-2 border-gray-100 bg-white p-4 shadow-sm hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md"
+            className="flex w-28 flex-col items-center gap-2 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md"
           >
             <span className="text-5xl" aria-hidden>{p.avatar}</span>
             <span className="truncate font-semibold text-gray-800">{p.name}</span>
@@ -54,23 +54,23 @@ export default function PickProfile() {
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="flex w-28 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-200 p-4 text-gray-400 hover:border-brand-300 hover:text-brand-600"
+            className="flex w-28 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-gray-200 p-4 text-gray-400 hover:border-brand-300 hover:text-brand-600"
           >
             <Plus size={32} />
-            <span className="font-semibold">New player</span>
+            <span className="font-semibold">New profile</span>
           </button>
         )}
       </div>
 
       {creating && (
-        <form onSubmit={submit} className="mx-auto mt-8 max-w-md rounded-2xl border-2 border-gray-100 bg-white p-6 shadow-sm">
+        <form onSubmit={submit} className="mx-auto mt-8 max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <label className="block text-sm font-semibold text-gray-700">Your name</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Leo"
             maxLength={20}
-            className="mt-1 w-full rounded-xl border-2 border-gray-200 px-3 py-2 focus:border-brand-400 focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-brand-400 focus:outline-none"
             autoFocus
           />
           <p className="mt-4 text-sm font-semibold text-gray-700">Pick an avatar</p>
@@ -81,7 +81,7 @@ export default function PickProfile() {
                 type="button"
                 onClick={() => setAvatar(a)}
                 className={clsx(
-                  'flex h-12 w-12 items-center justify-center rounded-xl border-2 text-2xl',
+                  'flex h-12 w-12 items-center justify-center rounded-xl border text-2xl',
                   avatar === a ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-brand-300',
                 )}
               >
@@ -90,8 +90,8 @@ export default function PickProfile() {
             ))}
           </div>
           <div className="mt-6 flex items-center gap-3">
-            <button type="submit" className="min-h-touch rounded-2xl bg-brand-500 px-6 font-semibold text-white hover:bg-brand-600">
-              Let's play
+            <button type="submit" className="min-h-touch rounded-2xl bg-gray-950 px-6 font-semibold text-white hover:bg-brand-700">
+              Start studying
             </button>
             {profiles.length > 0 && (
               <button type="button" onClick={() => setCreating(false)} className="text-sm font-semibold text-gray-500 hover:text-gray-700">
@@ -108,7 +108,7 @@ export default function PickProfile() {
           onClick={() => fileInput.current?.click()}
           className="inline-flex items-center gap-1 text-sm font-semibold text-gray-500 hover:text-brand-600"
         >
-          <Upload size={16} /> Import a saved player
+          <Upload size={16} /> Import a saved profile
         </button>
         <input ref={fileInput} type="file" accept="application/json" className="hidden" onChange={onImport} />
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}

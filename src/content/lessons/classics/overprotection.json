@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "lesson",
+  "id": "classics/overprotection",
+  "track": "classics",
+  "title": "Overprotection",
+  "subtitle": "Make the strong point stronger",
+  "summary": "Defend an important square more than necessary so your pieces coordinate around it.",
+  "estMinutes": 6,
+  "tags": ["strategy", "planning", "coordination"],
+  "attribution": "Original prose; ideas after Nimzowitsch, My System. No book text reproduced.",
+  "body": {
+    "steps": [
+      {
+        "id": "intro",
+        "type": "prose",
+        "title": "The strong point anchors the position",
+        "orientation": "white",
+        "fen": "4k3/8/3p4/4P3/3P4/8/1N6/4K3 w - - 0 1",
+        "markdown": "[[overprotection|Overprotection]] means defending an important point with extra force. The pawn on e5 is White's advanced anchor: it controls space, but Black's d6-pawn attacks it.",
+        "annotations": { "highlight": ["e5", "d6", "b2", "c4"], "arrows": [["b2", "c4", "good"], ["c4", "e5", "idea"]] }
+      },
+      {
+        "id": "add-defender",
+        "type": "single-move",
+        "title": "Add a useful defender",
+        "orientation": "white",
+        "fen": "4k3/8/3p4/4P3/3P4/8/1N6/4K3 w - - 0 1",
+        "markdown": "Improve the knight while adding another defender to the e5 anchor.",
+        "solution": { "san": ["Nc4"] },
+        "hints": [
+          { "text": "The b2 knight can move toward the center." },
+          { "text": "From c4, the knight helps guard e5.", "arrows": [["b2", "c4", "good"], ["c4", "e5", "idea"]] }
+        ],
+        "feedback": {
+          "correct": "Yes. Nc4 improves the knight and adds another defender to the e5 anchor.",
+          "wrong": "Look for the knight move that improves activity and supports e5."
+        }
+      },
+      {
+        "id": "why-extra",
+        "type": "choose",
+        "title": "Why defend more than once?",
+        "orientation": "white",
+        "fen": "4k3/8/3p4/4P3/2NP4/8/8/4K3 b - - 1 1",
+        "markdown": "Why can extra defense of a key point be useful rather than passive?",
+        "options": [
+          {
+            "id": "a",
+            "label": "The defenders become coordinated active pieces",
+            "correct": true,
+            "explain": "Right. Overprotecting a strong point gives your pieces shared purpose and useful squares."
+          },
+          {
+            "id": "b",
+            "label": "It means you should never attack",
+            "correct": false,
+            "explain": "Overprotection is not passivity. It prepares activity from a stable center."
+          },
+          {
+            "id": "c",
+            "label": "It makes the pawn a queen immediately",
+            "correct": false,
+            "explain": "The benefit is coordination and control, not instant promotion."
+          }
+        ]
+      },
+      {
+        "id": "wrap-up",
+        "type": "prose",
+        "title": "Build around what matters",
+        "orientation": "white",
+        "fen": "4k3/8/3p4/4P3/2NP4/8/8/4K3 b - - 1 1",
+        "markdown": "Do not overprotect everything. Pick the square or pawn that gives your position meaning, then let your pieces gather around it."
+      }
+    ]
+  }
+}

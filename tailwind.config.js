@@ -9,29 +9,38 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Kid-friendly brand palette: warm, high-contrast, calm.
+        // Tao-inspired learning-tool palette: neutral foundation with clear accent signals.
         brand: {
-          50: '#eef6ff',
-          100: '#d9ecff',
-          500: '#2f6fed',
-          600: '#1d57d6',
-          700: '#1745ab',
+          50: '#edf6fc',
+          100: '#dff3fb',
+          300: '#38c6ff',
+          400: '#1c9ed3',
+          500: '#0077a8',
+          600: '#075e84',
+          700: '#0a4057',
         },
-        // Semantic feedback colors, deliberately friendly rather than alarming.
+        accent: {
+          mint: '#5bfdb2',
+          teal: '#00897b',
+          orange: '#e07020',
+          yellow: '#ffef45',
+          ink: '#1a1a1a',
+          paper: '#fffef5',
+        },
         correct: '#16a34a',
-        retry: '#ea8a2f',
+        retry: '#e07020',
       },
       borderRadius: {
-        // Generous rounding throughout for a softer, kid-appropriate feel.
-        xl: '1rem',
-        '2xl': '1.5rem',
+        xl: '0.5rem',
+        '2xl': '0.5rem',
       },
       fontFamily: {
-        display: ['"Baloo 2"', 'ui-rounded', 'system-ui', 'sans-serif'],
-        sans: ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Work Sans"', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        book: ['Fraunces', 'Georgia', 'serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       minHeight: {
-        // Large, finger-friendly tap targets for ages 6-12.
         touch: '3rem',
       },
     },

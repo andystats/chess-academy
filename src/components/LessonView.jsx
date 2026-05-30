@@ -7,7 +7,7 @@ import BoardPanel from './BoardPanel.jsx';
 import StepPanel from './StepPanel.jsx';
 
 // Drives a single lesson envelope through the engine, renders the board + teaching panel, and
-// records the child's progress as each step is completed.
+// records profile progress as each step is completed.
 export default function LessonView({ lesson }) {
   const controller = useChessLesson(lesson);
   const { recordLessonProgress } = useProfile();

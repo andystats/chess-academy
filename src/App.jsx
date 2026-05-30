@@ -2,27 +2,28 @@ import { Routes, Route } from 'react-router-dom';
 import AppHeader from './components/AppHeader.jsx';
 import HomePage from './routes/HomePage.jsx';
 import LessonPage from './routes/LessonPage.jsx';
+import MySystemPage from './routes/MySystemPage.jsx';
+import TrainingPage from './routes/TrainingPage.jsx';
 import GlossaryPage from './routes/GlossaryPage.jsx';
 import ComingSoonPage from './routes/ComingSoonPage.jsx';
 import NotFoundPage from './routes/NotFoundPage.jsx';
-import PickProfile from './profile/PickProfile.jsx';
 import { useProfile } from './profile/ProfileContext.jsx';
 
 export default function App() {
-  const { ready, activeProfile } = useProfile();
+  const { ready } = useProfile();
 
   return (
-    <div className="min-h-screen bg-brand-50/40">
+    <div className="min-h-screen bg-white">
       <AppHeader />
       {!ready ? (
         <p className="py-20 text-center text-gray-400">Loading…</p>
-      ) : !activeProfile ? (
-        <PickProfile />
       ) : (
         <main>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/training" element={<TrainingPage />} />
             <Route path="/lesson/*" element={<LessonPage />} />
+            <Route path="/my-system" element={<MySystemPage />} />
             <Route path="/glossary" element={<GlossaryPage />} />
             <Route
               path="/puzzles"

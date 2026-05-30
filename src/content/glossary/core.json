@@ -66,6 +66,52 @@
       {
         "term": "outpost",
         "short": "A square deep in the opponent's half where your knight sits safely, protected by a pawn."
+      },
+      {
+        "term": "prophylaxis",
+        "aliases": ["prophylactic"],
+        "short": "A move or habit that stops the opponent's idea before it becomes a direct threat."
+      },
+      {
+        "term": "passed-pawn",
+        "aliases": ["passed pawn", "passed pawns"],
+        "short": "A pawn with no enemy pawn ahead of it on the same file or neighboring files, so it has a clearer path to promotion."
+      },
+      {
+        "term": "blockade",
+        "aliases": ["blockader", "blockaders", "blockades"],
+        "short": "Putting a piece on the square directly in front of a pawn so that pawn cannot advance.",
+        "seeAlso": ["passed-pawn"]
+      },
+      {
+        "term": "open-file",
+        "aliases": ["open file", "open files"],
+        "short": "A file with no pawns on it, giving rooks and queens a clear vertical line."
+      },
+      {
+        "term": "seventh-rank",
+        "aliases": ["seventh rank", "7th rank"],
+        "short": "The row just behind the opponent's pawns, where an invading rook can attack pawns and restrict the king.",
+        "seeAlso": ["open-file"]
+      },
+      {
+        "term": "exchange",
+        "aliases": ["exchanging", "trade", "trades"],
+        "short": "A capture sequence where material leaves the board. Good exchanges improve your position; bad exchanges solve the opponent's problems."
+      },
+      {
+        "term": "pawn-chain",
+        "aliases": ["pawn chain", "pawn chains"],
+        "short": "A diagonal group of pawns defending each other. The front points toward space; the base is often the target."
+      },
+      {
+        "term": "overprotection",
+        "aliases": ["overprotect", "overprotected"],
+        "short": "Defending an important square or pawn more times than seems necessary, so your pieces coordinate around a strong point."
+      },
+      {
+        "term": "mobility",
+        "short": "The useful freedom your pieces have. A mobile piece has meaningful squares and can join the plan quickly."
       }
     ]
   }

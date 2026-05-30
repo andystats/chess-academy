@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "lesson",
+  "id": "classics/blockade",
+  "track": "classics",
+  "title": "The Blockade",
+  "subtitle": "Put a piece in front of the pawn",
+  "summary": "Turn a dangerous passed pawn into a target by occupying the square directly in front of it.",
+  "estMinutes": 6,
+  "tags": ["strategy", "endgame", "pawns"],
+  "attribution": "Original prose; ideas after Nimzowitsch, My System. No book text reproduced.",
+  "body": {
+    "steps": [
+      {
+        "id": "intro",
+        "type": "prose",
+        "title": "Do not chase from behind",
+        "orientation": "white",
+        "fen": "4k3/8/8/8/3p4/8/5N2/4K3 w - - 0 1",
+        "markdown": "A [[passed-pawn|passed pawn]] wants to run. The square directly in front of it is the [[blockade]] square. Occupy that square and the pawn cannot move.",
+        "annotations": { "highlight": ["d3"], "highlightStyle": "good" }
+      },
+      {
+        "id": "knight-blockade",
+        "type": "single-move",
+        "title": "Find the blockade square",
+        "orientation": "white",
+        "fen": "4k3/8/8/8/3p4/8/5N2/4K3 w - - 0 1",
+        "markdown": "Black's d-pawn is ready to march. Move the knight to the square that freezes it.",
+        "solution": { "san": ["Nd3"] },
+        "hints": [
+          { "text": "A black pawn on d4 moves toward d3." },
+          { "text": "The knight can jump to the square directly in front of the pawn.", "arrows": [["f2", "d3", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Good. The knight blockades the pawn and cannot be pushed away by that pawn.",
+          "wrong": "Put the knight on the square the pawn wants to move to."
+        }
+      },
+      {
+        "id": "why-knights",
+        "type": "choose",
+        "title": "Why a knight?",
+        "orientation": "white",
+        "fen": "4k3/8/8/8/3p4/3N4/8/4K3 b - - 1 1",
+        "markdown": "Nimzowitsch loved knights as blockaders. Why do they work so well?",
+        "options": [
+          {
+            "id": "a",
+            "label": "They still attack from a fixed square",
+            "correct": true,
+            "explain": "Exactly. A knight can sit in front of the pawn and still jump into the enemy camp."
+          },
+          {
+            "id": "b",
+            "label": "They can be pushed by pawns",
+            "correct": false,
+            "explain": "The pawn being blockaded cannot push the knight away because the knight is on its next square."
+          },
+          {
+            "id": "c",
+            "label": "They move like rooks",
+            "correct": false,
+            "explain": "Knights jump, which is what makes them useful from a cramped blockade square."
+          }
+        ]
+      },
+      {
+        "id": "wrap-up",
+        "type": "prose",
+        "title": "Stop, then attack",
+        "orientation": "white",
+        "fen": "4k3/8/8/8/3p4/3N4/8/4K3 b - - 1 1",
+        "markdown": "First restrain the passed pawn. Then blockade it. Once it cannot move, the pawn often changes from a strength into a weakness your pieces can attack."
+      }
+    ]
+  }
+}
