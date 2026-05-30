@@ -7,7 +7,7 @@
   "additionalProperties": false,
   "properties": {
     "schemaVersion": { "const": 1 },
-    "kind": { "enum": ["lesson", "glossary", "puzzleSet", "reference"] },
+    "kind": { "enum": ["lesson", "glossary", "puzzleSet", "scenario", "reference"] },
     "id": {
       "type": "string",
       "description": "Permanent path-shaped slug; also the route and progress key.",
@@ -36,6 +36,10 @@
     {
       "if": { "properties": { "kind": { "const": "puzzleSet" } } },
       "then": { "properties": { "body": { "$ref": "#/definitions/puzzleSetBody" } } }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "scenario" } } },
+      "then": { "properties": { "body": { "$ref": "#/definitions/scenarioBody" } } }
     }
   ],
   "definitions": {
@@ -238,6 +242,20 @@
             }
           }
         }
+      }
+    },
+    "scenarioBody": {
+      "type": "object",
+      "required": ["fen", "playerSide"],
+      "additionalProperties": false,
+      "properties": {
+        "fen": { "type": "string", "minLength": 1 },
+        "playerSide": { "enum": ["white", "black"] },
+        "orientation": { "enum": ["white", "black"] },
+        "skillLevel": { "type": "integer", "minimum": 0, "maximum": 20 },
+        "relatedLesson": { "type": "string" },
+        "goal": { "type": "string" },
+        "successHint": { "type": "string" }
       }
     }
   }

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "scenario",
+  "id": "scenarios/spring-the-discovery",
+  "title": "Spring the Discovery",
+  "subtitle": "Unleash a discovered check to win the queen",
+  "summary": "Your rook is lined up on the enemy king behind your knight. Move the knight with a threat and the check comes for free.",
+  "track": "classics",
+  "tags": ["discovered-check", "tactics"],
+  "body": {
+    "fen": "4k3/5ppp/8/7q/8/8/4N1PP/4R1K1 w - - 0 1",
+    "orientation": "white",
+    "playerSide": "white",
+    "skillLevel": 3,
+    "relatedLesson": "classics/discovered-checks",
+    "goal": "Move the knight so it attacks the queen while the rook delivers check, win the queen, and convert.",
+    "successHint": "Nf4+ hits the queen on h5 and uncovers the rook's check at the same time — the king must move first."
+  }
+}

@@ -24,6 +24,18 @@ describe('lessonContentHash', () => {
     const changed = { body: { steps: [...lesson.body.steps, { id: 'c', type: 'prose', fen: 'z' }] } };
     expect(lessonContentHash(changed)).not.toBe(h1);
   });
+
+  it('hashes scenarios by their position, not their (absent) steps', () => {
+    const a = { kind: 'scenario', body: { fen: 'fen-a', playerSide: 'white', skillLevel: 4 } };
+    const b = { kind: 'scenario', body: { fen: 'fen-b', playerSide: 'white', skillLevel: 4 } };
+    const c = { kind: 'scenario', body: { fen: 'fen-a', playerSide: 'white', skillLevel: 8 } };
+    // Two stepless scenarios must NOT collide (the bug a steps-only hash would have).
+    expect(lessonContentHash(a)).not.toBe(lessonContentHash(b));
+    // Changing the strength must invalidate completion too.
+    expect(lessonContentHash(a)).not.toBe(lessonContentHash(c));
+    // A scenario's hash never collides with a lesson's.
+    expect(lessonContentHash(a)).not.toBe(lessonContentHash(lesson));
+  });
 });
 
 describe('reconcile', () => {

@@ -52,10 +52,10 @@ function LessonCard({ lesson }) {
   return (
     <Link
       to={`/lesson/${lesson.id}`}
-      className="group flex min-h-[13rem] flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md"
+      className="tao-card tao-card-hover group flex min-h-[13rem] flex-col gap-3 p-5"
     >
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-display text-xl font-bold text-gray-950 group-hover:text-brand-600">{lesson.title}</h3>
+        <h3 className="font-display text-xl font-bold uppercase tracking-tight text-foreground group-hover:text-brand-600">{lesson.title}</h3>
         {done && <CheckCircle2 className="shrink-0 text-correct" size={20} aria-label="Completed" />}
       </div>
       {lesson.subtitle && <p className="text-sm font-semibold text-brand-600">{lesson.subtitle}</p>}
@@ -78,8 +78,8 @@ function SnackCard({ snack, index }) {
   return (
     <article className="grid gap-5 border-t border-gray-200 py-7 md:grid-cols-[minmax(0,1fr)_13rem] md:items-start">
       <div>
-        <p className="font-mono text-xs font-semibold text-brand-600">{String(index + 1).padStart(2, '0')}</p>
-        <h3 className="mt-2 font-display text-2xl font-bold text-gray-950">{snack.title}</h3>
+        <p className="font-mono text-xs font-bold text-brand-600">{String(index + 1).padStart(2, '0')}</p>
+        <h3 className="mt-2 font-display text-2xl font-bold uppercase tracking-tight text-foreground">{snack.title}</h3>
         <p className="mt-3 max-w-2xl text-base leading-7 text-gray-700">{snack.line}</p>
         <Link
           to={`/lesson/${snack.lessonId}`}
@@ -107,10 +107,12 @@ export default function TrainingPage() {
   return (
     <div className="bg-white">
       <section className="mx-auto max-w-6xl px-4 py-12">
-        <p className="font-mono text-xs font-semibold uppercase text-brand-600">Practical study path</p>
-        <h1 className="mt-4 max-w-4xl font-display text-5xl font-extrabold leading-tight text-gray-950 md:text-6xl">
-          Quickest path to a 200 point gain.
+        <p className="font-mono text-xs font-bold uppercase tracking-wide text-brand-600">Practical study path</p>
+        <h1 className="mt-4 max-w-4xl font-display text-5xl font-extrabold uppercase leading-[1.05] tracking-tight text-foreground md:text-6xl">
+          Quickest path to a{' '}
+          <span className="font-book italic font-semibold normal-case tracking-normal text-brand-500">200 point gain.</span>
         </h1>
+        <div className="gradient-divider mt-5 w-20" />
         <p className="mt-5 max-w-2xl text-lg leading-8 text-gray-700">
           Most rating jumps come from fewer blunders, better forcing-move vision, and cleaner piece improvement.
           These snacks are short enough to repeat before a game.
@@ -123,12 +125,12 @@ export default function TrainingPage() {
         ))}
       </section>
 
-      <section className="border-t border-gray-200 bg-gray-50/60">
+      <section className="border-t-3 border-foreground bg-brand-50/40">
         <div className="mx-auto max-w-6xl px-4 py-12">
           <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="font-mono text-xs font-semibold uppercase text-brand-600">Practice lessons</p>
-              <h2 className="mt-2 font-display text-3xl font-bold text-gray-950">Train one idea at a time.</h2>
+              <p className="font-mono text-xs font-bold uppercase tracking-wide text-brand-600">Practice lessons</p>
+              <h2 className="mt-2 font-display text-3xl font-bold uppercase tracking-tight text-foreground">Train one idea at a time.</h2>
             </div>
             <p className="max-w-xl text-sm leading-6 text-gray-600">
               The snacks give the route; the lessons make the habits playable.
@@ -137,7 +139,7 @@ export default function TrainingPage() {
 
           {tracks.map((track) => (
             <section key={track.id} className="mb-10">
-              <h3 className="mb-4 font-display text-2xl font-bold text-gray-800">{track.label}</h3>
+              <h3 className="mb-4 font-display text-2xl font-bold uppercase tracking-tight text-foreground">{track.label}</h3>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {track.lessons.map((lesson) => (
                   <LessonCard key={lesson.id} lesson={lesson} />

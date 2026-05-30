@@ -1,17 +1,22 @@
-// Pure helpers for per-lesson progress. Kept free of storage and Date so they're easy to test;
-// callers pass timestamps in. Progress is keyed by the stable lesson id and tagged with a content
-// hash: if a lesson's content changes between releases, step-level progress is invalidated (so a
-// learner never skips new material or shows false completion) while the record itself is replaced.
+// Pure helpers for per-content progress. Kept free of storage and Date so they're easy to test;
+// callers pass timestamps in. Progress is keyed by the stable content id and tagged with a content
+// hash: if the content changes between releases, step-level progress is invalidated (so a learner
+// never skips new material or shows false completion) while the record itself is replaced.
 
-// Lesson envelopes are stable module singletons (from the content registry glob), so we can
-// memoize the hash per lesson object and skip re-stringifying on every render.
+// Content envelopes are stable module singletons (from the content registry glob), so we can
+// memoize the hash per envelope object and skip re-stringifying on every render.
 const hashCache = new WeakMap();
 
-/** A small, stable string hash (djb2) of the parts of a lesson that affect playthrough. */
-export function lessonContentHash(lesson) {
-  if (lesson && hashCache.has(lesson)) return hashCache.get(lesson);
-  const steps = lesson?.body?.steps ?? [];
-  const signature = JSON.stringify(
+// The playthrough-affecting signature differs by kind. Stepped content (lessons) hashes its steps;
+// a scenario is a single position, so it hashes the fields that define the game it sets up — a
+// changed FEN/side/strength must invalidate completion, which a steps-only hash could never detect.
+function contentSignature(env) {
+  if (env?.kind === 'scenario') {
+    const b = env.body ?? {};
+    return JSON.stringify(['scenario', b.fen, b.playerSide, b.skillLevel, b.relatedLesson]);
+  }
+  const steps = env?.body?.steps ?? [];
+  return JSON.stringify(
     steps.map((s) => [
       s.id,
       s.type,
@@ -22,12 +27,18 @@ export function lessonContentHash(lesson) {
       s.options?.map((o) => [o.id, o.correct]), // include the correct flag: changing the answer must invalidate
     ]),
   );
+}
+
+/** A small, stable string hash (djb2) of the parts of a content envelope that affect playthrough. */
+export function lessonContentHash(envelope) {
+  if (envelope && hashCache.has(envelope)) return hashCache.get(envelope);
+  const signature = contentSignature(envelope);
   let hash = 5381;
   for (let i = 0; i < signature.length; i++) {
     hash = ((hash << 5) + hash + signature.charCodeAt(i)) | 0;
   }
   const result = (hash >>> 0).toString(36);
-  if (lesson) hashCache.set(lesson, result);
+  if (envelope) hashCache.set(envelope, result);
   return result;
 }
 

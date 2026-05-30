@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "scenario",
+  "id": "scenarios/seize-the-open-file",
+  "title": "Seize the Open File",
+  "subtitle": "Use the only rook on an open file",
+  "summary": "Your rook owns the open d-file and the engine has none to contest it. Invade the seventh rank and harvest pawns.",
+  "track": "classics",
+  "tags": ["open-files", "rook-endgame"],
+  "body": {
+    "fen": "6k1/pp3ppp/2p5/8/8/2P5/PP3PPP/3R2K1 w - - 0 1",
+    "orientation": "white",
+    "playerSide": "white",
+    "skillLevel": 5,
+    "relatedLesson": "classics/open-files",
+    "goal": "Drive your rook down the open file onto the seventh rank, win pawns, and convert.",
+    "successHint": "Rd7 lands the rook on the seventh rank, hitting the f7 and b7 pawns at once."
+  }
+}

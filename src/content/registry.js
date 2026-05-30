@@ -25,6 +25,11 @@ export function listByKind(kind) {
   return envelopes.filter((e) => e.kind === kind);
 }
 
+/** All practice-arena scenarios, in registry order. */
+export function listScenarios() {
+  return listByKind('scenario');
+}
+
 /** Lessons grouped by track, in a stable display order. */
 export function listTracks() {
   const order = ['classics', 'habits'];

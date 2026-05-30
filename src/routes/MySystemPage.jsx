@@ -25,20 +25,17 @@ function ChapterStudy({ chapter }) {
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span className="font-mono text-xs font-semibold text-gray-500">{chapter.number}</span>
           <h3 className="font-book text-2xl font-semibold text-gray-950">{chapter.title}</h3>
-          <span className="rounded-2xl border border-gray-300 px-2 py-0.5 font-mono text-[0.68rem] uppercase text-gray-600">
+          <span className="tao-badge border-gray-700 text-gray-600">
             {chapter.status === 'planned' ? 'planned' : chapter.status === 'linked' ? 'linked study' : 'playable'}
           </span>
         </div>
         <p className="mt-3 max-w-2xl text-base leading-7 text-gray-700">{chapter.summary}</p>
         {playable ? (
-          <Link
-            to={`/lesson/${lesson.id}`}
-            className="mt-5 inline-flex min-h-touch items-center gap-2 rounded-2xl bg-gray-950 px-4 font-semibold text-white hover:bg-brand-700"
-          >
+          <Link to={`/lesson/${lesson.id}`} className="tao-btn-primary mt-5">
             <Play size={17} /> Open study board <ChevronRight size={17} />
           </Link>
         ) : (
-          <p className="mt-5 inline-flex min-h-touch items-center gap-2 rounded-2xl border border-gray-300 px-4 font-semibold text-gray-600">
+          <p className="mt-5 inline-flex min-h-touch items-center gap-2 border-3 border-gray-300 px-4 font-semibold text-gray-600">
             <CircleDashed size={17} /> Chapter study to draft
           </p>
         )}
