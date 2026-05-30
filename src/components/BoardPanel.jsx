@@ -27,6 +27,11 @@ const BOARD_THEMES = {
     light: '#f7f3e8',
     shell: 'border border-black/20 shadow-sm',
   },
+  arena: {
+    dark: '#1c9ed3',
+    light: '#edf6fc',
+    shell: 'border-[3px] border-accent-ink shadow-[6px_6px_0_#1a1a1a]',
+  },
 };
 
 function buildArrows(arrows) {

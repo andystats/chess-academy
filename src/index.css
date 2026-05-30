@@ -14,6 +14,32 @@
   }
 }
 
+@layer components {
+  /* The tao-rwd "editorial print" kit: thick ink borders, hard offset shadows on hover, uppercase
+     mono badges, and a cyan-to-teal gradient rule. Shared so every surface reads the same. */
+  .tao-card {
+    @apply border-3 border-foreground bg-white transition-all duration-200;
+  }
+  .tao-card-hover {
+    @apply hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard;
+  }
+  .tao-badge {
+    @apply inline-flex items-center gap-1 border-2 border-foreground px-2 py-0.5 font-mono text-xs font-bold uppercase tracking-wide;
+  }
+  .tao-btn {
+    @apply inline-flex min-h-touch items-center justify-center gap-1.5 border-3 border-foreground px-5 font-semibold transition-all duration-200;
+  }
+  .tao-btn-primary {
+    @apply tao-btn bg-foreground text-white hover:shadow-hard-brand hover:-translate-x-0.5 hover:-translate-y-0.5;
+  }
+  .tao-btn-ghost {
+    @apply tao-btn bg-white text-foreground hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white;
+  }
+  .gradient-divider {
+    @apply h-[3px] rounded-full bg-gradient-to-r from-brand-300 to-accent-teal;
+  }
+}
+
 @layer utilities {
   .paper-texture {
     background-image:

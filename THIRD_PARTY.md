@@ -15,18 +15,22 @@ on, and will bundle, components and data under their own licenses. They are list
 
 Fonts (Baloo 2, Nunito) are served from Google Fonts under the SIL Open Font License.
 
-## Stockfish (planned, Stage 3) — GPL-3.0
+## Stockfish (Practice Arena) — GPL-3.0
 
-We will embed the [Stockfish](https://stockfishchess.org/) chess engine (compiled to WebAssembly,
-e.g. [nmrugg/stockfish.js](https://github.com/nmrugg/stockfish.js)) for hints and analysis.
+The [Practice Arena](src/routes/ArenaPage.jsx) plays against the [Stockfish](https://stockfishchess.org/)
+chess engine, compiled to WebAssembly via [niklasf/stockfish.js](https://github.com/niklasf/stockfish.js)
+(the `stockfish.js` npm package, v10 — classical eval, single-threaded).
 **Stockfish is licensed under the GNU General Public License v3.** To respect it:
 
 - The engine is loaded as a **separate, unmodified** WebAssembly Web Worker and communicated with
-  over the standard UCI text protocol — it is an independent program, not statically linked into
-  our code.
-- Its `LICENSE`/`COPYING` and any required source pointers are kept intact alongside the binary
-  under `public/engine/` (gitignored binaries are fetched at build time).
-- Stockfish is credited prominently in the app UI wherever its output is shown.
+  over the standard UCI text protocol (see `src/engine/stockfishClient.js`) — it is an independent
+  program, not statically linked into our code.
+- The single-threaded WASM build is used deliberately: it needs no `SharedArrayBuffer`, so it runs
+  on GitHub Pages without the COOP/COEP headers that static hosting can't set.
+- Its `Copying.txt` (GPL-3.0) is kept intact alongside the binary under `public/engine/`. Those
+  binaries are **gitignored** and vendored from the npm package at install/build time by
+  `scripts/vendor-engine.mjs` (run via `postinstall`/`predev`/`prebuild`).
+- Stockfish is credited in the Arena UI wherever its output is shown.
 
 If you redistribute a build of this app that bundles Stockfish, you must continue to honor GPL-3.0
 for that component (provide/point to its source).

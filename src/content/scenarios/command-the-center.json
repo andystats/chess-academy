@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "scenario",
+  "id": "scenarios/command-the-center",
+  "title": "Command the Center",
+  "subtitle": "Turn a big pawn center into an attack",
+  "summary": "You own the center with pawns on d4 and e4. Use the space to push the engine back and open lines.",
+  "track": "classics",
+  "tags": ["center", "space"],
+  "body": {
+    "fen": "r1bqkb1r/ppp2ppp/2n2n2/4p3/3PP3/5N2/PPP2PPP/RNBQKB1R w KQkq - 0 1",
+    "orientation": "white",
+    "playerSide": "white",
+    "skillLevel": 4,
+    "relatedLesson": "classics/the-center",
+    "goal": "Use your central pawns to gain space, develop with threats, and outplay the engine.",
+    "successHint": "Advancing in the center (d5) or resolving the tension gains room for your pieces."
+  }
+}

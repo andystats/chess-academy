@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "scenario",
+  "id": "scenarios/attack-the-chain-base",
+  "title": "Attack the Chain Base",
+  "subtitle": "Strike the root of the pawn chain",
+  "summary": "White has built a pawn chain with its base on d4. Play as Black and undermine the base before White gets rolling.",
+  "track": "classics",
+  "tags": ["pawn-chain", "pawn-structure"],
+  "body": {
+    "fen": "rnbqkbnr/ppp2ppp/4p3/3pP3/3P4/8/PPP2PPP/RNBQKBNR b KQkq - 0 1",
+    "orientation": "black",
+    "playerSide": "black",
+    "skillLevel": 4,
+    "relatedLesson": "classics/pawn-chain",
+    "goal": "Attack the base of White's pawn chain, open lines for your pieces, and play on against the engine.",
+    "successHint": "A pawn chain is weakest at its base — hit d4 with ...c5 rather than chipping at the head on e5."
+  }
+}

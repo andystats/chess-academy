@@ -29,10 +29,23 @@ export default {
         },
         correct: '#16a34a',
         retry: '#e07020',
+        // Semantic ink/paper pair for the high-contrast "editorial print" treatment.
+        foreground: '#1a1a1a',
+        background: '#ffffff',
       },
       borderRadius: {
         xl: '0.5rem',
         '2xl': '0.5rem',
+      },
+      borderWidth: {
+        3: '3px',
+      },
+      boxShadow: {
+        // Hard offset "print" shadows — no blur, pure ink/accent offset (the tao-rwd signature).
+        hard: '4px 4px 0 0 #1a1a1a',
+        'hard-lg': '6px 6px 0 0 #1a1a1a',
+        'hard-brand': '5px 5px 0 0 #1c9ed3',
+        'hard-yellow': '5px 5px 0 0 #ffef45',
       },
       fontFamily: {
         display: ['"Work Sans"', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],

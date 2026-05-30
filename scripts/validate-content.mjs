@@ -141,6 +141,17 @@ function validatePuzzles(file, env) {
   }
 }
 
+function validateScenario(file, env, idToFile) {
+  const { fen, relatedLesson } = env.body;
+  if (!assertFen(file, 'scenario', fen)) return;
+  // A scenario you "play out" must start from a live position, not a finished game.
+  if (new Chess(fen).isGameOver()) fail(file, 'scenario: starting FEN is already game-over');
+  // A linked lesson must point at a real lesson envelope (resolved in pass 2 against all ids).
+  if (relatedLesson && !idToFile.has(relatedLesson)) {
+    fail(file, `scenario: relatedLesson "${relatedLesson}" does not resolve to any content id`);
+  }
+}
+
 // --- Load schema + validator -------------------------------------------------
 const ajv = new Ajv({ allErrors: true });
 const validateSchema = ajv.compile(JSON.parse(readFileSync(SCHEMA_PATH, 'utf8')));
@@ -176,6 +187,7 @@ const allStepIds = new Map();
 for (const { file, env } of envelopes) {
   if (env.kind === 'lesson') validateLessonSteps(file, env, allStepIds);
   if (env.kind === 'puzzleSet') validatePuzzles(file, env);
+  if (env.kind === 'scenario') validateScenario(file, env, idToFile);
 
   // Every [[term]] in any prose must resolve to a known glossary term/alias.
   const proseBlocks = [];

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import StylizedKingScene from '../components/StylizedKingScene.jsx';
 
 const HOME_LINKS = [
@@ -11,6 +12,11 @@ const HOME_LINKS = [
     to: '/my-system',
     label: 'My System',
     blurb: 'A book-like study room for classic positional chess.',
+  },
+  {
+    to: '/arena',
+    label: 'Practice Arena',
+    blurb: 'Try the ideas against a live engine, or play a full game.',
   },
   {
     to: '/glossary',
@@ -28,15 +34,27 @@ export default function HomePage() {
           <StylizedKingScene />
         </div>
 
-        <nav className="mt-4 grid w-full max-w-4xl gap-0 border-y border-gray-200 md:grid-cols-3">
+        <div className="mt-2 max-w-3xl text-center">
+          <p className="font-mono text-xs font-bold uppercase tracking-wide text-brand-600">An open chess study room</p>
+          <h1 className="mt-3 font-display text-4xl font-extrabold uppercase leading-[1.05] tracking-tight text-foreground md:text-6xl">
+            Learn the idea.{' '}
+            <span className="font-book italic font-semibold normal-case tracking-normal text-brand-500">Then play it.</span>
+          </h1>
+          <div className="gradient-divider mx-auto mt-5 w-20" />
+        </div>
+
+        <nav className="mt-10 grid w-full max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {HOME_LINKS.map((link) => (
             <Link
               key={link.to}
               to={link.to}
-              className="group border-b border-gray-200 px-0 py-5 transition-colors last:border-b-0 hover:bg-gray-50 md:border-b-0 md:border-r md:px-6 md:last:border-r-0"
+              className="tao-card tao-card-hover group flex min-h-[11rem] flex-col p-5"
             >
-              <span className="font-display text-xl font-bold text-gray-950 group-hover:text-brand-600">{link.label}</span>
-              <span className="mt-1 block max-w-xs text-sm leading-6 text-gray-600">{link.blurb}</span>
+              <span className="font-display text-lg font-bold uppercase tracking-tight text-foreground group-hover:text-brand-600">
+                {link.label}
+              </span>
+              <span className="mt-2 block text-sm leading-6 text-gray-600">{link.blurb}</span>
+              <ArrowRight className="mt-auto text-gray-300 transition-colors group-hover:text-brand-500" size={20} />
             </Link>
           ))}
         </nav>

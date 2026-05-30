@@ -3,6 +3,14 @@ import { Chess } from 'chess.js';
 // Pure chess helpers shared by the lesson engine (src/lesson/useChessLesson.js) and the
 // content validator (scripts/validate-content.mjs). No React or DOM here so the validator
 // can import it under plain Node.
+
+/** The standard chess starting position, as a FEN. */
+export const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+/** The opposing color for a 'white'/'black' side. */
+export function opposite(side) {
+  return side === 'white' ? 'black' : 'white';
+}
 //
 // Design note: chess.js 1.x `.move()` THROWS on an illegal move (it never returns null), so
 // every caller relies on try/catch. We compare moves by their long-algebraic form (LAN, e.g.

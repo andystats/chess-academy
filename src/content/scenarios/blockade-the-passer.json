@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "scenario",
+  "id": "scenarios/blockade-the-passer",
+  "title": "Blockade the Passer",
+  "subtitle": "Stop the passed pawn with a knight",
+  "summary": "The engine has a dangerous passed pawn on d4. Park your knight in front of it, then round it up.",
+  "track": "classics",
+  "tags": ["blockade", "passed-pawn"],
+  "body": {
+    "fen": "6k1/5ppp/8/8/3p1N2/8/5PPP/6K1 w - - 0 1",
+    "orientation": "white",
+    "playerSide": "white",
+    "skillLevel": 4,
+    "relatedLesson": "classics/blockade",
+    "goal": "Blockade the passed pawn on the square in front of it, then win the pawn and the game.",
+    "successHint": "Nd3 sits the knight squarely in front of the pawn — it can never advance past a blockader."
+  }
+}

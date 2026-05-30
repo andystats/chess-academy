@@ -30,10 +30,10 @@ function ChooseOptions({ options, chosenOptionId, onChoose }) {
             type="button"
             onClick={() => onChoose(opt.id)}
             className={clsx(
-              'min-h-touch w-full rounded-2xl border px-4 py-3 text-left transition-colors',
+              'min-h-touch w-full border-3 px-4 py-3 text-left transition-colors',
               chosen && opt.correct && 'border-correct bg-green-50',
               chosen && !opt.correct && 'border-retry bg-orange-50',
-              !chosen && 'border-gray-200 hover:border-brand-500 hover:bg-brand-50',
+              !chosen && 'border-foreground hover:bg-brand-50',
             )}
           >
             <span className="font-semibold text-gray-800">{opt.label}</span>
@@ -87,9 +87,9 @@ export default function StepPanel({ lesson, chapterTitle }) {
     <div className="flex flex-col gap-5 w-full max-w-xl">
       <div>
         {chapterTitle && (
-          <p className="font-mono text-xs font-bold uppercase text-brand-600">{chapterTitle}</p>
+          <p className="font-mono text-xs font-bold uppercase tracking-wide text-brand-600">{chapterTitle}</p>
         )}
-        <h1 className="font-display text-3xl font-bold text-gray-950">{step.title}</h1>
+        <h1 className="mt-1 font-display text-3xl font-bold uppercase tracking-tight text-foreground">{step.title}</h1>
       </div>
 
       <Markdown className="text-lg leading-8 text-gray-700" renderTerm={renderTerm}>
@@ -114,21 +114,12 @@ export default function StepPanel({ lesson, chapterTitle }) {
       )}
 
       <div className="flex flex-wrap items-center gap-3 pt-1">
-        <button
-          type="button"
-          onClick={prev}
-          disabled={isFirstStep}
-          className="inline-flex min-h-touch items-center gap-1 rounded-2xl border border-gray-200 px-4 font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-        >
+        <button type="button" onClick={prev} disabled={isFirstStep} className="tao-btn-ghost">
           <ChevronLeft size={20} /> Back
         </button>
 
         {step.mode === 'line' && (
-          <button
-            type="button"
-            onClick={restartStep}
-            className="inline-flex min-h-touch items-center gap-1 rounded-2xl border border-gray-200 px-4 font-semibold text-gray-700 hover:bg-gray-50"
-          >
+          <button type="button" onClick={restartStep} className="tao-btn-ghost">
             <RotateCcw size={18} /> Start over
           </button>
         )}
@@ -137,7 +128,7 @@ export default function StepPanel({ lesson, chapterTitle }) {
           <button
             type="button"
             onClick={requestHint}
-            className="inline-flex min-h-touch items-center gap-1 rounded-2xl border border-amber-200 bg-amber-50 px-4 font-semibold text-amber-700 hover:bg-amber-100"
+            className="inline-flex min-h-touch items-center justify-center gap-1.5 border-3 border-amber-400 bg-amber-50 px-4 font-semibold text-amber-700 transition-all hover:bg-amber-100"
           >
             <Lightbulb size={18} /> Hint
           </button>
@@ -147,7 +138,7 @@ export default function StepPanel({ lesson, chapterTitle }) {
           type="button"
           onClick={next}
           disabled={isLastStep || !canAdvance}
-          className="ml-auto inline-flex min-h-touch items-center gap-1 rounded-2xl bg-gray-950 px-6 font-semibold text-white shadow-sm hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="tao-btn-primary ml-auto"
         >
           {isLastStep ? <>Done <Sparkles size={18} /></> : <>Next <ChevronRight size={20} /></>}
         </button>
