@@ -1,7 +1,6 @@
 import clsx from 'clsx';
 import { RotateCcw, Undo2, Flag, RefreshCw, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { ENGINE_LEVEL_MARKS, ENGINE_MAX_LEVEL, ENGINE_MIN_LEVEL, levelConfig } from '../engine/levels.js';
-import { PIECE_SYMBOLS } from '../engine/gameState.js';
 
 // The play column for the Practice Arena: status, move list, strength dial, and game controls.
 // Driven entirely by the controller returned from useEngineGame. The board lives in the sibling
@@ -39,46 +38,85 @@ function Feedback({ feedback }) {
   );
 }
 
-function formatEvaluation(evaluation, playerSide) {
-  if (!evaluation) return 'No score yet';
+function playerRelativeScore(evaluation, playerSide) {
+  if (!evaluation) return null;
   const raw = playerSide === 'white' ? evaluation.white : -evaluation.white;
-  if (evaluation.type === 'mate') {
-    const label = Math.abs(raw);
-    return raw >= 0 ? `Mate in ${label}` : `Mated in ${label}`;
+  return { type: evaluation.type, pawns: raw / 100, mate: raw };
+}
+
+function qualitativeScore(evaluation, playerSide) {
+  const score = playerRelativeScore(evaluation, playerSide);
+  if (!score) {
+    return {
+      headline: 'No read yet',
+      detail: 'The engine will give a qualitative position read after it searches.',
+      raw: '—',
+      scale: 0,
+    };
   }
-  const pawns = raw / 100;
-  return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(1)}`;
+
+  if (score.type === 'mate') {
+    const side = score.mate >= 0 ? 'You' : 'Opponent';
+    const label = Math.abs(score.mate);
+    return {
+      headline: `${side} can force mate`,
+      detail: label === 1 ? 'Mate is immediate.' : `Mate is estimated in ${label}.`,
+      raw: score.mate >= 0 ? `M${label}` : `-M${label}`,
+      scale: score.mate >= 0 ? 1 : -1,
+    };
+  }
+
+  const abs = Math.abs(score.pawns);
+  let phrase;
+  if (abs <= 1.25) phrase = 'nearly equal';
+  else if (abs < 2) phrase = 'slight advantage';
+  else if (abs < 4) phrase = 'clear advantage';
+  else if (abs < 7) phrase = 'big advantage';
+  else if (abs < 9) phrase = 'winning advantage';
+  else phrase = 'should win without trouble';
+
+  const side = score.pawns >= 0 ? 'You have' : 'Opponent has';
+  return {
+    headline: abs <= 1.25 ? 'Nearly equal' : phrase === 'should win without trouble' ? `${side} enough to win without trouble` : `${side} a ${phrase}`,
+    detail: 'Treat large winning scores as a practical verdict, not a precise measurement.',
+    raw: `${score.pawns >= 0 ? '+' : ''}${score.pawns.toFixed(1)}`,
+    scale: Math.max(-1, Math.min(1, score.pawns / 9)),
+  };
 }
 
-function CapturedPieces({ captured }) {
-  const whiteLost = captured?.white ?? [];
-  const blackLost = captured?.black ?? [];
-
-  return (
-    <div className="grid gap-3 border-3 border-foreground bg-white p-4 text-sm sm:grid-cols-2">
-      <CapturedRow label="White lost" color="white" pieces={whiteLost} />
-      <CapturedRow label="Black lost" color="black" pieces={blackLost} />
-    </div>
-  );
+function colorScaleStyle(scale) {
+  const clamped = Math.max(-1, Math.min(1, scale ?? 0));
+  if (clamped === 0) return { backgroundColor: '#ffffff' };
+  const alpha = 0.08 + Math.abs(clamped) * 0.28;
+  const color = clamped > 0 ? `rgba(22, 163, 74, ${alpha})` : `rgba(220, 38, 38, ${alpha})`;
+  return {
+    background: `linear-gradient(90deg, ${color}, #ffffff 78%)`,
+  };
 }
 
-function CapturedRow({ label, color, pieces }) {
-  return (
-    <div>
-      <p className="font-mono text-[0.65rem] font-bold uppercase tracking-wide text-gray-500">{label}</p>
-      <p className="mt-1 min-h-7 text-2xl leading-none text-foreground" aria-label={`${label}: ${pieces.join(', ') || 'none'}`}>
-        {pieces.length ? pieces.map((piece, index) => <span key={`${piece}-${index}`}>{PIECE_SYMBOLS[color][piece]}</span>) : '—'}
-      </p>
-    </div>
-  );
+function formatEvaluation(evaluation, playerSide) {
+  const score = playerRelativeScore(evaluation, playerSide);
+  if (!score) return '—';
+  if (evaluation.type === 'mate') {
+    const label = Math.abs(score.mate);
+    return score.mate >= 0 ? `M${label}` : `-M${label}`;
+  }
+  return `${score.pawns >= 0 ? '+' : ''}${score.pawns.toFixed(1)}`;
 }
 
 function EvaluationCard({ evaluation, playerSide }) {
+  const read = qualitativeScore(evaluation, playerSide);
   return (
-    <div className="border-3 border-foreground bg-brand-50/40 p-4">
-      <p className="font-mono text-xs font-bold uppercase tracking-wide text-gray-500">Engine score for you</p>
-      <p className="mt-1 font-display text-3xl font-bold tracking-tight text-foreground">{formatEvaluation(evaluation, playerSide)}</p>
-      <p className="mt-1 text-xs leading-5 text-gray-500">Estimate from the last position Stockfish searched.</p>
+    <div
+      className="border-3 border-foreground p-4 transition-colors duration-300"
+      style={colorScaleStyle(read.scale)}
+    >
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="font-mono text-xs font-bold uppercase tracking-wide text-gray-500">Position read</p>
+        <p className="font-mono text-xs font-bold uppercase tracking-wide text-gray-400">{formatEvaluation(evaluation, playerSide)}</p>
+      </div>
+      <p className="mt-2 font-display text-2xl font-bold uppercase tracking-tight text-foreground">{read.headline}</p>
+      <p className="mt-2 text-xs leading-5 text-gray-500">{read.detail}</p>
     </div>
   );
 }
@@ -167,10 +205,7 @@ export default function EnginePanel({ game, eyebrow, title, children, skillLevel
         <StrengthSlider value={skillLevel} onChange={onSkillLevelChange} />
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <EvaluationCard evaluation={game.evaluation} playerSide={game.playerSide} />
-        <CapturedPieces captured={game.captured} />
-      </div>
+      <EvaluationCard evaluation={game.evaluation} playerSide={game.playerSide} />
 
       {pairs.length > 0 && (
         <ol className="max-h-48 overflow-y-auto border-3 border-foreground bg-brand-50/40 p-3 font-mono text-sm leading-7 text-gray-700">
