@@ -8,6 +8,7 @@ import GlossaryPage from './routes/GlossaryPage.jsx';
 import ArenaPage from './routes/ArenaPage.jsx';
 import ScenarioPage from './routes/ScenarioPage.jsx';
 import FreePlayPage from './routes/FreePlayPage.jsx';
+import LocalPlayPage from './routes/LocalPlayPage.jsx';
 import ComingSoonPage from './routes/ComingSoonPage.jsx';
 import NotFoundPage from './routes/NotFoundPage.jsx';
 import { useProfile } from './profile/ProfileContext.jsx';
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/glossary" element={<GlossaryPage />} />
             <Route path="/arena" element={<ArenaPage />} />
             <Route path="/arena/free" element={<FreePlayPage />} />
+            <Route path="/arena/local" element={<LocalPlayPage />} />
             <Route path="/arena/scenario/*" element={<ScenarioPage />} />
             <Route
               path="/puzzles"

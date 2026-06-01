@@ -66,7 +66,7 @@ export default function MySystemPage() {
             <p className="font-mono text-xs font-semibold uppercase text-gray-500">Study room</p>
             <h1 className="mt-3 font-book text-4xl font-semibold leading-tight text-gray-950">My System</h1>
             <p className="mt-3 text-sm leading-6 text-gray-700">
-              A close, original walkthrough of Nimzowitsch's structure with playable boards for the core scenarios.
+              A chapter-faithful walkthrough of the 1930 public-domain English edition, with playable boards where the core scenarios are ready.
             </p>
             <nav className="mt-6 space-y-3 border-t border-gray-300 pt-5">
               {MY_SYSTEM_PARTS.map((part) => (
@@ -89,7 +89,7 @@ export default function MySystemPage() {
             </h2>
             <p className="mt-5 max-w-3xl text-lg leading-8 text-gray-700">
               The goal is full conceptual fidelity: the order, dependencies, and chess meaning stay intact.
-              The prose is newly written for this tool, and each suitable idea receives a board study.
+              The prose is newly written for this tool, and each suitable idea receives a board study as the section is built out.
             </p>
           </div>
 

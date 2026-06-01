@@ -5,8 +5,8 @@ import StylizedKingScene from '../components/StylizedKingScene.jsx';
 const HOME_LINKS = [
   {
     to: '/training',
-    label: '200 Point Path',
-    blurb: 'Fast habits, short board examples, and practice lessons.',
+    label: 'Mental Checklist',
+    blurb: 'A practical pre-move routine with short board examples.',
   },
   {
     to: '/my-system',

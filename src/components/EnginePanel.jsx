@@ -1,15 +1,12 @@
 import clsx from 'clsx';
 import { RotateCcw, Undo2, Flag, RefreshCw, Loader2, CheckCircle2, XCircle } from 'lucide-react';
-import SegmentedControl from './ui/SegmentedControl.jsx';
-import { ENGINE_LEVELS } from '../engine/levels.js';
+import { ENGINE_LEVEL_MARKS, ENGINE_MAX_LEVEL, ENGINE_MIN_LEVEL, levelConfig } from '../engine/levels.js';
+import { PIECE_SYMBOLS } from '../engine/gameState.js';
 
 // The play column for the Practice Arena: status, move list, strength dial, and game controls.
 // Driven entirely by the controller returned from useEngineGame. The board lives in the sibling
 // column (see LessonLayout). When `onSkillLevelChange` is provided a strength selector is shown
 // (free play); scenarios fix the strength and omit it.
-
-// The strength dial reads from the engine level ladder; ratings are approximate feel, not Elo.
-const SKILL_LABELS = ENGINE_LEVELS.map((l) => ({ value: l.value, label: l.label, sublabel: l.rating }));
 
 function pairMoves(history) {
   const pairs = [];
@@ -38,6 +35,82 @@ function Feedback({ feedback }) {
     >
       {correct ? <CheckCircle2 className="mt-0.5 shrink-0" size={18} /> : <XCircle className="mt-0.5 shrink-0" size={18} />}
       <span>{feedback.text}</span>
+    </div>
+  );
+}
+
+function formatEvaluation(evaluation, playerSide) {
+  if (!evaluation) return 'No score yet';
+  const raw = playerSide === 'white' ? evaluation.white : -evaluation.white;
+  if (evaluation.type === 'mate') {
+    const label = Math.abs(raw);
+    return raw >= 0 ? `Mate in ${label}` : `Mated in ${label}`;
+  }
+  const pawns = raw / 100;
+  return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(1)}`;
+}
+
+function CapturedPieces({ captured }) {
+  const whiteLost = captured?.white ?? [];
+  const blackLost = captured?.black ?? [];
+
+  return (
+    <div className="grid gap-3 border-3 border-foreground bg-white p-4 text-sm sm:grid-cols-2">
+      <CapturedRow label="White lost" color="white" pieces={whiteLost} />
+      <CapturedRow label="Black lost" color="black" pieces={blackLost} />
+    </div>
+  );
+}
+
+function CapturedRow({ label, color, pieces }) {
+  return (
+    <div>
+      <p className="font-mono text-[0.65rem] font-bold uppercase tracking-wide text-gray-500">{label}</p>
+      <p className="mt-1 min-h-7 text-2xl leading-none text-foreground" aria-label={`${label}: ${pieces.join(', ') || 'none'}`}>
+        {pieces.length ? pieces.map((piece, index) => <span key={`${piece}-${index}`}>{PIECE_SYMBOLS[color][piece]}</span>) : '—'}
+      </p>
+    </div>
+  );
+}
+
+function EvaluationCard({ evaluation, playerSide }) {
+  return (
+    <div className="border-3 border-foreground bg-brand-50/40 p-4">
+      <p className="font-mono text-xs font-bold uppercase tracking-wide text-gray-500">Engine score for you</p>
+      <p className="mt-1 font-display text-3xl font-bold tracking-tight text-foreground">{formatEvaluation(evaluation, playerSide)}</p>
+      <p className="mt-1 text-xs leading-5 text-gray-500">Estimate from the last position Stockfish searched.</p>
+    </div>
+  );
+}
+
+function StrengthSlider({ value, onChange }) {
+  const config = levelConfig(value);
+  return (
+    <div className="border-3 border-foreground bg-white p-4">
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="font-mono text-xs font-bold uppercase tracking-wide text-gray-500">Engine strength</p>
+        <p className="font-semibold text-foreground">
+          {config.label} <span className="text-sm text-gray-500">{config.rating}</span>
+        </p>
+      </div>
+      <input
+        type="range"
+        min={ENGINE_MIN_LEVEL}
+        max={ENGINE_MAX_LEVEL}
+        step="1"
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="mt-4 h-2 w-full accent-brand-600"
+        aria-label="Engine strength"
+      />
+      <div className="mt-2 flex justify-between font-mono text-[0.65rem] font-bold uppercase tracking-wide text-gray-400">
+        {ENGINE_LEVEL_MARKS.map((mark) => (
+          <span key={mark.value}>{mark.label}</span>
+        ))}
+      </div>
+      <p className="mt-3 text-xs leading-5 text-gray-500">
+        Lower levels use shallower Stockfish searches and lower skill settings.
+      </p>
     </div>
   );
 }
@@ -91,11 +164,13 @@ export default function EnginePanel({ game, eyebrow, title, children, skillLevel
       <StatusLine game={game} />
 
       {onSkillLevelChange && (
-        <div>
-          <p className="mb-2 font-mono text-xs font-bold uppercase tracking-wide text-gray-500">Engine strength</p>
-          <SegmentedControl options={SKILL_LABELS} value={skillLevel} onChange={onSkillLevelChange} className="flex-wrap" />
-        </div>
+        <StrengthSlider value={skillLevel} onChange={onSkillLevelChange} />
       )}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <EvaluationCard evaluation={game.evaluation} playerSide={game.playerSide} />
+        <CapturedPieces captured={game.captured} />
+      </div>
 
       {pairs.length > 0 && (
         <ol className="max-h-48 overflow-y-auto border-3 border-foreground bg-brand-50/40 p-3 font-mono text-sm leading-7 text-gray-700">

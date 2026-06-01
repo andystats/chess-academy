@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { CheckCircle2, ChevronRight, Clock } from 'lucide-react';
+import BoardPanel from '../components/BoardPanel.jsx';
 import { listTracks } from '../content/registry.js';
 import { useProfile } from '../profile/ProfileContext.jsx';
 
@@ -15,6 +16,64 @@ const CHECKLIST = [
   { rule: 'Improve your worst piece.', note: 'No tactic? Upgrade the piece doing the least.' },
   { rule: 'Fight for the center and open files.', note: 'Pieces and rooks want open lines.' },
   { rule: 'Sit on your hands.', note: "Would you still play it after his best reply? Then move." },
+];
+
+const EXAMPLES = [
+  {
+    title: 'Checks first',
+    fen: '6k1/5ppp/8/8/8/8/8/R3K3 w - - 0 1',
+    move: 'Ra8#',
+    claim: 'Forcing moves outrank vague plans. Here the back-rank check ends the game immediately.',
+    source: 'Common back-rank pattern',
+    highlights: ['a1', 'a8', 'g8'],
+    arrows: [['a1', 'a8', 'good']],
+  },
+  {
+    title: 'Captures need calculation',
+    fen: '4k3/8/8/3q4/4P3/8/8/4K3 w - - 0 1',
+    move: 'exd5',
+    claim: 'A capture is not good because it is available; it is good when the reply still leaves you ahead.',
+    source: 'Checks-captures-threats habit',
+    highlights: ['e4', 'd5'],
+    arrows: [['e4', 'd5', 'good']],
+  },
+  {
+    title: 'Stop their idea',
+    fen: 'rnbqkbnr/pppp1ppp/8/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 2 2',
+    move: '...Nf6',
+    claim: 'The quiet developing move matters because it removes the direct queen-and-bishop shot at f7.',
+    source: 'My System: prophylaxis',
+    highlights: ['g8', 'f6', 'f7'],
+    arrows: [['g8', 'f6', 'good']],
+    orientation: 'black',
+  },
+  {
+    title: 'Use the open file',
+    fen: '6k1/pp3ppp/8/8/8/8/5PPP/R5K1 w - - 0 1',
+    move: 'Rxa7',
+    claim: 'The rook is not “active” in the corner; it becomes active when the open file gives it an entry square.',
+    source: 'My System: open files and seventh rank',
+    highlights: ['a1', 'a7'],
+    arrows: [['a1', 'a7', 'good']],
+  },
+  {
+    title: 'Attack the base',
+    fen: '4k3/8/4p3/3p1P2/2p1P3/8/8/4K3 w - - 0 1',
+    move: 'fxe6',
+    claim: 'Against a pawn chain, hitting the protected head usually helps the chain. The base is the target.',
+    source: 'My System: pawn chains',
+    highlights: ['f5', 'e6', 'd5', 'c4'],
+    arrows: [['f5', 'e6', 'good']],
+  },
+  {
+    title: 'Improve the worst piece',
+    fen: 'r1bqk2r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4',
+    move: 'Nc3',
+    claim: 'When checks, captures, and threats do not solve the position, upgrade the piece doing the least.',
+    source: 'Modern checklist habit',
+    highlights: ['b1', 'c3'],
+    arrows: [['b1', 'c3', 'good']],
+  },
 ];
 
 function LessonCard({ lesson }) {
@@ -60,6 +119,27 @@ function ChecklistRow({ item, index }) {
   );
 }
 
+function ExampleCard({ example }) {
+  return (
+    <article className="tao-card tao-card-hover grid gap-4 p-4 sm:grid-cols-[11rem_minmax(0,1fr)]">
+      <BoardPanel
+        fen={example.fen}
+        orientation={example.orientation ?? 'white'}
+        variant="book"
+        className="w-full max-w-[11rem]"
+        highlights={example.highlights}
+        arrows={example.arrows}
+      />
+      <div className="min-w-0">
+        <p className="font-mono text-[0.65rem] font-bold uppercase tracking-wide text-brand-600">{example.source}</p>
+        <h3 className="mt-1 font-display text-xl font-bold uppercase tracking-tight text-foreground">{example.title}</h3>
+        <p className="mt-2 font-mono text-sm font-bold text-gray-500">{example.move}</p>
+        <p className="mt-3 text-sm leading-6 text-gray-700">{example.claim}</p>
+      </div>
+    </article>
+  );
+}
+
 export default function TrainingPage() {
   const tracks = listTracks();
 
@@ -68,13 +148,13 @@ export default function TrainingPage() {
       <section className="mx-auto max-w-6xl px-4 py-12">
         <p className="font-mono text-xs font-bold uppercase tracking-wide text-brand-600">Practical study path</p>
         <h1 className="mt-4 max-w-4xl font-display text-5xl font-extrabold uppercase leading-[1.05] tracking-tight text-foreground md:text-6xl">
-          Quickest path to a{' '}
-          <span className="font-book italic font-semibold normal-case tracking-normal text-brand-500">200 point gain.</span>
+          The mental{' '}
+          <span className="font-book italic font-semibold normal-case tracking-normal text-brand-500">checklist.</span>
         </h1>
         <div className="gradient-divider mt-5 w-20" />
         <p className="mt-5 max-w-2xl text-lg leading-8 text-gray-700">
-          Most rating jumps come from one thing: fewer blunders. Run this checklist before every move
-          until it's automatic.
+          Most rating jumps come from one thing: fewer blunders. Run this pre-move routine until it
+          becomes automatic, then use the examples below to connect each habit to a real board demand.
         </p>
       </section>
 
@@ -86,6 +166,22 @@ export default function TrainingPage() {
               <ChecklistRow key={item.rule} item={item} index={index} />
             ))}
           </ol>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 pb-12">
+        <div className="mb-6 max-w-3xl">
+          <p className="font-mono text-xs font-bold uppercase tracking-wide text-brand-600">Board examples</p>
+          <h2 className="mt-2 font-display text-3xl font-bold uppercase tracking-tight text-foreground">Make the checklist concrete.</h2>
+          <p className="mt-3 text-sm leading-6 text-gray-600">
+            These positions are deliberately simple, but each one matches its claim: find the forcing move,
+            answer the threat, or improve the piece the position is asking you to improve.
+          </p>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {EXAMPLES.map((example) => (
+            <ExampleCard key={example.title} example={example} />
+          ))}
         </div>
       </section>
 

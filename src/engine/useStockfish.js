@@ -6,8 +6,8 @@ import { levelConfig } from './levels.js';
 // lazily on the first move request (so a page that never plays never downloads/spawns the engine)
 // and terminated on unmount. Strength is remembered and re-applied across requests.
 //
-// `requestMove` resolves to a UCI move string (or null for "no legal move"); on engine failure it
-// surfaces the error via the `error` state and rejects, so callers can keep the board playable.
+// `requestMove` resolves to { move, evaluation }; on engine failure it surfaces the error via the
+// `error` state and rejects, so callers can keep the board playable.
 export function useStockfish(initialStrength = 10) {
   const engineRef = useRef(null);
   const strengthRef = useRef(initialStrength);

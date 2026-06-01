@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ArrowRight, Swords, Cpu } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Swords, Cpu, UsersRound } from 'lucide-react';
 import { listScenarios, getContent } from '../content/registry.js';
 import { useProfile } from '../profile/ProfileContext.jsx';
 import SectionHeader from '../components/ui/SectionHeader.jsx';
 import Badge from '../components/ui/Badge.jsx';
+import ArenaRoadmapFlipCard from '../components/ArenaRoadmapFlipCard.jsx';
 
 // Strip the "scenarios/" id prefix to build the route, mirroring how lesson ids map to /lesson/*.
 const scenarioSlug = (scenario) => scenario.id.replace(/^scenarios\//, '');
@@ -54,22 +55,19 @@ export default function ArenaPage() {
         </SectionHeader>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 pb-12">
-        <Link
+      <section className="mx-auto grid max-w-6xl gap-4 px-4 pb-12 lg:grid-cols-2">
+        <ArenaModeLink
           to="/arena/free"
-          className="tao-card group flex items-center gap-5 p-6 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard-brand"
-        >
-          <Cpu className="shrink-0 text-brand-500" size={36} />
-          <div className="flex-1">
-            <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-foreground group-hover:text-brand-600">
-              Free Play vs Engine
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Pick a side and a strength, optionally start from any position, and play a full game.
-            </p>
-          </div>
-          <ArrowRight className="shrink-0 text-gray-300 transition-colors group-hover:text-brand-500" size={24} />
-        </Link>
+          icon={<Cpu className="shrink-0 text-brand-500" size={36} />}
+          title="Free Play vs Engine"
+          text="Pick a side and a strength, optionally start from any position, and play a full game."
+        />
+        <ArenaModeLink
+          to="/arena/local"
+          icon={<UsersRound className="shrink-0 text-brand-500" size={36} />}
+          title="Local Two-Player"
+          text="Work-in-progress shared-board play for two people on one device. Duck Chess comes next."
+        />
       </section>
 
       <section className="border-t-3 border-foreground bg-brand-50/40">
@@ -85,6 +83,26 @@ export default function ArenaPage() {
           </div>
         </div>
       </section>
+
+      <ArenaRoadmapFlipCard />
     </div>
+  );
+}
+
+function ArenaModeLink({ to, icon, title, text }) {
+  return (
+    <Link
+      to={to}
+      className="tao-card group flex items-center gap-5 p-6 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard-brand"
+    >
+      {icon}
+      <div className="flex-1">
+        <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-foreground group-hover:text-brand-600">
+          {title}
+        </h2>
+        <p className="mt-1 text-sm leading-6 text-gray-600">{text}</p>
+      </div>
+      <ArrowRight className="shrink-0 text-gray-300 transition-colors group-hover:text-brand-500" size={24} />
+    </Link>
   );
 }

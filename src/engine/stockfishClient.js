@@ -25,6 +25,7 @@ function workerUrl() {
 export function createStockfish() {
   let worker = null;
   let pending = null; // { match, resolve, reject, timer } for the one outstanding command, or null
+  let lastScore = null;
 
   function settle(error, value) {
     if (!pending) return;
@@ -51,6 +52,8 @@ export function createStockfish() {
   }
 
   function handleLine(line) {
+    const score = parseScore(line);
+    if (score) lastScore = score;
     if (!pending) return;
     const hit = pending.match(line);
     if (hit === false || hit === undefined) return; // not the line we're waiting for
@@ -82,15 +85,19 @@ export function createStockfish() {
   }
 
   // Ask for the best move from `fen`. Limit by `depth` (weak, shallow search) when given, else by
-  // `movetime` ms. Resolves to a UCI move ("e2e4", "a7a8q"), or null if the engine reports no legal
-  // move ("bestmove (none)").
+  // `movetime` ms. Resolves to the UCI move plus the latest score line Stockfish emitted for this
+  // search. Scores are normalized to White's point of view for easier UI display.
   async function getBestMove(fen, { depth, movetime = 800 } = {}) {
     if (!worker) await init();
+    lastScore = null;
     send(`position fen ${fen}`);
     send(depth ? `go depth ${depth}` : `go movetime ${Math.round(movetime)}`);
     const line = await waitFor((l) => (l.startsWith('bestmove') ? l : false), MOVE_TIMEOUT_MS, 'a move');
     const uci = line.split(/\s+/)[1];
-    return isUci(uci) ? uci : null;
+    return {
+      move: isUci(uci) ? uci : null,
+      evaluation: normalizeScore(lastScore, fen),
+    };
   }
 
   // True while a command is outstanding — lets the caller decide to tear down a thinking engine on
@@ -113,4 +120,23 @@ export function createStockfish() {
   }
 
   return { init, setStrength, getBestMove, isBusy, dispose };
+}
+
+function parseScore(line) {
+  if (!line.startsWith('info ') || !line.includes(' score ')) return null;
+  const cp = line.match(/\bscore cp (-?\d+)/);
+  if (cp) return { type: 'cp', value: Number(cp[1]) };
+  const mate = line.match(/\bscore mate (-?\d+)/);
+  if (mate) return { type: 'mate', value: Number(mate[1]) };
+  return null;
+}
+
+function normalizeScore(score, fen) {
+  if (!score) return null;
+  const turn = fen.split(/\s+/)[1] === 'b' ? 'black' : 'white';
+  const sign = turn === 'white' ? 1 : -1;
+  return {
+    type: score.type,
+    white: score.value * sign,
+  };
 }

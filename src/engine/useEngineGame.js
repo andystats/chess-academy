@@ -1,6 +1,7 @@
 import { useReducer, useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import { Chess } from 'chess.js';
 import { applyMove, legalTargets, opposite, acceptableLans, compileToLan, moveToLan, START_FEN } from '../lesson/moves.js';
+import { capturedPieces, gameResult } from './gameState.js';
 import { useStockfish } from './useStockfish.js';
 import { levelConfig } from './levels.js';
 
@@ -17,35 +18,14 @@ const DEFAULT_WRONG = 'Not quite — look for the move the lesson points to and 
 
 const SIDE_CHAR = { white: 'w', black: 'b' };
 
-// A uniformly random legal move (as UCI) for the current position — used to inject blunders at the
-// easy levels, where the engine itself is too strong to lose. Returns null if there are no moves.
-function randomMove(game) {
-  const moves = game.moves({ verbose: true });
-  if (!moves.length) return null;
-  const m = moves[Math.floor(Math.random() * moves.length)];
-  return m.from + m.to + (m.promotion || '');
-}
-
-// Translate a finished game into a result banner, or null while it's still going.
-function gameResult(game) {
-  if (!game.isGameOver()) return null;
-  if (game.isCheckmate()) {
-    // The side NOT to move delivered mate.
-    const winner = opposite(game.turn() === 'w' ? 'white' : 'black');
-    return { winner, reason: 'Checkmate' };
-  }
-  if (game.isStalemate()) return { winner: 'draw', reason: 'Stalemate' };
-  if (game.isInsufficientMaterial()) return { winner: 'draw', reason: 'Insufficient material' };
-  if (game.isThreefoldRepetition()) return { winner: 'draw', reason: 'Threefold repetition' };
-  return { winner: 'draw', reason: 'Draw' };
-}
-
 const initialState = {
   fen: START_FEN,
   status: 'player-turn', // 'player-turn' | 'engine-thinking' | 'over'
   result: null,
   history: [],
   lastMove: null,
+  captured: { white: [], black: [] },
+  evaluation: null,
   selectedSquare: null,
   legalTargets: [],
   // Scenarios start in a 'guided' phase where the player's key move is checked against the
@@ -63,6 +43,8 @@ function reducer(state, action) {
         fen: action.fen,
         history: action.history,
         lastMove: null,
+        captured: action.captured,
+        evaluation: null,
         status: action.status,
         result: action.result ?? null,
         phase: action.phase,
@@ -77,6 +59,8 @@ function reducer(state, action) {
         fen: action.fen,
         history: action.history,
         lastMove: action.lastMove ?? null,
+        captured: action.captured,
+        evaluation: action.evaluation ?? state.evaluation,
         status: action.status,
         result: action.result ?? null,
         selectedSquare: null,
@@ -88,6 +72,8 @@ function reducer(state, action) {
         fen: action.fen,
         history: action.history,
         lastMove: action.lastMove ?? null,
+        captured: action.captured,
+        evaluation: action.evaluation ?? state.evaluation,
         status: action.status,
         result: action.result ?? null,
         phase: 'free',
@@ -109,6 +95,11 @@ function reducer(state, action) {
   }
 }
 
+function readEngineReply(reply) {
+  if (typeof reply === 'string' || reply == null) return { uci: reply, evaluation: null };
+  return { uci: reply.move ?? null, evaluation: reply.evaluation ?? null };
+}
+
 export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guided = null }) {
   const { ready, error, requestMove, setStrength, interrupt } = useStockfish(skillLevel);
   const gameRef = useRef(null);
@@ -122,29 +113,26 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
   const startFen = fen || START_FEN;
 
   // Ask the engine for a move from the current position and apply it, unless the run was superseded.
-  // At easy levels the engine occasionally blunders a random legal move instead (see levels.js).
   const scheduleEngineMove = useCallback(async () => {
     const myRun = runIdRef.current;
     dispatch({ type: 'thinking' });
-    let uci;
-    if (config.blunder && Math.random() < config.blunder) {
-      uci = randomMove(gameRef.current); // intentional blunder — no engine call needed
-    } else {
-      try {
-        uci = await requestMove(gameRef.current.fen(), config.search);
-      } catch {
-        if (myRun !== runIdRef.current) return; // stale failure
-        dispatch({
-          type: 'sync',
-          fen: gameRef.current.fen(),
-          history: gameRef.current.history(),
-          status: 'over',
-          result: { winner: null, reason: 'The engine is unavailable.' },
-        });
-        return;
-      }
+    let reply;
+    try {
+      reply = await requestMove(gameRef.current.fen(), config.search);
+    } catch {
+      if (myRun !== runIdRef.current) return; // stale failure
+      dispatch({
+        type: 'sync',
+        fen: gameRef.current.fen(),
+        history: gameRef.current.history(),
+        captured: capturedPieces(gameRef.current),
+        status: 'over',
+        result: { winner: null, reason: 'The engine is unavailable.' },
+      });
+      return;
     }
     if (myRun !== runIdRef.current) return; // a reset/takeback/resign happened while thinking
+    const { uci, evaluation } = readEngineReply(reply);
     const game = gameRef.current;
     let lastMove = null;
     if (uci) {
@@ -160,9 +148,11 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
       type: 'sync',
       fen: game.fen(),
       history: game.history(),
+      captured: capturedPieces(game),
       lastMove,
       status: result ? 'over' : 'player-turn',
       result,
+      evaluation,
     });
   }, [requestMove, config]);
 
@@ -179,6 +169,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
       type: 'reset',
       fen: game.fen(),
       history: game.history(),
+      captured: capturedPieces(game),
       status: engineToMove ? 'engine-thinking' : 'player-turn',
       result: gameResult(game),
       phase: guided ? 'guided' : 'free',
@@ -207,6 +198,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
           type: 'guided-correct',
           fen: game.fen(),
           history: game.history(),
+          captured: capturedPieces(game),
           lastMove: { from: m.from, to: m.to },
           status: result ? 'over' : 'engine-thinking',
           result,
@@ -246,6 +238,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
         type: 'sync',
         fen: game.fen(),
         history: game.history(),
+        captured: capturedPieces(game),
         lastMove: { from: m.from, to: m.to },
         status: result ? 'over' : 'engine-thinking',
         result,
@@ -306,6 +299,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
       type: 'sync',
       fen: game.fen(),
       history: game.history(),
+      captured: capturedPieces(game),
       status: 'over',
       result: { winner: opposite(playerSide), reason: 'You resigned' },
     });
@@ -324,6 +318,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
       type: 'sync',
       fen: game.fen(),
       history: game.history(),
+      captured: capturedPieces(game),
       lastMove: null,
       status: engineToMove ? 'engine-thinking' : 'player-turn',
       result: null,
@@ -353,6 +348,8 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
     feedback: state.feedback,
     history: state.history,
     lastMove: state.lastMove,
+    captured: state.captured,
+    evaluation: state.evaluation,
     selectedSquare: state.selectedSquare,
     legalTargets: state.legalTargets,
     arePiecesDraggable,

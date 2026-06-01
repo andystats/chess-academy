@@ -3,7 +3,7 @@ import clsx from 'clsx';
 
 const LINKS = [
   { to: '/', label: 'Atrium', end: true },
-  { to: '/training', label: '200 Point Path' },
+  { to: '/training', label: 'Mental Checklist' },
   { to: '/my-system', label: 'My System' },
   { to: '/arena', label: 'Arena' },
   { to: '/glossary', label: 'Glossary' },

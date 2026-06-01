@@ -28,8 +28,8 @@ const BOARD_THEMES = {
     shell: 'border border-black/20 shadow-sm',
   },
   arena: {
-    dark: '#1c9ed3',
-    light: '#edf6fc',
+    dark: '#739552',
+    light: '#ebecd0',
     shell: 'border-[3px] border-accent-ink shadow-[6px_6px_0_#1a1a1a]',
   },
 };
@@ -59,6 +59,7 @@ export default function BoardPanel({
   legalTargets = [],
   variant = 'academy',
   className = 'w-full max-w-[34rem]',
+  animationDuration = variant === 'arena' ? 520 : 320,
 }) {
   const theme = BOARD_THEMES[variant] ?? BOARD_THEMES.academy;
 
@@ -78,7 +79,7 @@ export default function BoardPanel({
         customBoardStyle={{ borderRadius: 0 }}
         customDarkSquareStyle={{ backgroundColor: theme.dark }}
         customLightSquareStyle={{ backgroundColor: theme.light }}
-        animationDuration={250}
+        animationDuration={animationDuration}
       />
     </div>
   );
