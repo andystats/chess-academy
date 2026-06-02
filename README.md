@@ -15,13 +15,41 @@ account, no ads, works offline-first in the browser.
 - **Thinking habits** — the modern coaching checklists: **C**hecks, **C**aptures, **T**hreats;
   "to take is a mistake"; "optimise your worst piece"; always check your opponent's best reply.
 - **Glossary** — plain-language definitions with little example boards, cross-linked from lessons.
-- *(Coming)* a **puzzle trainer** powered by the CC0 [Lichess puzzle database](https://database.lichess.org/#puzzles),
-  and embedded **[Stockfish](https://stockfishchess.org/)** for hints and analysis.
+- **Practice arena** — play **[Stockfish](https://stockfishchess.org/)** at the strength you choose,
+  run lesson scenarios, share a board for local two-player, or **play a friend online** (below).
+- *(Coming)* a **puzzle trainer** powered by the CC0 [Lichess puzzle database](https://database.lichess.org/#puzzles).
+
+## Play a friend online
+
+The app is live at **<https://andystats.github.io/chess-academy/>**. Two people on different devices
+can play standard chess or **Duck Chess** in real time — no accounts, no install.
+
+1. Open the site → **Practice Arena → Play a Friend Online**.
+2. Pick a variant (**Duck Chess** or Standard) and your colour, then **Create game**.
+3. **Copy the invite link** and send it to your friend — opening it joins them as the other colour.
+4. Take turns on the same board, in real time.
+
+### First time with Duck Chess?
+
+Duck Chess is normal chess with one twist — a rubber duck 🦆 that blocks squares:
+
+- **Each turn has two steps:** make a normal move, **then move the duck** to any empty square (after
+  the first placement it must move to a *different* square each turn).
+- **The duck blocks everything** — no piece may land on it or slide through it (knights still jump
+  over), and it can't be captured.
+- **There is no check or checkmate.** You may move your king into danger and ignore threats to it, so
+  **you win by *capturing* the enemy king** outright. Hunt for the king grab — and use the duck to
+  shield your own king or block a winning capture.
+
+> Realtime play uses [Supabase](https://supabase.com/) and needs `VITE_SUPABASE_URL` /
+> `VITE_SUPABASE_ANON_KEY` (see [`.env.example`](./.env.example)). Without them the rest of the app
+> still works — only online play is disabled.
 
 ## Status
 
-Early but real. The lesson engine, content schema + validator, local profiles, a book-study
-section, and the first lessons are built; puzzles and the engine come next. See
+Early but real. The lesson engine, content schema + validator, local profiles, a book-study section,
+the first lessons, and the practice arena — Stockfish play, lesson scenarios, local two-player, and
+**online multiplayer with the Duck Chess variant** — are built; the puzzle trainer comes next. See
 [`ROADMAP`](#roadmap) below.
 
 ## Quick start

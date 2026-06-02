@@ -1,40 +1,6 @@
 import clsx from 'clsx';
 import { RefreshCw, RotateCcw, Undo2 } from 'lucide-react';
-import { PIECE_SYMBOLS } from '../engine/gameState.js';
-
-function pairMoves(history) {
-  const pairs = [];
-  for (let i = 0; i < history.length; i += 2) {
-    pairs.push({ num: i / 2 + 1, white: history[i], black: history[i + 1] ?? '' });
-  }
-  return pairs;
-}
-
-function resultText(result) {
-  if (!result) return null;
-  if (result.winner === 'draw') return `Draw (${result.reason})`;
-  return `${result.winner === 'white' ? 'White' : 'Black'} won (${result.reason})`;
-}
-
-function CapturedRow({ label, color, pieces }) {
-  return (
-    <div>
-      <p className="font-mono text-[0.65rem] font-bold uppercase tracking-wide text-gray-500">{label}</p>
-      <p className="mt-1 min-h-7 text-2xl leading-none text-foreground" aria-label={`${label}: ${pieces.join(', ') || 'none'}`}>
-        {pieces.length ? pieces.map((piece, index) => <span key={`${piece}-${index}`}>{PIECE_SYMBOLS[color][piece]}</span>) : '—'}
-      </p>
-    </div>
-  );
-}
-
-function CapturedPieces({ captured }) {
-  return (
-    <div className="grid gap-3 border-3 border-foreground bg-white p-4 text-sm sm:grid-cols-2">
-      <CapturedRow label="White lost" color="white" pieces={captured.white} />
-      <CapturedRow label="Black lost" color="black" pieces={captured.black} />
-    </div>
-  );
-}
+import { CapturedPieces, pairMoves, resultText } from './gamePanelParts.jsx';
 
 export default function LocalGamePanel({ game }) {
   const pairs = pairMoves(game.history);

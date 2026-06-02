@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ArrowRight, Swords, Cpu, UsersRound } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Swords, Cpu, UsersRound, Globe } from 'lucide-react';
 import { listScenarios, getContent } from '../content/registry.js';
 import { useProfile } from '../profile/ProfileContext.jsx';
 import SectionHeader from '../components/ui/SectionHeader.jsx';
@@ -66,7 +66,13 @@ export default function ArenaPage() {
           to="/arena/local"
           icon={<UsersRound className="shrink-0 text-brand-500" size={36} />}
           title="Local Two-Player"
-          text="Work-in-progress shared-board play for two people on one device. Duck Chess comes next."
+          text="Shared-board play for two people on one device."
+        />
+        <ArenaModeLink
+          to="/arena/online"
+          icon={<Globe className="shrink-0 text-brand-500" size={36} />}
+          title="Play a Friend Online"
+          text="Real-time games over an invite link — standard chess or the Duck Chess variant."
         />
       </section>
 

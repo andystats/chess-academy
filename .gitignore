@@ -22,3 +22,6 @@ npm-debug.log*
 
 # Stockfish engine WASM binaries are fetched/vendored at build time (see THIRD_PARTY.md)
 /public/engine/
+
+# CI writes this with Supabase secrets at build time; never commit it
+.env.production

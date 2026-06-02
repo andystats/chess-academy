@@ -16,6 +16,24 @@ const TARGET_STYLE = {
   background: 'radial-gradient(circle, rgba(47,111,237,0.5) 22%, transparent 24%)',
 };
 
+// Duck Chess overlay. react-chessboard's `Piece`/`CustomPieces` types are a closed union of standard
+// piece codes, so the duck can't be a real piece — it's drawn as a square background instead. The
+// amber fill marks the square even if the emoji glyph fails to render; the glyph rides on top via a
+// data-URI SVG. Duck-target squares (where the duck may move this turn) get a softer amber dot.
+const DUCK_GLYPH = `data:image/svg+xml,${encodeURIComponent(
+  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50' y='54' font-size='66' text-anchor='middle' dominant-baseline='central'>🦆</text></svg>",
+)}`;
+const DUCK_STYLE = {
+  backgroundColor: 'rgba(250, 204, 21, 0.85)',
+  backgroundImage: `url("${DUCK_GLYPH}")`,
+  backgroundSize: '80%',
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'center',
+};
+const DUCK_TARGET_STYLE = {
+  background: 'radial-gradient(circle, rgba(234,179,8,0.55) 24%, transparent 26%)',
+};
+
 const BOARD_THEMES = {
   academy: {
     dark: '#7c9cc4',
@@ -38,11 +56,13 @@ function buildArrows(arrows) {
   return arrows.map(([from, to, color]) => [from, to, ARROW_COLORS[color] ?? DEFAULT_ARROW]);
 }
 
-function buildSquareStyles({ highlights, selectedSquare, legalTargets }) {
+function buildSquareStyles({ highlights, selectedSquare, legalTargets, duckSquare, duckTargets }) {
   const styles = {};
   for (const sq of highlights) styles[sq] = { ...HIGHLIGHT_STYLE };
   for (const sq of legalTargets) styles[sq] = { ...(styles[sq] ?? {}), ...TARGET_STYLE };
   if (selectedSquare) styles[selectedSquare] = { ...(styles[selectedSquare] ?? {}), ...SELECTED_STYLE };
+  for (const sq of duckTargets) styles[sq] = { ...(styles[sq] ?? {}), ...DUCK_TARGET_STYLE };
+  if (duckSquare) styles[duckSquare] = { ...(styles[duckSquare] ?? {}), ...DUCK_STYLE }; // duck wins its square
   return styles;
 }
 
@@ -57,6 +77,8 @@ export default function BoardPanel({
   highlights = [],
   selectedSquare = null,
   legalTargets = [],
+  duckSquare = null,
+  duckTargets = [],
   variant = 'academy',
   className = 'w-full max-w-[34rem]',
   animationDuration = variant === 'arena' ? 520 : 320,
@@ -75,7 +97,7 @@ export default function BoardPanel({
         onPromotionPieceSelect={onPromotionPieceSelect}
         onSquareClick={onSquareClick}
         customArrows={buildArrows(arrows)}
-        customSquareStyles={buildSquareStyles({ highlights, selectedSquare, legalTargets })}
+        customSquareStyles={buildSquareStyles({ highlights, selectedSquare, legalTargets, duckSquare, duckTargets })}
         customBoardStyle={{ borderRadius: 0 }}
         customDarkSquareStyle={{ backgroundColor: theme.dark }}
         customLightSquareStyle={{ backgroundColor: theme.light }}

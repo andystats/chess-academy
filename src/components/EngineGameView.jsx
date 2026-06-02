@@ -20,6 +20,8 @@ export default function EngineGameView({ game, panel }) {
           highlights={highlights}
           selectedSquare={game.selectedSquare}
           legalTargets={game.legalTargets}
+          duckSquare={game.duckSquare}
+          duckTargets={game.duckTargets}
         />
       }
       panel={panel}

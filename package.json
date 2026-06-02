@@ -19,6 +19,7 @@
     "validate-content": "node scripts/validate-content.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.106.2",
     "chess.js": "^1.4.0",
     "clsx": "^2.1.0",
     "lucide-react": "^0.344.0",

@@ -27,6 +27,18 @@ jobs:
       # On a project Pages site the app is served from /<repo>/, so the build
       # base path must match the repository name. The router reads it from
       # import.meta.env.BASE_URL, keeping client routes in sync.
+      # Multiplayer (online arena) talks to Supabase Realtime from the browser. The values are
+      # public-by-design (the anon key ships in the bundle; the channel is unauthenticated) and live
+      # in repo Actions secrets only so they aren't hard-coded here. We write them to .env.production
+      # rather than passing them via the step `env:` because Vite reliably inlines `import.meta.env`
+      # from .env files at build time; absent secrets just yield an empty file → online mode degrades
+      # gracefully (see src/lib/supabase.js).
+      - name: Write Supabase env for the build
+        run: |
+          {
+            echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}"
+            echo "VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}"
+          } > .env.production
       - name: Build
         run: npm run build
         env:
