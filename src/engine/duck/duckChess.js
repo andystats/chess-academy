@@ -1,5 +1,5 @@
-// The Duck Chess engine: a stateful game object mirroring how src/engine/useLocalGame.js drives a
-// mutable chess.js instance, but for the variant. A turn is two phases — move a piece, then move the
+// The Duck Chess engine: a stateful game object, the variant's counterpart to driving a mutable
+// chess.js instance. A turn is two phases — move a piece, then move the
 // duck to an empty square — modelled by `state.phase` ('piece' → 'duck' → flip to opponent's 'piece').
 // There is no check or checkmate; the ONLY terminal condition is capturing the enemy king, which ends
 // the game immediately in the piece phase (the winner does not place a duck).

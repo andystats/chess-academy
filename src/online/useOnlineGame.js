@@ -1,7 +1,7 @@
 // The online game controller: composes a rules instance (src/online/rules.js) with the realtime
-// transport (useGameChannel.js) and exposes the same game-object contract the arena view consumes
-// (see src/engine/useLocalGame.js), plus a few online extras (duckSquare, duckTargets, phase,
-// connection, selfColor, resync).
+// transport (useGameChannel.js) and exposes the game-object contract the arena view consumes
+// (EngineGameView + BoardPanel), plus a few online extras (duckSquare, duckTargets, phase,
+// connection, selfColor, resync, and chat: messages + sendChat).
 //
 // Authority model — the HOST (game creator) is the sole source of truth:
 //   - Both players apply their own completed turn to a local rules instance immediately (optimistic),
@@ -62,6 +62,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   const [selection, setSelection] = useState({ selectedSquare: null, legalTargets: [] });
   const [orientation, setOrientation] = useState(selfColor);
   const [synced, setSynced] = useState(isHost || Boolean(loadSnapshot(gameId)));
+  const [messages, setMessages] = useState([]); // chat — peer-to-peer, ephemeral
 
   const sync = useCallback(() => {
     setView(snapshotView(gameRef.current));
@@ -129,17 +130,26 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     [variant, gameId, sync],
   );
 
+  // Chat is peer-to-peer (both sides send and receive), independent of the host-authoritative game
+  // sync, so its handler is wired for both roles.
+  const handleChat = useCallback((message) => {
+    if (message?.text) setMessages((prev) => [...prev, message]);
+  }, []);
+
   const channel = useGameChannel({
     gameId,
     selfId,
     isHost,
-    handlers: isHost
-      ? {
-          onMoveIntent: applyIntent,
-          onRequestSnapshot: () => broadcastAuthoritative(false),
-          onPeerJoin: () => broadcastAuthoritative(false),
-        }
-      : { onSnapshot: adoptSnapshot },
+    handlers: {
+      onChat: handleChat,
+      ...(isHost
+        ? {
+            onMoveIntent: applyIntent,
+            onRequestSnapshot: () => broadcastAuthoritative(false),
+            onPeerJoin: () => broadcastAuthoritative(false),
+          }
+        : { onSnapshot: adoptSnapshot }),
+    },
   });
   // Track the channel in a ref (updated after render) so the memoized callbacks above can reach it
   // without depending on its identity, which breaks the define-before-useGameChannel ordering.
@@ -217,7 +227,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
         return;
       }
       if (!canMovePiece) return;
-      // Piece phase: tap-to-move selection, mirroring useLocalGame.
+      // Piece phase: tap-to-move selection (select a piece, then tap a destination).
       if (selection.selectedSquare) {
         if (square === selection.selectedSquare) {
           setSelection({ selectedSquare: null, legalTargets: [] });
@@ -248,6 +258,17 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     if (isHost) broadcastAuthoritative(false);
     else channelRef.current?.requestSnapshot();
   }, [isHost, broadcastAuthoritative]);
+
+  const sendChat = useCallback(
+    (text) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      const message = { id: `${selfId}-${Date.now()}`, by: selfColor, text: trimmed };
+      setMessages((prev) => [...prev, message]); // show our own message at once (broadcast self:false)
+      channelRef.current?.sendChat(message);
+    },
+    [selfId, selfColor],
+  );
 
   // Only computed during your own duck phase (a narrow window), so the per-render scan is negligible.
   const duckTargets =
@@ -280,6 +301,8 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     duckTargets,
     selfColor,
     resync,
+    messages,
+    sendChat,
     connection: { status: channel.status, peerPresent: channel.peerPresent, synced },
   };
 }

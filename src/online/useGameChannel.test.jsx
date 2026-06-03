@@ -57,15 +57,18 @@ describe('useGameChannel', () => {
     const onSnapshot = vi.fn();
     const onMoveIntent = vi.fn();
     const onRequestSnapshot = vi.fn();
-    setup({ onSnapshot, onMoveIntent, onRequestSnapshot });
+    const onChat = vi.fn();
+    setup({ onSnapshot, onMoveIntent, onRequestSnapshot, onChat });
 
     act(() => fake.emit('broadcast', 'snapshot', { payload: { seq: 3 } }));
     act(() => fake.emit('broadcast', 'move-intent', { payload: { turnId: 1 } }));
     act(() => fake.emit('broadcast', 'request-snapshot', { payload: { by: 'them' } }));
+    act(() => fake.emit('broadcast', 'chat', { payload: { id: 'm1', by: 'white', text: 'hi' } }));
 
     expect(onSnapshot).toHaveBeenCalledWith({ seq: 3 });
     expect(onMoveIntent).toHaveBeenCalledWith({ turnId: 1 });
     expect(onRequestSnapshot).toHaveBeenCalledWith({ by: 'them' });
+    expect(onChat).toHaveBeenCalledWith({ id: 'm1', by: 'white', text: 'hi' });
   });
 
   it('reports a peer once a non-self presence appears, and fires onPeerJoin', () => {
@@ -86,9 +89,11 @@ describe('useGameChannel', () => {
     act(() => result.current.sendMoveIntent({ turnId: 7 }));
     act(() => result.current.broadcastSnapshot({ seq: 2 }));
     act(() => result.current.requestSnapshot());
+    act(() => result.current.sendChat({ id: 'm1', by: 'white', text: 'gg' }));
 
     expect(fake.channel.send).toHaveBeenCalledWith({ type: 'broadcast', event: 'move-intent', payload: { turnId: 7 } });
     expect(fake.channel.send).toHaveBeenCalledWith({ type: 'broadcast', event: 'snapshot', payload: { seq: 2 } });
     expect(fake.channel.send).toHaveBeenCalledWith({ type: 'broadcast', event: 'request-snapshot', payload: { by: 'me' } });
+    expect(fake.channel.send).toHaveBeenCalledWith({ type: 'broadcast', event: 'chat', payload: { id: 'm1', by: 'white', text: 'gg' } });
   });
 });

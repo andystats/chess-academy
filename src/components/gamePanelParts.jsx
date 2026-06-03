@@ -1,7 +1,7 @@
 import { PIECE_SYMBOLS } from '../engine/gameState.js';
 
-// Presentation helpers shared by the two game control panels (LocalGamePanel, OnlineGamePanel): the
-// result line, the captured-pieces grid, and move-list pairing. Kept here so the panels don't drift.
+// Presentation helpers for the game control panel(s): the result line, the captured-pieces grid, and
+// move-list pairing. Kept separate so they're easy to reuse if another panel is added later.
 
 /** Human-readable outcome, or null while the game is ongoing. */
 export function resultText(result) {

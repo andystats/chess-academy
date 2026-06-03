@@ -13,6 +13,7 @@ const { transport } = vi.hoisted(() => ({
     broadcastSnapshot: vi.fn(),
     sendMoveIntent: vi.fn(),
     requestSnapshot: vi.fn(),
+    sendChat: vi.fn(),
   },
 }));
 
@@ -25,6 +26,7 @@ vi.mock('./useGameChannel.js', () => ({
       broadcastSnapshot: transport.broadcastSnapshot,
       sendMoveIntent: transport.sendMoveIntent,
       requestSnapshot: transport.requestSnapshot,
+      sendChat: transport.sendChat,
     };
   },
 }));
@@ -44,6 +46,7 @@ beforeEach(() => {
   transport.broadcastSnapshot.mockClear();
   transport.sendMoveIntent.mockClear();
   transport.requestSnapshot.mockClear();
+  transport.sendChat.mockClear();
 });
 
 describe('host (standard)', () => {
@@ -161,5 +164,26 @@ describe('king capture (duck, host resumes from a seeded snapshot)', () => {
     expect(result.current.result).toEqual({ winner: 'white', reason: 'King captured' });
     expect(result.current.status).toBe('over');
     expect(result.current.arePiecesDraggable).toBe(false);
+  });
+});
+
+describe('chat', () => {
+  const props = { gameId: 'gc', variant: 'standard', selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
+
+  it('appends + broadcasts your own message, appends a received one, and ignores blanks', () => {
+    const { result } = renderHook(() => useOnlineGame(props));
+
+    act(() => result.current.sendChat('  hello  '));
+    expect(result.current.messages).toHaveLength(1);
+    expect(result.current.messages[0]).toMatchObject({ by: 'white', text: 'hello' }); // trimmed
+    expect(transport.sendChat).toHaveBeenCalledTimes(1);
+
+    act(() => transport.handlers.onChat({ id: 'x', by: 'black', text: 'hi back' }));
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.messages[1]).toMatchObject({ by: 'black', text: 'hi back' });
+
+    act(() => result.current.sendChat('   '));
+    expect(result.current.messages).toHaveLength(2); // whitespace-only is dropped
+    expect(transport.sendChat).toHaveBeenCalledTimes(1);
   });
 });

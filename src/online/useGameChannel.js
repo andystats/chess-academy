@@ -7,6 +7,8 @@
 //   - move-intent      {turnId, by, pieceMove:{from,to,promotion}, duckSquare?}  either player → host
 //   - snapshot         {seq, variant, hostColor, players:{white,black}, state}    host → everyone
 //   - request-snapshot {by}                                                       joiner/Resync → host
+//   - chat             {id, by, text}                                             either player → both
+// Chat is peer-to-peer and ephemeral (not part of the authoritative game snapshot).
 //
 // We never set `private: true` (that would require Realtime Authorization/RLS); the channel is public,
 // authorized by the anon key alone. `broadcast.self:false` means a sender never hears its own events.
@@ -39,6 +41,7 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
       .on('broadcast', { event: 'snapshot' }, ({ payload }) => fire('onSnapshot', payload))
       .on('broadcast', { event: 'move-intent' }, ({ payload }) => fire('onMoveIntent', payload))
       .on('broadcast', { event: 'request-snapshot' }, ({ payload }) => fire('onRequestSnapshot', payload))
+      .on('broadcast', { event: 'chat' }, ({ payload }) => fire('onChat', payload))
       .on('presence', { event: 'sync' }, () => {
         const ids = Object.keys(channel.presenceState());
         setPeerPresent(ids.some((id) => id !== selfId));
@@ -71,5 +74,6 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
     broadcastSnapshot: (snapshot) => send('snapshot', snapshot),
     sendMoveIntent: (intent) => send('move-intent', intent),
     requestSnapshot: () => send('request-snapshot', { by: selfId }),
+    sendChat: (message) => send('chat', message),
   };
 }

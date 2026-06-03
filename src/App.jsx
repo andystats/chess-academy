@@ -8,7 +8,6 @@ import GlossaryPage from './routes/GlossaryPage.jsx';
 import ArenaPage from './routes/ArenaPage.jsx';
 import ScenarioPage from './routes/ScenarioPage.jsx';
 import FreePlayPage from './routes/FreePlayPage.jsx';
-import LocalPlayPage from './routes/LocalPlayPage.jsx';
 import OnlineLobbyPage from './routes/OnlineLobbyPage.jsx';
 import OnlinePlayPage from './routes/OnlinePlayPage.jsx';
 import ComingSoonPage from './routes/ComingSoonPage.jsx';
@@ -33,7 +32,6 @@ export default function App() {
             <Route path="/glossary" element={<GlossaryPage />} />
             <Route path="/arena" element={<ArenaPage />} />
             <Route path="/arena/free" element={<FreePlayPage />} />
-            <Route path="/arena/local" element={<LocalPlayPage />} />
             <Route path="/arena/online" element={<OnlineLobbyPage />} />
             <Route path="/play/:gameId" element={<OnlinePlayPage />} />
             <Route path="/arena/scenario/*" element={<ScenarioPage />} />
