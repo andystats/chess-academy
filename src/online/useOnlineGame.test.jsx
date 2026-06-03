@@ -167,6 +167,57 @@ describe('king capture (duck, host resumes from a seeded snapshot)', () => {
   });
 });
 
+describe('robustness', () => {
+  const hostProps = { gameId: 'rh', variant: 'standard', selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
+  const joinerProps = { gameId: 'rj', variant: 'standard', selfColor: 'black', isHost: false, hostColor: 'white', selfId: 'joiner' };
+
+  it('re-syncs on (re)connect: host re-publishes, joiner re-requests', () => {
+    const host = renderHook(() => useOnlineGame(hostProps));
+    transport.broadcastSnapshot.mockClear();
+    act(() => transport.handlers.onSubscribed());
+    expect(transport.broadcastSnapshot).toHaveBeenCalledTimes(1);
+
+    const joiner = renderHook(() => useOnlineGame(joinerProps));
+    transport.requestSnapshot.mockClear();
+    act(() => transport.handlers.onSubscribed());
+    expect(transport.requestSnapshot).toHaveBeenCalled();
+    joiner.unmount();
+    host.unmount();
+  });
+
+  it('host re-publishes (without re-applying) when a known player resends a stale move', () => {
+    const { result } = renderHook(() => useOnlineGame(hostProps));
+    act(() => result.current.onPieceDrop('e2', 'e4')); // seq 2, black to move
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: { from: 'e7', to: 'e5', promotion: 'q' }, duckSquare: null })); // seq 3, white to move
+    transport.broadcastSnapshot.mockClear();
+
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: { from: 'e7', to: 'e5', promotion: 'q' }, duckSquare: null })); // stale duplicate
+    expect(transport.broadcastSnapshot).toHaveBeenCalledTimes(1);
+    expect(transport.broadcastSnapshot.mock.calls[0][0].seq).toBe(3); // re-published, not re-applied
+    expect(result.current.currentTurn).toBe('white');
+  });
+
+  it('joiner resends an unconfirmed move-intent until a newer snapshot clears it', () => {
+    vi.useFakeTimers();
+    try {
+      const { result } = renderHook(() => useOnlineGame(joinerProps));
+      act(() => transport.handlers.onSnapshot({ seq: 2, variant: 'standard', hostColor: 'white', players: { white: 'host', black: 'joiner' }, state: fenAfter('standard', { from: 'e2', to: 'e4' }) }));
+      act(() => result.current.onPieceDrop('e7', 'e5'));
+      expect(transport.sendMoveIntent).toHaveBeenCalledTimes(1);
+
+      act(() => vi.advanceTimersByTime(2600));
+      const afterRetry = transport.sendMoveIntent.mock.calls.length;
+      expect(afterRetry).toBeGreaterThan(1); // resent while unconfirmed
+
+      act(() => transport.handlers.onSnapshot({ seq: 3, variant: 'standard', hostColor: 'white', players: { white: 'host', black: 'joiner' }, state: fenAfter('standard', { from: 'e2', to: 'e4' }, { from: 'e7', to: 'e5' }) }));
+      act(() => vi.advanceTimersByTime(5200));
+      expect(transport.sendMoveIntent.mock.calls.length).toBe(afterRetry); // confirmed → no more resends
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('chat', () => {
   const props = { gameId: 'gc', variant: 'standard', selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
 

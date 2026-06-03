@@ -53,6 +53,12 @@ describe('useGameChannel', () => {
     expect(fake.channel.track).toHaveBeenCalledWith({ id: 'me', isHost: true });
   });
 
+  it('fires onSubscribed on (re)connect so the controller can re-sync', () => {
+    const onSubscribed = vi.fn();
+    setup({ onSubscribed });
+    expect(onSubscribed).toHaveBeenCalled();
+  });
+
   it('routes incoming broadcasts to the matching handler', () => {
     const onSnapshot = vi.fn();
     const onMoveIntent = vi.fn();

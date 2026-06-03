@@ -21,6 +21,7 @@ function statusText(game) {
   if (result) return resultText(result);
   if (connection.status === 'unconfigured') return 'Online play is not configured';
   if (connection.status === 'connecting') return 'Connecting…';
+  if (connection.status === 'reconnecting') return 'Reconnecting…';
   if (connection.status === 'error') return 'Connection lost — try Resync';
   if (!connection.synced) return 'Waiting for host…';
   if (!connection.peerPresent) return 'Waiting for opponent…';

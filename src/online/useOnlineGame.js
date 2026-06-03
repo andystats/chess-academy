@@ -19,7 +19,9 @@ import { createVariantGame, lastMoveOf } from './rules.js';
 import { useGameChannel } from './useGameChannel.js';
 import { loadSnapshot, saveSnapshot } from './localSnapshot.js';
 
-const RESYNC_INTERVAL_MS = 900;
+const RESYNC_INTERVAL_MS = 900; // joiner polls this fast until first synced (handshake)
+const IDLE_RESYNC_MS = 6000; // once synced, joiner pulls this slowly while waiting on the opponent
+const MOVE_RETRY_MS = 2500; // joiner resends an unconfirmed move-intent this often
 
 function snapshotView(game) {
   const phase = game.phase();
@@ -40,6 +42,9 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   const seqRef = useRef(0);
   const playersRef = useRef({ white: null, black: null });
   const pendingPieceMoveRef = useRef(null);
+  // The joiner's last move-intent that the host hasn't confirmed yet (cleared when a newer snapshot
+  // arrives). Resent on an interval so a single lost message can't deadlock the game.
+  const pendingIntentRef = useRef(null);
 
   // Lazily build the starting rules instance: host resumes from its persisted snapshot on reload;
   // the joiner starts from any persisted snapshot and otherwise waits for the host's first snapshot.
@@ -105,7 +110,14 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       // from any other id are ignored. With a public channel this is trust-on-first-move, which is
       // fine for a private invite link shared between two friends (the link is the access control).
       if (playersRef.current[color] == null) playersRef.current[color] = intent.by;
-      if (intent.by !== playersRef.current[color]) return; // not the player whose turn it is
+      if (intent.by !== playersRef.current[color]) {
+        // Not whose turn it is. If it's the other known player resending a move we already applied
+        // (their snapshot was lost), re-publish current state so they catch up; never re-apply. A
+        // stray third party is ignored outright.
+        const knownPlayer = intent.by === playersRef.current.white || intent.by === playersRef.current.black;
+        if (knownPlayer) broadcastAuthoritative(false);
+        return;
+      }
 
       if (!game.movePiece(intent.pieceMove).ok) return broadcastAuthoritative(true); // illegal → resync
       if (game.phase() === 'duck' && !game.result()) {
@@ -121,6 +133,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     (snapshot) => {
       if (!snapshot || snapshot.seq <= seqRef.current) return;
       seqRef.current = snapshot.seq;
+      pendingIntentRef.current = null; // a newer authoritative state means our move was applied or rolled back
       if (snapshot.players) playersRef.current = snapshot.players;
       gameRef.current = createVariantGame(snapshot.variant || variant, snapshot.state);
       saveSnapshot(gameId, snapshot);
@@ -142,6 +155,10 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     isHost,
     handlers: {
       onChat: handleChat,
+      // Fired on every (re)connect: the host re-publishes current state; the joiner pulls it.
+      onSubscribed: isHost
+        ? () => broadcastAuthoritative(false)
+        : () => channelRef.current?.requestSnapshot(),
       ...(isHost
         ? {
             onMoveIntent: applyIntent,
@@ -157,13 +174,28 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     channelRef.current = channel;
   });
 
-  // Joiner: keep asking for a snapshot until we have one (covers "joiner subscribed before host").
+  // Joiner pulls the authoritative snapshot: fast until first synced (handshake races / late host),
+  // then slowly while waiting on the opponent as a safety net for a missed snapshot. No polling on
+  // your own turn — you already hold the latest state. The host is authoritative and never pulls.
+  const waitingForState = view.currentTurn !== selfColor || !synced;
   useEffect(() => {
-    if (isHost || synced || channel.status !== 'connected') return undefined;
-    channel.requestSnapshot();
-    const id = setInterval(() => channel.requestSnapshot(), RESYNC_INTERVAL_MS);
+    if (isHost || channel.status !== 'connected') return undefined;
+    channelRef.current?.requestSnapshot();
+    if (!waitingForState) return undefined;
+    const interval = synced ? IDLE_RESYNC_MS : RESYNC_INTERVAL_MS;
+    const id = setInterval(() => channelRef.current?.requestSnapshot(), interval);
     return () => clearInterval(id);
-  }, [isHost, synced, channel.status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isHost, synced, waitingForState, channel.status]);
+
+  // Joiner: resend an unconfirmed move-intent until a newer snapshot clears it, so one dropped message
+  // can't leave both players waiting on each other forever.
+  useEffect(() => {
+    if (isHost) return undefined;
+    const id = setInterval(() => {
+      if (pendingIntentRef.current) channelRef.current?.sendMoveIntent(pendingIntentRef.current);
+    }, MOVE_RETRY_MS);
+    return () => clearInterval(id);
+  }, [isHost]);
 
   // --- Local interaction ---
 
@@ -179,7 +211,9 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       if (isHost) {
         broadcastAuthoritative(true);
       } else {
-        channelRef.current?.sendMoveIntent({ by: selfId, pieceMove, duckSquare });
+        const intent = { by: selfId, pieceMove, duckSquare };
+        pendingIntentRef.current = intent; // retransmit until a newer snapshot confirms/rolls back
+        channelRef.current?.sendMoveIntent(intent);
         sync();
       }
     },
