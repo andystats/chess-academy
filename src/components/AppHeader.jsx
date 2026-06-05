@@ -19,8 +19,8 @@ export default function AppHeader() {
             Chess <span className="font-book italic font-semibold normal-case tracking-normal text-brand-500">Academy</span>
           </span>
         </Link>
-        <nav className="order-last w-full overflow-x-auto sm:order-none sm:ml-auto sm:w-auto">
-          <ul className="flex items-center gap-1 whitespace-nowrap font-mono text-xs font-bold uppercase tracking-wide sm:gap-2">
+        <nav className="order-last w-full sm:order-none sm:ml-auto sm:w-auto">
+          <ul className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1 font-mono text-xs font-bold uppercase tracking-wide sm:justify-end sm:gap-x-2">
             {LINKS.map((link) => (
               <li key={link.to}>
                 <NavLink

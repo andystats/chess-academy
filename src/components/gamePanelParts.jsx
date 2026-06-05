@@ -24,18 +24,29 @@ export function pairMoves(history, label = (entry) => entry ?? '') {
 
 function CapturedRow({ label, color, pieces }) {
   return (
-    <div>
+    <div className="min-w-0">
       <p className="font-mono text-[0.65rem] font-bold uppercase tracking-wide text-gray-500">{label}</p>
-      <p className="mt-1 min-h-7 text-2xl leading-none text-foreground" aria-label={`${label}: ${pieces.join(', ') || 'none'}`}>
-        {pieces.length ? pieces.map((piece, index) => <span key={`${piece}-${index}`}>{PIECE_SYMBOLS[color][piece]}</span>) : '—'}
-      </p>
+      <div
+        className="mt-2 flex min-h-16 flex-wrap content-start items-start gap-x-1 gap-y-2 text-2xl leading-none text-foreground"
+        aria-label={`${label}: ${pieces.join(', ') || 'none'}`}
+      >
+        {pieces.length ? (
+          pieces.map((piece, index) => (
+            <span key={`${piece}-${index}`} className="inline-flex h-7 w-6 items-center justify-center">
+              {PIECE_SYMBOLS[color][piece]}
+            </span>
+          ))
+        ) : (
+          <span className="inline-flex h-7 items-center">—</span>
+        )}
+      </div>
     </div>
   );
 }
 
 export function CapturedPieces({ captured }) {
   return (
-    <div className="grid gap-3 border-3 border-foreground bg-white p-4 text-sm sm:grid-cols-2">
+    <div className="grid gap-4 border-3 border-foreground bg-white p-4 text-sm sm:grid-cols-2">
       <CapturedRow label="White lost" color="white" pieces={captured.white} />
       <CapturedRow label="Black lost" color="black" pieces={captured.black} />
     </div>
