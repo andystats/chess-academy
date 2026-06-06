@@ -62,7 +62,7 @@ export default function ArenaPage() {
               <Globe size={18} /> Play a friend
             </Link>
             <a
-              href="https://github.com/andywilson1/chess-academy"
+              href="https://github.com/andystats/chess-academy"
               className="tao-btn-ghost"
               target="_blank"
               rel="noreferrer"

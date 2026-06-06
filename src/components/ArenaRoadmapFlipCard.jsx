@@ -32,7 +32,7 @@ export default function ArenaRoadmapFlipCard() {
           </h2>
         </div>
         <a
-          href="https://github.com/andywilson1/chess-academy"
+          href="https://github.com/andystats/chess-academy"
           className="tao-btn-ghost self-start text-sm"
           target="_blank"
           rel="noreferrer"
