@@ -2,11 +2,8 @@ import { NavLink, Link } from 'react-router-dom';
 import clsx from 'clsx';
 
 const LINKS = [
-  { to: '/', label: 'Atrium', end: true },
-  { to: '/training', label: 'Mental Checklist' },
-  { to: '/my-system', label: 'My System' },
-  { to: '/arena', label: 'Arena' },
-  { to: '/glossary', label: 'Glossary' },
+  { to: '/', label: 'Arena', end: true },
+  { to: '/#make-your-own', label: 'Make Your Own', hash: true },
 ];
 
 export default function AppHeader() {
@@ -23,20 +20,29 @@ export default function AppHeader() {
           <ul className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1 font-mono text-xs font-bold uppercase tracking-wide sm:justify-end sm:gap-x-2">
             {LINKS.map((link) => (
               <li key={link.to}>
-                <NavLink
-                  to={link.to}
-                  end={link.end}
-                  className={({ isActive }) =>
-                    clsx(
-                      'px-2 py-1.5 transition-colors',
-                      isActive
-                        ? 'border-b-2 border-foreground font-extrabold text-foreground'
-                        : 'border-b-2 border-transparent text-gray-500 hover:text-brand-600',
-                    )
-                  }
-                >
-                  {link.label}
-                </NavLink>
+                {link.hash ? (
+                  <Link
+                    to={link.to}
+                    className="border-b-2 border-transparent px-2 py-1.5 text-gray-500 transition-colors hover:text-brand-600"
+                  >
+                    {link.label}
+                  </Link>
+                ) : (
+                  <NavLink
+                    to={link.to}
+                    end={link.end}
+                    className={({ isActive }) =>
+                      clsx(
+                        'px-2 py-1.5 transition-colors',
+                        isActive
+                          ? 'border-b-2 border-foreground font-extrabold text-foreground'
+                          : 'border-b-2 border-transparent text-gray-500 hover:text-brand-600',
+                      )
+                    }
+                  >
+                    {link.label}
+                  </NavLink>
+                )}
               </li>
             ))}
           </ul>

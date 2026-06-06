@@ -1,63 +1,71 @@
-import { useState } from 'react';
-import { ChevronRight, RotateCcw } from 'lucide-react';
+import { Code2, Github, Rocket, Settings2 } from 'lucide-react';
 
-const PHASES = [
-  'Local two-player standard chess: shared board, legal moves, history, captured pieces.',
-  'Duck Chess local rules: move a piece, place the duck, block lines, then pass the turn.',
-  'Invite-link rooms: create a room, join as White or Black, sync moves in realtime.',
-  'Persistence and polish: clocks, rematches, game records, spectators, and variant study boards.',
+const STEPS = [
+  {
+    icon: Github,
+    title: 'Clone it',
+    text: 'Fork the GitHub repo, clone your fork, and install the app locally.',
+    command: 'git clone <your-fork-url>\nnpm install',
+  },
+  {
+    icon: Code2,
+    title: 'Change the room',
+    text: 'Edit the React components, add practice positions, tune the styling, or swap in your own chess variants.',
+    command: 'npm run dev',
+  },
+  {
+    icon: Rocket,
+    title: 'Host it',
+    text: 'Push to GitHub and connect the repo to Vercel. Static play works immediately; online rooms use Supabase Realtime env vars.',
+    command: 'VITE_SUPABASE_URL=...\nVITE_SUPABASE_ANON_KEY=...',
+  },
 ];
 
 export default function ArenaRoadmapFlipCard() {
-  const [flipped, setFlipped] = useState(false);
-
   return (
-    <section className="mx-auto max-w-6xl px-4 py-12">
-      <button
-        type="button"
-        onClick={() => setFlipped((value) => !value)}
-        className="group block w-full text-left [perspective:1200px]"
-        aria-pressed={flipped}
-      >
-        <div
-          className={`relative min-h-[17rem] transition-transform duration-500 [transform-style:preserve-3d] ${
-            flipped ? '[transform:rotateY(180deg)]' : ''
-          }`}
-        >
-          <div className="tao-card absolute inset-0 flex flex-col justify-between p-6 [backface-visibility:hidden] sm:p-8">
-            <div>
-              <p className="font-mono text-xs font-bold uppercase tracking-wide text-brand-600">Work in progress</p>
-              <h2 className="mt-3 font-display text-3xl font-bold uppercase tracking-tight text-foreground">
-                Two-player and Duck Chess roadmap
-              </h2>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-gray-600">
-                We are starting with the smallest playable loop, then adding the variant rules and online rooms once
-                the local game state is solid.
-              </p>
-            </div>
-            <span className="mt-6 inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wide text-brand-600">
-              Flip for the build plan <ChevronRight size={16} />
-            </span>
-          </div>
-
-          <div className="tao-card absolute inset-0 flex flex-col justify-between bg-foreground p-6 text-white [backface-visibility:hidden] [transform:rotateY(180deg)] sm:p-8">
-            <div>
-              <p className="font-mono text-xs font-bold uppercase tracking-wide text-brand-300">Phased plan</p>
-              <ol className="mt-4 space-y-3">
-                {PHASES.map((phase, index) => (
-                  <li key={phase} className="flex gap-3 text-sm leading-6 text-gray-100">
-                    <span className="font-mono font-bold text-brand-300">{String(index + 1).padStart(2, '0')}</span>
-                    <span>{phase}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-            <span className="mt-6 inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wide text-brand-300">
-              <RotateCcw size={16} /> Flip back
-            </span>
-          </div>
+    <section id="make-your-own" className="mx-auto max-w-6xl px-4 py-12">
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="font-mono text-xs font-bold uppercase tracking-wide text-brand-600">Make your own</p>
+          <h2 className="mt-2 font-display text-3xl font-bold uppercase tracking-tight text-foreground">
+            Clone the room, change the rules
+          </h2>
         </div>
-      </button>
+        <a
+          href="https://github.com/andywilson1/chess-academy"
+          className="tao-btn-ghost self-start text-sm"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <Github size={16} /> Open repo
+        </a>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        {STEPS.map(({ icon: Icon, title, text, command }) => (
+          <article key={title} className="tao-card flex min-h-[17rem] flex-col p-5">
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="font-display text-xl font-bold uppercase tracking-tight text-foreground">{title}</h3>
+              <Icon className="shrink-0 text-brand-500" size={24} />
+            </div>
+            <p className="mt-3 text-sm leading-6 text-gray-600">{text}</p>
+            <pre className="mt-auto overflow-x-auto border-2 border-foreground bg-foreground p-3 font-mono text-xs leading-5 text-brand-100">
+              <code>{command}</code>
+            </pre>
+          </article>
+        ))}
+      </div>
+
+      <div className="mt-5 border-3 border-foreground bg-brand-50/40 p-5">
+        <div className="flex items-start gap-3">
+          <Settings2 className="mt-1 shrink-0 text-brand-600" size={20} />
+          <p className="text-sm leading-6 text-gray-700">
+            The stack is intentionally ordinary: Vite, React, Tailwind, chess.js, Stockfish, Supabase
+            Realtime for invite-link games, and Vercel for hosting. That keeps the Arena easy to read,
+            easy to remix, and cheap to run.
+          </p>
+        </div>
+      </div>
     </section>
   );
 }

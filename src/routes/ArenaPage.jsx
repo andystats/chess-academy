@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ArrowRight, Swords, Cpu, Globe } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Swords, Cpu, Globe, Github } from 'lucide-react';
 import { listScenarios, getContent } from '../content/registry.js';
 import { useProfile } from '../profile/ProfileContext.jsx';
-import SectionHeader from '../components/ui/SectionHeader.jsx';
 import Badge from '../components/ui/Badge.jsx';
 import ArenaRoadmapFlipCard from '../components/ArenaRoadmapFlipCard.jsx';
+import StylizedKingScene from '../components/StylizedKingScene.jsx';
 
 // Strip the "scenarios/" id prefix to build the route, mirroring how lesson ids map to /lesson/*.
 const scenarioSlug = (scenario) => scenario.id.replace(/^scenarios\//, '');
@@ -42,17 +42,38 @@ export default function ArenaPage() {
 
   return (
     <div className="bg-white">
-      <section className="mx-auto max-w-6xl px-4 py-12">
-        <SectionHeader
-          eyebrow="Practice arena"
-          title="Try the ideas against a"
-          accent="real engine."
-          size="xl"
-        >
-          Lessons teach the idea; here you apply it. Each scenario sets up a position straight from a
-          lesson — make the key move, then convert against Stockfish. Or just play a full game at the
-          strength you choose.
-        </SectionHeader>
+      <section className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-8 md:py-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div>
+          <p className="font-mono text-xs font-bold uppercase tracking-wide text-brand-600">Open-source chess room</p>
+          <h1 className="mt-2 font-display text-4xl font-extrabold uppercase leading-tight tracking-tight text-foreground md:text-6xl">
+            Chess Academy <span className="font-book italic font-semibold normal-case tracking-normal text-brand-500">Arena</span>
+          </h1>
+          <div className="gradient-divider mt-5 w-24" />
+          <p className="mt-5 max-w-3xl text-base leading-7 text-gray-700 md:text-lg md:leading-8">
+            A convenient, playable chess space you can run in a browser: Stockfish free play, focused
+            practice positions, and invite-link games with standard chess or Duck Chess. The code is
+            public, small enough to fork, and built for quick experiments.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Link to="/arena/free" className="tao-btn-primary">
+              <Cpu size={18} /> Play engine
+            </Link>
+            <Link to="/arena/online" className="tao-btn-ghost">
+              <Globe size={18} /> Play a friend
+            </Link>
+            <a
+              href="https://github.com/andywilson1/chess-academy"
+              className="tao-btn-ghost"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Github size={18} /> GitHub
+            </a>
+          </div>
+        </div>
+        <div className="mx-auto w-full max-w-64 overflow-hidden lg:justify-self-end">
+          <StylizedKingScene className="h-44 w-full md:h-52" />
+        </div>
       </section>
 
       <section className="mx-auto grid max-w-6xl gap-4 px-4 pb-12 lg:grid-cols-2">
@@ -60,7 +81,7 @@ export default function ArenaPage() {
           to="/arena/free"
           icon={<Cpu className="shrink-0 text-brand-500" size={36} />}
           title="Free Play vs Engine"
-          text="Pick a side and a strength, optionally start from any position, and play a full game."
+          text="Pick a side and strength, load any legal FEN, and play a complete game against Stockfish."
         />
         <ArenaModeLink
           to="/arena/online"
@@ -74,7 +95,7 @@ export default function ArenaPage() {
         <div className="mx-auto max-w-6xl px-4 py-12">
           <div className="mb-8 flex items-center gap-2">
             <Swords className="text-brand-500" size={22} />
-            <h2 className="font-display text-3xl font-bold uppercase tracking-tight text-foreground">Lesson scenarios</h2>
+            <h2 className="font-display text-3xl font-bold uppercase tracking-tight text-foreground">Practice positions</h2>
           </div>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {scenarios.map((scenario) => (

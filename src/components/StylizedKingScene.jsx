@@ -64,7 +64,7 @@ function makeKing() {
   return group;
 }
 
-export default function StylizedKingScene() {
+export default function StylizedKingScene({ className = 'h-[18rem] w-full md:h-[24rem] lg:h-[26rem]' }) {
   const mountRef = useRef(null);
 
   useEffect(() => {
@@ -157,7 +157,7 @@ export default function StylizedKingScene() {
   return (
     <div
       ref={mountRef}
-      className="h-[18rem] w-full md:h-[24rem] lg:h-[26rem]"
+      className={className}
       aria-label="Spinning stylized chess king"
       role="img"
     />

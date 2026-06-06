@@ -1,10 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+import { Navigate, Routes, Route } from 'react-router-dom';
 import AppHeader from './components/AppHeader.jsx';
-import HomePage from './routes/HomePage.jsx';
-import LessonPage from './routes/LessonPage.jsx';
-import MySystemPage from './routes/MySystemPage.jsx';
-import TrainingPage from './routes/TrainingPage.jsx';
-import GlossaryPage from './routes/GlossaryPage.jsx';
 import ArenaPage from './routes/ArenaPage.jsx';
 import ScenarioPage from './routes/ScenarioPage.jsx';
 import FreePlayPage from './routes/FreePlayPage.jsx';
@@ -25,11 +20,11 @@ export default function App() {
       ) : (
         <main>
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/training" element={<TrainingPage />} />
-            <Route path="/lesson/*" element={<LessonPage />} />
-            <Route path="/my-system" element={<MySystemPage />} />
-            <Route path="/glossary" element={<GlossaryPage />} />
+            <Route path="/" element={<ArenaPage />} />
+            <Route path="/training" element={<Navigate to="/" replace />} />
+            <Route path="/lesson/*" element={<Navigate to="/" replace />} />
+            <Route path="/my-system" element={<Navigate to="/" replace />} />
+            <Route path="/glossary" element={<Navigate to="/#make-your-own" replace />} />
             <Route path="/arena" element={<ArenaPage />} />
             <Route path="/arena/free" element={<FreePlayPage />} />
             <Route path="/arena/online" element={<OnlineLobbyPage />} />
