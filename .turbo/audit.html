@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Academy — Project Health Audit · 2026-06-10</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Spline+Sans:wght@300..700&family=Spline+Sans+Mono:wght@300..700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#faf7f0; --paper-deep:#f3eee2; --ink:#1d1c18; --ink-soft:#54514a; --ink-faint:#8a857a;
+  --line:#e3dccb; --accent:#1d5c4d; --accent-soft:#e3ede8;
+  --p0:#a31621; --p0-bg:#f9e7e8; --p1:#b4520a; --p1-bg:#f9ecdf; --p2:#8a6d00; --p2-bg:#f6f0d8; --p3:#5b6770; --p3-bg:#e9ecee;
+  --pass:#1d5c4d; --pass-bg:#e3ede8; --warn:#b4520a; --warn-bg:#f9ecdf; --fail:#a31621; --fail-bg:#f9e7e8;
+  --mono:'Spline Sans Mono',monospace; --body:'Spline Sans',sans-serif; --display:'Fraunces',serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:74px}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15.5px;line-height:1.55;
+  background-image:radial-gradient(circle at 12% -4%, #efe7d2 0%, transparent 36%),radial-gradient(circle at 110% 8%, #e9efe9 0%, transparent 30%)}
+.wrap{max-width:1060px;margin:0 auto;padding:0 28px}
+code,.loc{font-family:var(--mono);font-size:.84em;background:var(--paper-deep);border:1px solid var(--line);border-radius:4px;padding:.08em .35em;white-space:nowrap}
+.loc{white-space:normal;word-break:break-word}
+a{color:var(--accent)}
+
+/* ---------- header ---------- */
+header.hero{padding:62px 0 30px;border-bottom:3px solid var(--ink);position:relative;overflow:hidden}
+.hero .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.hero h1{font-family:var(--display);font-weight:560;font-size:clamp(40px,6.4vw,72px);line-height:.98;letter-spacing:-.015em;margin:14px 0 10px}
+.hero h1 em{font-style:italic;font-weight:430;color:var(--accent)}
+.hero .sub{max-width:62ch;color:var(--ink-soft);font-size:16.5px}
+.hero .meta{display:flex;gap:26px;flex-wrap:wrap;margin-top:22px;font-family:var(--mono);font-size:12.5px;color:var(--ink-faint)}
+.hero .meta b{color:var(--ink);font-weight:600}
+.board{position:absolute;right:-22px;top:-22px;width:230px;height:230px;opacity:.10;pointer-events:none;
+  background:conic-gradient(var(--ink) 90deg,transparent 90deg 180deg,var(--ink) 180deg 270deg,transparent 270deg);background-size:56px 56px}
+
+/* ---------- severity bar ---------- */
+.sevband{margin:30px 0 8px}
+.sevband .label{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:9px}
+.bar{display:flex;height:42px;border:1.5px solid var(--ink);border-radius:6px;overflow:hidden;font-family:var(--mono);font-size:12.5px;font-weight:600}
+.bar span{display:flex;align-items:center;justify-content:center;gap:6px;min-width:64px;color:#fff}
+.bar .s0{background:var(--p0);flex:3}.bar .s1{background:var(--p1);flex:12}.bar .s2{background:var(--p2);flex:36}.bar .s3{background:var(--p3);flex:15}
+.bar small{font-weight:400;opacity:.85}
+.sevnote{font-size:12.5px;color:var(--ink-faint);margin-top:7px}
+
+/* ---------- nav ---------- */
+nav.toc{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);transition:box-shadow .25s}
+nav.toc.scrolled{box-shadow:0 4px 18px -10px rgba(29,28,24,.35)}
+nav.toc .wrap{display:flex;gap:4px;overflow-x:auto;padding:10px 28px;scrollbar-width:none}
+nav.toc a{font-family:var(--mono);font-size:12px;letter-spacing:.04em;text-decoration:none;color:var(--ink-soft);
+  padding:6px 11px;border-radius:99px;white-space:nowrap;border:1px solid transparent}
+nav.toc a:hover{color:var(--ink);border-color:var(--line);background:var(--paper-deep)}
+.tools{margin-left:auto;display:flex;gap:6px}
+.tools button{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);background:var(--paper-deep);color:var(--ink-soft);
+  border-radius:99px;padding:6px 11px;cursor:pointer}
+.tools button:hover{color:var(--ink);border-color:var(--ink-faint)}
+
+/* ---------- dashboard ---------- */
+section{padding:44px 0 8px}
+h2{font-family:var(--display);font-weight:560;font-size:clamp(25px,3.4vw,34px);letter-spacing:-.01em;margin-bottom:6px}
+h2 .idx{font-family:var(--mono);font-size:13px;color:var(--accent);vertical-align:.55em;letter-spacing:.1em;margin-right:8px}
+.lede{color:var(--ink-soft);max-width:74ch;margin-bottom:22px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));gap:12px}
+.tile{border:1.5px solid var(--ink);border-radius:8px;padding:15px 16px 13px;background:var(--paper);position:relative;
+  display:flex;flex-direction:column;gap:5px;min-height:108px}
+.tile .cat{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.tile .health{font-family:var(--display);font-size:27px;font-weight:600;line-height:1}
+.tile .counts{font-family:var(--mono);font-size:12px;color:var(--ink-faint);margin-top:auto}
+.tile.pass{background:var(--pass-bg)}.tile.pass .health{color:var(--pass)}
+.tile.warn{background:var(--warn-bg)}.tile.warn .health{color:var(--warn)}
+.tile.fail{background:var(--fail-bg)}.tile.fail .health{color:var(--fail)}
+.tile .flag{position:absolute;top:10px;right:12px;font-size:15px}
+.thresholds{font-size:12.5px;color:var(--ink-faint);margin-top:12px}
+
+/* ---------- narrative ---------- */
+.story{border:1.5px solid var(--ink);border-left:7px solid var(--fail);border-radius:8px;background:#fff;padding:24px 26px;margin-top:8px}
+.story h3{font-family:var(--display);font-size:21px;font-weight:600;margin-bottom:10px}
+.story ol{margin:10px 0 4px 20px;display:grid;gap:9px}
+.story li::marker{font-family:var(--mono);font-weight:600;color:var(--fail)}
+.story p{color:var(--ink-soft)}
+
+/* ---------- findings ---------- */
+details.cat{border:1.5px solid var(--ink);border-radius:8px;background:#fff;margin-bottom:14px;overflow:hidden}
+details.cat>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:14px;padding:15px 20px;background:var(--paper-deep)}
+details.cat>summary::-webkit-details-marker{display:none}
+details.cat>summary .h{font-family:var(--display);font-size:20px;font-weight:600;flex:1}
+details.cat>summary .chev{font-family:var(--mono);transition:transform .25s;color:var(--ink-faint)}
+details.cat[open]>summary .chev{transform:rotate(90deg)}
+details.cat[open]>summary{border-bottom:1px solid var(--line)}
+.pillrow{display:flex;gap:5px;flex-wrap:wrap}
+.pill{font-family:var(--mono);font-size:11px;font-weight:600;border-radius:99px;padding:2px 9px}
+.hpill.pass{background:var(--pass-bg);color:var(--pass)}.hpill.warn{background:var(--warn-bg);color:var(--warn)}.hpill.fail{background:var(--fail-bg);color:var(--fail)}
+.cat .inner{padding:6px 0 4px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;
+  text-align:left;padding:10px 14px;border-bottom:1px solid var(--line)}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--paper)}
+td.id{font-family:var(--mono);font-size:12px;color:var(--ink-faint);white-space:nowrap}
+.sev{font-family:var(--mono);font-size:11px;font-weight:700;border-radius:4px;padding:2.5px 7px;white-space:nowrap}
+.sev.P0{background:var(--p0);color:#fff}.sev.P1{background:var(--p1-bg);color:var(--p1);border:1px solid var(--p1)}
+.sev.P2{background:var(--p2-bg);color:var(--p2);border:1px solid var(--p2)}.sev.P3{background:var(--p3-bg);color:var(--p3);border:1px solid var(--p3)}
+td .t{font-weight:600}
+td .d{color:var(--ink-soft);margin-top:3px}
+td .v{font-family:var(--mono);font-size:11.5px;color:var(--accent);margin-top:5px}
+td .v.da{color:var(--p1)}
+.note{margin:14px 20px 18px;padding:12px 16px;border-left:4px solid var(--accent);background:var(--accent-soft);
+  border-radius:0 6px 6px 0;font-size:13.5px;color:var(--ink-soft)}
+
+/* ---------- disputes & roadmap ---------- */
+.dispute{border:1.5px dashed var(--p1);border-radius:8px;background:var(--p1-bg);padding:18px 20px;margin-bottom:12px}
+.dispute h4{font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--p1);margin-bottom:6px}
+.dispute p{font-size:14px;color:var(--ink-soft)}
+.steps{counter-reset:step;display:grid;gap:0;border:1.5px solid var(--ink);border-radius:8px;background:#fff;overflow:hidden}
+.step{display:flex;gap:18px;padding:18px 22px;border-bottom:1px solid var(--line)}
+.step:last-child{border-bottom:none}
+.step::before{counter-increment:step;content:counter(step);font-family:var(--display);font-size:27px;font-weight:600;color:var(--accent);min-width:30px;line-height:1.1}
+.step .t{font-weight:600}
+.step .d{color:var(--ink-soft);font-size:14px;margin-top:2px}
+footer{margin:54px 0 44px;padding-top:18px;border-top:3px solid var(--ink);font-family:var(--mono);font-size:12px;color:var(--ink-faint);
+  display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+
+/* ---------- motion ---------- */
+@media (prefers-reduced-motion: no-preference){
+  .tile{opacity:0;transform:translateY(10px);animation:rise .5s cubic-bezier(.2,.7,.3,1) forwards}
+  .tile:nth-child(1){animation-delay:.03s}.tile:nth-child(2){animation-delay:.08s}.tile:nth-child(3){animation-delay:.13s}
+  .tile:nth-child(4){animation-delay:.18s}.tile:nth-child(5){animation-delay:.23s}.tile:nth-child(6){animation-delay:.28s}
+  .tile:nth-child(7){animation-delay:.33s}.tile:nth-child(8){animation-delay:.38s}.tile:nth-child(9){animation-delay:.43s}
+  @keyframes rise{to{opacity:1;transform:none}}
+  .hero .eyebrow,.hero h1,.hero .sub,.hero .meta,.sevband{opacity:0;transform:translateY(8px);animation:rise .55s cubic-bezier(.2,.7,.3,1) forwards}
+  .hero h1{animation-delay:.06s}.hero .sub{animation-delay:.12s}.hero .meta{animation-delay:.18s}.sevband{animation-delay:.24s}
+  details.cat .inner{animation:fade .3s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+}
+
+/* ---------- responsive ---------- */
+@media (max-width:720px){
+  body{font-size:14.5px}
+  .wrap{padding:0 16px}
+  nav.toc .wrap{padding:10px 16px}
+  table,thead,tbody,tr{display:block}
+  thead{display:none}
+  td{display:block;border-bottom:none;padding:3px 16px}
+  tr{border-bottom:1px solid var(--line);padding:10px 0}
+  td.id::before{content:"# ";color:var(--ink-faint)}
+  .bar span small{display:none}
+}
+
+/* ---------- print ---------- */
+@media print{
+  body{background:#fff;font-size:11px;color:#000}
+  nav.toc,.tools,.board{display:none}
+  .hero{padding:10px 0}
+  details.cat{border-color:#999}
+  details.cat>summary .chev{display:none}
+  details.cat .inner{display:block!important}
+  .tile,.story,.steps,.dispute{break-inside:avoid}
+  a{color:#000;text-decoration:none}
+  tr:hover td{background:none}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="board" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="eyebrow">Project Health Audit · .turbo pipeline · 39 analysis agents</div>
+    <h1>Chess Academy<br><em>robustness, examined.</em></h1>
+    <p class="sub">Full audit of the source, online protocol, CI, and dependencies — focused on why <b>joining online games feels unreliable</b>, and on readiness for the planned lobby, chat improvements, and the <span style="white-space:nowrap">“duck chess decay” 🦆</span> variant.</p>
+    <div class="meta">
+      <span>Date <b>2026-06-10</b></span>
+      <span>Scope <b>full repo</b> (vendored engine excluded)</span>
+      <span>Threat model <b>present</b></span>
+      <span>Test suite <b>124 passing</b></span>
+      <span>Verification <b>Devil’s-Advocate pass</b></span>
+    </div>
+    <div class="sevband">
+      <div class="label">Findings by severity — deduplicated across agents</div>
+      <div class="bar" role="img" aria-label="3 P0, 12 P1, 36 P2, 15 P3 finding groups">
+        <span class="s0">3 <small>P0</small></span>
+        <span class="s1">12 <small>P1</small></span>
+        <span class="s2">36 <small>P2</small></span>
+        <span class="s3">15+ <small>P3</small></span>
+      </div>
+      <div class="sevnote">P0 count = 1 code defect (CORR-1) + 2 critical test-coverage gaps. P3 segment bundles ~18 accepted minor items under CORR-19.</div>
+    </div>
+  </div>
+</header>
+
+<nav class="toc" id="toc">
+  <div class="wrap">
+    <a href="#dashboard">Dashboard</a>
+    <a href="#headline">Why joins fail</a>
+    <a href="#correctness">Correctness</a>
+    <a href="#security">Security</a>
+    <a href="#api">API Usage</a>
+    <a href="#quality">Quality</a>
+    <a href="#tests">Tests</a>
+    <a href="#deps">Dependencies</a>
+    <a href="#tooling">Tooling</a>
+    <a href="#dead">Dead Code</a>
+    <a href="#disputes">Disputes</a>
+    <a href="#plan">Sequence</a>
+    <div class="tools">
+      <button onclick="document.querySelectorAll('details.cat').forEach(d=>d.open=true)">Expand all</button>
+      <button onclick="document.querySelectorAll('details.cat').forEach(d=>d.open=false)">Collapse</button>
+      <button onclick="window.print()">Print</button>
+    </div>
+  </div>
+</nav>
+
+<section id="dashboard">
+  <div class="wrap">
+    <h2><span class="idx">01</span>Dashboard</h2>
+    <p class="lede">Health uses the audit thresholds — <b>Fail</b> = any P0 · <b>Warn</b> = any P1 · <b>Pass</b> = neither. Several “Pass” categories still carry actionable P2s; counts shown per tile.</p>
+    <div class="grid">
+      <div class="tile fail"><span class="flag">♚</span><div class="cat">Correctness</div><div class="health">Fail</div><div class="counts">28 findings · 1 critical · 5 high</div></div>
+      <div class="tile fail"><span class="flag">♛</span><div class="cat">Test Coverage</div><div class="health">Fail</div><div class="counts">13 gaps · 2 critical-area gaps</div></div>
+      <div class="tile warn"><span class="flag">♜</span><div class="cat">Code Quality</div><div class="health">Warn</div><div class="counts">12 findings · 2 high</div></div>
+      <div class="tile warn"><span class="flag">♝</span><div class="cat">Dependencies</div><div class="health">Warn</div><div class="counts">18 findings · 1 calibrated-high</div></div>
+      <div class="tile pass"><span class="flag">♞</span><div class="cat">Security</div><div class="health">Pass</div><div class="counts">13 findings · 7 P2 hardening</div></div>
+      <div class="tile pass"><span class="flag">♟</span><div class="cat">API Usage</div><div class="health">Pass</div><div class="counts">8 findings · 1 deadline 06-16</div></div>
+      <div class="tile pass"><span class="flag">♙</span><div class="cat">Tooling</div><div class="health">Pass</div><div class="counts">5 gaps · formatter/hooks/lint-ext</div></div>
+      <div class="tile pass"><span class="flag">♖</span><div class="cat">Dead Code</div><div class="health">Pass</div><div class="counts">14 findings · ~982 orphaned lines</div></div>
+      <div class="tile pass"><span class="flag">🦆</span><div class="cat">Threat Model</div><div class="health">Present</div><div class="counts">.turbo/threat-model.md · generated this audit</div></div>
+    </div>
+    <p class="thresholds">XSS posture verified clean app-wide (React auto-escaping everywhere; no <code>dangerouslySetInnerHTML</code>/<code>eval</code>); profile import properly sanitized; game-id entropy 122 bits.</p>
+  </div>
+</section>
+
+<section id="headline">
+  <div class="wrap">
+    <h2><span class="idx">02</span>Why joining feels unreliable</h2>
+    <p class="lede">The shipped multiplayer is <b>not</b> the parked docs architecture (no Auth/Postgres/RLS). It is Supabase Realtime <b>Broadcast + Presence on public channels</b>: the creator’s tab is the sole authority, and a monotonic <code>seq</code> on full snapshots is the only reconciliation primitive. Five findings compound:</p>
+    <div class="story">
+      <h3>The compounding failure chain</h3>
+      <ol>
+        <li><b>Joiner-ahead-of-host is unrecoverable</b> (CORR-1). Resyncs and corrections never bump <code>seq</code>, so the joiner’s <code>seq&nbsp;&lt;=</code> guard drops them forever — after host storage loss, “New game” divergence, or multi-tab stomps, the joiner goes permanently deaf.</li>
+        <li><b>Two tabs in one browser collide</b> (CORR-4). One global <code>selfId</code> + host-config keyed by game id ⇒ your own invite link in a second tab becomes a <em>second host with the same identity</em>; presence sees one client; both wait forever. This silently breaks the most natural way to demo the app.</li>
+        <li><b>Stale “synced” joiner, absent host</b> (CORR-5). A persisted snapshot boots the joiner as synced and movable with nobody listening; intents retry into the void.</li>
+        <li><b>Mid-turn duck snapshots are fatal</b> (CORR-2/3). The host can commit a half-turn, and restoring a duck-phase snapshot crashes <code>placeDuck</code> (empty <code>turns</code>).</li>
+        <li><b>No terminal error state</b> (CORR-8). The panel’s “Connection lost — try Resync” branch is unreachable; failures present as infinite “Reconnecting…”.</li>
+      </ol>
+      <p style="margin-top:10px">Fix class: introduce an <b>epoch</b> (game-instance id) beside <code>seq</code>, bump on every resync/correction, validate wire input, and gate play on live host presence. That one cluster removes the “login feels flaky” symptom — and it is exactly the groundwork the lobby needs.</p>
+    </div>
+  </div>
+</section>
+
+<section id="correctness">
+  <div class="wrap">
+    <h2><span class="idx">03</span>Findings</h2>
+    <p class="lede">Each finding carries the evaluation verdict. “DA” marks claims verified against external sources by the Devil’s-Advocate pass.</p>
+
+    <details class="cat" open id="cat-correctness">
+      <summary><span class="chev">▶</span><span class="h">Correctness</span>
+        <span class="pillrow"><span class="pill sev P0">1× P0</span><span class="pill sev P1">5× P1</span><span class="pill sev P2">12× P2</span><span class="pill sev P3">~18 minor</span><span class="pill hpill fail">Fail</span></span>
+      </summary>
+      <div class="inner">
+      <table>
+        <thead><tr><th>#</th><th>Sev</th><th style="width:46%">Finding</th><th>Location</th></tr></thead>
+        <tbody>
+          <tr><td class="id">CORR-1</td><td><span class="sev P0">P0</span></td><td><span class="t">Joiner-ahead-of-host deadlock</span><div class="d"><code>newGame()</code> never resets <code>seq</code>; <code>adoptSnapshot</code> drops <code>seq&nbsp;&lt;=</code> own; resyncs/corrections re-broadcast <em>without bumping</em>. Once the joiner’s seq ≥ host’s, every snapshot — including Resync — is silently dropped, permanently. Fix: epoch/game-instance id, or always-bump on resync.</div><div class="v">Accept · High — code-verified twice</div></td><td><span class="loc">src/online/useOnlineGame.js:281-287, :134, :165</span></td></tr>
+          <tr><td class="id">CORR-2</td><td><span class="sev P1">P1</span></td><td><span class="t">Non-atomic intent apply strands a half-turn</span><div class="d">Host applies the piece move, then a failed <code>placeDuck</code> broadcasts a mid-turn state; the joiner’s retry carries <code>pieceMove:null</code> and is dropped — game wedges in duck phase. Fix: restore pre-apply state on partial failure.</div><div class="v">Accept · High</div></td><td><span class="loc">src/online/useOnlineGame.js:104-129</span></td></tr>
+          <tr><td class="id">CORR-3</td><td><span class="sev P1">P1</span></td><td><span class="t"><code>placeDuck</code> crashes on deserialized mid-turn state</span><div class="d">Wire format encodes <code>phase=duck</code> but deserialize rebuilds <code>turns: []</code>; <code>turns[-1].duck = …</code> throws. Hit by refresh-mid-turn or adopting a CORR-2 snapshot. Empirically verified.</div><div class="v">Accept · High</div></td><td><span class="loc">src/engine/duck/duckChess.js:148-154</span></td></tr>
+          <tr><td class="id">CORR-4</td><td><span class="sev P1">P1</span></td><td><span class="t">Same-browser multi-tab identity collision</span><div class="d">Global <code>selfId</code> + host config keyed by game id ⇒ second tab = duplicate host, same identity; presence collapses; snapshots stomp. Breaks two-tab local testing. Fix: per-tab identity + role-aware keys.</div><div class="v">Accept · High</div></td><td><span class="loc">src/online/localSnapshot.js:14, 42-57</span></td></tr>
+          <tr><td class="id">CORR-5</td><td><span class="sev P1">P1</span></td><td><span class="t">Stale-synced joiner with absent host</span><div class="d"><code>synced</code> boots true from any persisted snapshot; <code>canMovePiece</code> ignores presence/freshness — moves on a dead board, intents retry forever, no “waiting for host”.</div><div class="v">Accept · High</div></td><td><span class="loc">src/online/useOnlineGame.js:69, 180-204</span></td></tr>
+          <tr><td class="id">CORR-6</td><td><span class="sev P2">P2</span></td><td><span class="t">No-bump corrections are unreceivable</span><div class="d">Host “catch-up” re-publish keeps the same seq the joiner already holds → dropped; a wrong optimistic board persists. Same root as CORR-1.</div><div class="v">Accept · High</div></td><td><span class="loc">src/online/useOnlineGame.js:113-119, :134</span></td></tr>
+          <tr><td class="id">CORR-7</td><td><span class="sev P2">P2</span></td><td><span class="t">Seat-claim race (trust-on-first-move)</span><div class="d">First id to move on an unclaimed color owns it silently; double-joins lock out the true opponent with no feedback. Surface “seat taken”; bind seats to presence identity.</div><div class="v">Accept · Medium</div></td><td><span class="loc">src/online/useOnlineGame.js:112</span></td></tr>
+          <tr><td class="id">CORR-8</td><td><span class="sev P2">P2</span></td><td><span class="t">Dead <code>'error'</code> connection status</span><div class="d">Panel renders “Connection lost — try Resync” for a status the channel never emits — failures show as endless “Reconnecting…”. Emit terminal <code>'error'</code> after N backoff failures; share the status union.</div><div class="v">Accept · High — 3 agents</div></td><td><span class="loc">useGameChannel.js:82-88 vs OnlineGamePanel.jsx:25-26</span></td></tr>
+          <tr><td class="id">CORR-9</td><td><span class="sev P2">P2</span></td><td><span class="t"><code>peerPresent</code> flaps on reconnect</span><div class="d">Hard reset to false on every transient channel error; treat as unknown / debounce.</div><div class="v">Accept · Medium</div></td><td><span class="loc">src/online/useGameChannel.js:85-88</span></td></tr>
+          <tr><td class="id">CORR-10</td><td><span class="sev P2">P2</span></td><td><span class="t">Reconnect supersession is implicit</span><div class="d">Stale channel’s late subscribe-callback can double-schedule reconnects; pending timer not cancelled on success. Add a per-attempt token.</div><div class="v">Accept · Medium</div></td><td><span class="loc">src/online/useGameChannel.js:44-91</span></td></tr>
+          <tr><td class="id">CORR-11</td><td><span class="sev P1">P1</span></td><td><span class="t">Spurious “engine was stopped” banner</span><div class="d">Intentional <code>interrupt()</code> rejects the in-flight promise and <code>requestMove</code> unconditionally <code>setError</code>s it; false failure persists after new-game/resign/take-back. Sentinel-flag intentional disposal.</div><div class="v">Accept · High</div></td><td><span class="loc">useStockfish.js:57-76 · stockfishClient.js:109-120</span></td></tr>
+          <tr><td class="id">CORR-12</td><td><span class="sev P2">P2</span></td><td><span class="t"><code>interrupt()</code> no-ops during engine init</span><div class="d"><code>isBusy()</code> is false in the handshake window; resign/take-back during warm-up can wedge. Dispose unconditionally when an engine exists.</div><div class="v">Accept · Medium</div></td><td><span class="loc">useStockfish.js:57-63 · stockfishClient.js:43-52</span></td></tr>
+          <tr><td class="id">CORR-13</td><td><span class="sev P2">P2</span></td><td><span class="t"><code>lastScore</code> leaks across searches</span><div class="d">Score parsed outside search windows can attach a stale evaluation to the next move. Scope capture to the pending search.</div><div class="v">Accept · Medium</div></td><td><span class="loc">stockfishClient.js:54-61, 90-101</span></td></tr>
+          <tr><td class="id">CORR-14</td><td><span class="sev P2">P2</span></td><td><span class="t">Tap-to-move cannot underpromote</span><div class="d">Hardcoded <code>promotion:'q'</code> with no picker on the tap path — an underpromotion lesson step soft-locks for tap users. Verified reachable.</div><div class="v">Accept · High</div></td><td><span class="loc">src/lesson/useChessLesson.js:231 (also :205)</span></td></tr>
+          <tr><td class="id">CORR-15</td><td><span class="sev P2">P2</span></td><td><span class="t">Accepted alternative can freeze a line step</span><div class="d">Mainline-derived opponent reply may be illegal after an accepted alternative; throw is swallowed; step sticks in <code>playing-opponent</code> forever. Recompute replies against the live position.</div><div class="v">Accept · High</div></td><td><span class="loc">useChessLesson.js:169-175 · lesson/engine.js:68-72</span></td></tr>
+          <tr><td class="id">CORR-16</td><td><span class="sev P2">P2</span></td><td><span class="t">Malformed invite link silently defaults to white</span><div class="d">Bad/missing <code>?host</code> ⇒ both players can believe they’re black; links carry no joiner-seat for double-join disambiguation. Treat as broken-link state.</div><div class="v">Accept · High</div></td><td><span class="loc">OnlinePlayPage.jsx:24 · OnlineLobbyPage.jsx:29</span></td></tr>
+          <tr><td class="id">CORR-17</td><td><span class="sev P2">P2</span></td><td><span class="t">Chat autoscroll yanks the page</span><div class="d"><code>scrollIntoView</code> scrolls <em>all</em> ancestors incl. the viewport — incoming messages can pull the board off-screen. Scroll the chat container instead.</div><div class="v da">Accept · High — DA-confirmed (MDN)</div></td><td><span class="loc">src/components/ChatBox.jsx:13-15</span></td></tr>
+          <tr><td class="id">CORR-18</td><td><span class="sev P2">P2</span></td><td><span class="t">WebGL failure blanks the landing page</span><div class="d">Unguarded <code>new WebGLRenderer</code> and no ErrorBoundary anywhere — decorative 3D failure unmounts the route. Try/catch + app-level boundary.</div><div class="v">Accept · High</div></td><td><span class="loc">StylizedKingScene.jsx:78 · src/App.jsx</span></td></tr>
+          <tr><td class="id">CORR-19</td><td><span class="sev P3">P3</span></td><td><span class="t">Accepted minor items (bundle of ~18)</span><div class="d">“mate 0” copy · reduced-motion RAF loop · non-lazy <code>loadSnapshot</code> in useState · chat key collision · empty chat submit · GlossaryLink timer · unplayable-FEN accept · guided take-back double-undo · promotion-optimism flicker · request-snapshot over-firing · unguarded <code>JSON.stringify</code> persist · <code>__proto__</code> key hardening · untrimmed imported names · dead no-op guard · vestigial <code>hintsUsed</code> · <code>[[term|]]</code> empty link · glossary <code>body.entries</code> guard · deploy <code>cancel-in-progress:true</code> (DA: starter uses <code>false</code>) · scenario <code>playerSide</code> validation · local OCR-tool nits.</div><div class="v">Accept · P3</div></td><td><span class="loc">various — see .turbo/audit.md</span></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </details>
+
+    <details class="cat" id="cat-security">
+      <summary id="security"><span class="chev">▶</span><span class="h">Security</span>
+        <span class="pillrow"><span class="pill sev P2">7× P2</span><span class="pill sev P3">5× P3</span><span class="pill hpill pass">Pass†</span></span>
+      </summary>
+      <div class="inner">
+      <table>
+        <thead><tr><th>#</th><th>Sev</th><th style="width:46%">Finding</th><th>Location</th></tr></thead>
+        <tbody>
+          <tr><td class="id">SEC-1</td><td><span class="sev P2">P2</span></td><td><span class="t">Unguarded <code>new Chess(fen)</code> on adopted snapshots</span><div class="d">chess.js throws on malformed FEN — one high-seq garbage snapshot crashes the joiner. Try/catch the variant-game construction; drop bad snapshots.</div><div class="v">Accept · High</div></td><td><span class="loc">rules.js:21 via useOnlineGame.js:138, 51-64</span></td></tr>
+          <tr><td class="id">SEC-2</td><td><span class="sev P2">P2</span></td><td><span class="t">Non-string <code>duckSquare</code> crashes the host</span><div class="d">Truthy non-strings pass the falsy guard → <code>charCodeAt</code> TypeError inside the broadcast handler. Type-guard intent fields.</div><div class="v">Accept · High</div></td><td><span class="loc">useOnlineGame.js:124 → duck/board.js:20-24</span></td></tr>
+          <tr><td class="id">SEC-3</td><td><span class="sev P2">P2</span></td><td><span class="t"><code>deserialize</code> trusts the wire completely</span><div class="d">Non-string throws; garbage yields undefined turn/phase + NaN clocks that silently corrupt. Validate shape; reject malformed snapshots.</div><div class="v">Accept · High</div></td><td><span class="loc">src/engine/duck/board.js:122-135</span></td></tr>
+          <tr><td class="id">SEC-4</td><td><span class="sev P2">P2</span></td><td><span class="t"><code>parsePlacement</code> writes past index 63</span><div class="d">Over-full placement grows the board array; state no longer round-trips. Bound the index; require exactly 64 squares.</div><div class="v">Accept · High</div></td><td><span class="loc">src/engine/duck/board.js:52-64</span></td></tr>
+          <tr><td class="id">SEC-5</td><td><span class="sev P3">P3</span></td><td><span class="t">Off-board squares alias into range</span><div class="d"><code>"z9"</code> → index 17: duck teleports to squares the generator never offered. Validate <code>[a-h][1-8]</code> / check <code>legalDuckTargets</code>.</div><div class="v">Accept</div></td><td><span class="loc">board.js:20-24 · duckChess.js:148-151</span></td></tr>
+          <tr><td class="id">SEC-6</td><td><span class="sev P3">P3</span></td><td><span class="t">Chat unbounded on receive</span><div class="d">No count/length cap from the wire (UI maxLength is local-only). Cap/truncate in <code>handleChat</code>.</div><div class="v">Accept</div></td><td><span class="loc">useOnlineGame.js:148-150</span></td></tr>
+          <tr><td class="id">SEC-7</td><td><span class="sev P3">P3</span></td><td><span class="t">Adopted <code>players</code>/<code>variant</code>/kings unvalidated</span><div class="d">Crafted snapshot can flash bogus “King captured” or confuse seats. Defense-in-depth shape checks on adopt.</div><div class="v">Accept</div></td><td><span class="loc">useOnlineGame.js:132-144 · duckChess.js:22-26</span></td></tr>
+          <tr><td class="id">SEC-8</td><td><span class="sev P2">P2</span></td><td><span class="t">CI workflow has no <code>permissions</code> block</span><div class="d">Default token scope while <code>npm ci</code> runs lifecycle scripts on PRs. Add <code>permissions: contents: read</code> (deploy.yml already does).</div><div class="v">Accept · High</div></td><td><span class="loc">.github/workflows/ci.yml</span></td></tr>
+          <tr><td class="id">SEC-9</td><td><span class="sev P2">P2</span></td><td><span class="t">Actions pinned to mutable tags, not SHAs</span><div class="d">Tag repointing runs attacker code with <code>id-token: write</code> + secrets. Pin commit SHAs + Dependabot. Threat model’s top surface.</div><div class="v">Accept · Medium</div></td><td><span class="loc">.github/workflows/{ci,deploy}.yml</span></td></tr>
+          <tr><td class="id">SEC-10</td><td><span class="sev P2">P2</span></td><td><span class="t">No CSP / security headers on either target</span><div class="d">Add CSP meta (GH Pages) + <code>headers</code> in vercel.json, allow-listing Supabase WSS + fonts; <code>frame-ancestors 'none'</code>. Pairs with richer chat plans.</div><div class="v">Accept · High</div></td><td><span class="loc">index.html · vercel.json</span></td></tr>
+          <tr><td class="id">SEC-11</td><td><span class="sev P3">P3</span></td><td><span class="t">Deploy secret echo + no registry pinning</span><div class="d">Use <code>env:</code> indirection + <code>printf</code> for <code>.env.production</code>; add <code>.npmrc</code> with <code>registry=https://registry.npmjs.org/</code>.</div><div class="v">Accept</div></td><td><span class="loc">deploy.yml:37-41 · repo root</span></td></tr>
+          <tr><td class="id">SEC-12</td><td><span class="sev P3">P3</span></td><td><span class="t">Fonts origin un-CSP’d; keep 404-restore History-API-only</span><div class="d">Constrain fonts origins via CSP or self-host; hash/nonce the inline restore script when CSP lands (verified currently safe — no DOM sink).</div><div class="v">Accept</div></td><td><span class="loc">index.html:7-9, 14-28</span></td></tr>
+          <tr><td class="id">SEC-13</td><td><span class="sev P3">—</span></td><td><span class="t">Explicitly clean</span><div class="d">Profile import (fresh UUID, allow-listed avatar, fixed-key sanitize — no prototype pollution) · chat/board/markdown rendering React-escaped · route params allow-list-normalized · 122-bit game ids.</div><div class="v">No findings</div></td><td><span class="loc">src/profile · src/components · src/routes</span></td></tr>
+        </tbody>
+      </table>
+      <div class="note">Severity calibrated to the threat model: no money, PII, or credentials — the impact ceiling for channel attacks is griefing/DoS of one ephemeral game session, gated on knowing the invite-link game id.</div>
+      </div>
+    </details>
+
+    <details class="cat" id="cat-api">
+      <summary id="api"><span class="chev">▶</span><span class="h">API Usage</span>
+        <span class="pillrow"><span class="pill sev P2">4× P2</span><span class="pill sev P3">4× P3</span><span class="pill hpill pass">Pass†</span></span>
+      </summary>
+      <div class="inner">
+      <table>
+        <thead><tr><th>#</th><th>Sev</th><th style="width:46%">Finding</th><th>Location</th></tr></thead>
+        <tbody>
+          <tr><td class="id">API-1</td><td><span class="sev P2">P2</span></td><td><span class="t">v4 actions run on the deprecated Node 20 runtime — <u>default flips 2026-06-16</u></span><div class="d">GitHub runners default to Node 24 on June 16 2026; Node 20 removed 2026-09-16. Bump <code>checkout@v5</code>, <code>setup-node@v5</code>, <code>deploy-pages@v5</code> (<code>upload-pages-artifact@v3</code> is current).</div><div class="v da">Accept · DA-confirmed (github.blog changelog 2025-09-19)</div></td><td><span class="loc">.github/workflows/{ci,deploy}.yml</span></td></tr>
+          <tr><td class="id">API-2</td><td><span class="sev P2">P2</span></td><td><span class="t"><code>eventsPerSecond</code> realtime param is dead</span><div class="d">Zero references in installed realtime-js 2.106 — there is no client-side rate cap despite the comment. Remove or configure server-side.</div><div class="v da">Accept · DA-confirmed (grep of installed pkg)</div></td><td><span class="loc">src/lib/supabase.js:18</span></td></tr>
+          <tr><td class="id">API-3</td><td><span class="sev P3">P3</span></td><td><span class="t"><code>broadcast.ack:true</code> is inert</span><div class="d"><code>send()</code>’s promise is discarded — the server ack round-trip buys nothing. Drop <code>ack</code> or consume the promise.</div><div class="v">Accept</div></td><td><span class="loc">useGameChannel.js:62, 107-109</span></td></tr>
+          <tr><td class="id">API-4</td><td><span class="sev P3">P3</span></td><td><span class="t"><code>removeChannel</code> fires CLOSED into the old subscribe callback</span><div class="d">Benign redundant-reconnect path absorbed by the timer guard; make teardown ignore superseded channels (same fix as CORR-10).</div><div class="v">Accept</div></td><td><span class="loc">useGameChannel.js:44-58, 85-89</span></td></tr>
+          <tr><td class="id">API-5</td><td><span class="sev P2">P2</span></td><td><span class="t">Unguarded <code>crypto.randomUUID()</code></span><div class="d">Secure-contexts only — undefined on plain-HTTP LAN hosts; the guarded pattern already exists at <code>localSnapshot.js:34</code>. Extract a shared <code>genId()</code>.</div><div class="v da">Accept · DA-confirmed (MDN)</div></td><td><span class="loc">ProfileContext.jsx:50, 114</span></td></tr>
+          <tr><td class="id">API-6</td><td><span class="sev P2">P2</span></td><td><span class="t">Raw <code>localStorage</code> in ProfileContext</span><div class="d">Throws when storage is blocked — crashes the provider on load, defeating the graceful-degradation design the other storage modules follow.</div><div class="v">Accept · High</div></td><td><span class="loc">ProfileContext.jsx:25, 41, 63</span></td></tr>
+          <tr><td class="id">API-7</td><td><span class="sev P3">P3</span></td><td><span class="t">IDB transaction fragility + unhandled rejection</span><div class="d"><code>listProgress</code> issues a 2nd request after an await on the same transaction (queue both first); fire-and-forget <code>putProgress</code> needs a <code>.catch</code>.</div><div class="v">Accept</div></td><td><span class="loc">storage.js:49-58 · ProfileContext.jsx:86</span></td></tr>
+          <tr><td class="id">API-8</td><td><span class="sev P3">P3</span></td><td><span class="t"><code>useMemo</code> keyed on <code>searchParams</code> identity</span><div class="d">Harmless recompute (identity not stable in router v6); depend on the primitive values. <b>Everything else verified correct:</b> react-chessboard 4.7.3 props, three r184 dispose, chess.js v1 throwing semantics handled, classic-worker UCI Stockfish, Vite 5 glob, jest-dom v6 path, StrictMode safety, all router links v7-safe.</div><div class="v">Accept</div></td><td><span class="loc">OnlinePlayPage.jsx:20-27</span></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </details>
+
+    <details class="cat" id="cat-quality">
+      <summary id="quality"><span class="chev">▶</span><span class="h">Code Quality</span>
+        <span class="pillrow"><span class="pill sev P1">2× P1</span><span class="pill sev P2">4× P2</span><span class="pill sev P3">bundle</span><span class="pill hpill warn">Warn</span></span>
+      </summary>
+      <div class="inner">
+      <table>
+        <thead><tr><th>#</th><th>Sev</th><th style="width:46%">Finding</th><th>Location</th></tr></thead>
+        <tbody>
+          <tr><td class="id">QUAL-1</td><td><span class="sev P1">P1</span></td><td><span class="t">Variant identity = hardcoded binary in 4+ sites</span><div class="d">Unknown variants silently become standard. Build a <code>VARIANTS</code> registry (<code>{id: {label, create}}</code>) so “duck chess decay” is one entry + an engine, not a shotgun edit. <b>Do before the new variant.</b></div><div class="v">Accept · High</div></td><td><span class="loc">rules.js:59 · OnlinePlayPage:23 · OnlineLobbyPage:13 · OnlineGamePanel:11</span></td></tr>
+          <tr><td class="id">QUAL-2</td><td><span class="sev P2">P2</span></td><td><span class="t">Serializer has no extension slot for decay state</span><div class="d">Positional 8-field wire format can’t carry per-square decay counters/repair clocks. Decide the evolution now (delimited optional segment or JSON state) — retrofitting later means migrating persisted snapshots.</div><div class="v">Accept · High (planning)</div></td><td><span class="loc">src/engine/duck/board.js:108-135</span></td></tr>
+          <tr><td class="id">QUAL-3</td><td><span class="sev P2">P2</span></td><td><span class="t">Two divergent captured-pieces implementations</span><div class="d">Board-diff (duck; miscounts after promotion — acknowledged) vs history-replay (standard). Promote the snapshot-safe one to shared; decay needs per-square history anyway.</div><div class="v">Accept · Medium</div></td><td><span class="loc">duckChess.js:33-49 vs gameState.js:20</span></td></tr>
+          <tr><td class="id">QUAL-4</td><td><span class="sev P1">P1</span></td><td><span class="t">Board-input handlers copy-pasted across all 3 controller hooks</span><div class="d">~40 lines × 3 (<code>onPieceDrop</code>/<code>onPromotionPieceSelect</code>/tap machine) + duplicated <code>Feedback</code> (already render-divergent), <code>pairMoves</code>, move-list. Extract <code>useBoardInput</code> + shared parts — the underpromotion fix then lands everywhere once.</div><div class="v">Accept · High</div></td><td><span class="loc">useChessLesson.js · useEngineGame.js · useOnlineGame.js</span></td></tr>
+          <tr><td class="id">QUAL-5</td><td><span class="sev P2">P2</span></td><td><span class="t">Diverged duplicates ahead of lobby work</span><div class="d">Two drifted “online not configured” notices; <code>SectionHeader</code> exists unused while ≥5 pages hand-roll headers; <code>ScenarioCard</code>/<code>LessonCard</code> are the same card twice. Extract before the lobby multiplies copies.</div><div class="v">Accept · Medium</div></td><td><span class="loc">OnlineLobbyPage:45-53 vs OnlinePlayPage:29-42 · ui/SectionHeader.jsx</span></td></tr>
+          <tr><td class="id">QUAL-6</td><td><span class="sev P3">P3</span></td><td><span class="t">Convention drift bundle</span><div class="d"><code>COLOR_NAME</code> ×4 · square-index math inlined ×7 (decay counters would copy it again — centralize first) · <code>START_FEN</code> re-hardcoded · <code>DEFAULT_WRONG</code> drift · undocumented controller status enums · stale comment · duplicated glossary gather · <b>chat inlined in <code>useOnlineGame</code> — extract <code>useGameChat</code> before chat features</b> (transport/view seams already clean).</div><div class="v">Accept</div></td><td><span class="loc">various</span></td></tr>
+          <tr><td class="id">QUAL-7</td><td><span class="sev P2">P2</span></td><td><span class="t">Deploy story drift</span><div class="d">CI/deploy bootstrap duplicated; Node stated 3 ways (workflows 20, README 18+/22, no <code>engines</code>); GH-Pages vs Vercel use divergent SPA routing + undocumented env/base-path. Pin one Node story; document or drop the 2nd target.</div><div class="v">Accept · Medium</div></td><td><span class="loc">workflows · package.json · vercel.json · 404.html</span></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </details>
+
+    <details class="cat" id="cat-tests">
+      <summary id="tests"><span class="chev">▶</span><span class="h">Test Coverage</span>
+        <span class="pillrow"><span class="pill sev P0">2× P0</span><span class="pill sev P1">4× P1</span><span class="pill sev P2">bundle</span><span class="pill hpill fail">Fail</span></span>
+      </summary>
+      <div class="inner">
+      <table>
+        <thead><tr><th>#</th><th>Sev</th><th style="width:60%">Gap</th><th>Area</th></tr></thead>
+        <tbody>
+          <tr><td class="id">TEST-1</td><td><span class="sev P0">P0</span></td><td><span class="t">Reconnect / error / backoff machine entirely untested</span><div class="d">The fake channel only resolves SUBSCRIBED — status flips, backoff cap, attempt reset, cancelled guard all unexercised. The heart of join reliability.</div></td><td><span class="loc">useGameChannel.js:44-91</span></td></tr>
+          <tr><td class="id">TEST-2</td><td><span class="sev P0">P0</span></td><td><span class="t">Seat-claim + stray-third-party rejection untested</span><div class="d">The access control of the public channel — incl. illegal-move corrective-resync paths.</div></td><td><span class="loc">useOnlineGame.js:104-129</span></td></tr>
+          <tr><td class="id">TEST-3</td><td><span class="sev P1">P1</span></td><td><span class="t"><code>localSnapshot.js</code> zero coverage</span><div class="d">Identity + persistence backing reload-resume and seat locking (corrupt JSON, storage-throw branches).</div></td><td><span class="loc">src/online/localSnapshot.js</span></td></tr>
+          <tr><td class="id">TEST-4</td><td><span class="sev P1">P1</span></td><td><span class="t">Resync cadence + host re-broadcast triggers untested</span><div class="d">Fast→slow polling, no-poll-on-own-turn, <code>onPeerJoin</code>/<code>onRequestSnapshot</code> — the timers that prevent handshake deadlock.</div></td><td><span class="loc">useOnlineGame.js:159-198</span></td></tr>
+          <tr><td class="id">TEST-5</td><td><span class="sev P1">P1</span></td><td><span class="t">Connection-degraded gates unasserted</span><div class="d"><code>canMovePiece</code> false when reconnecting/unsynced; host-only <code>newGame</code>; <code>resync</code> role behavior.</div></td><td><span class="loc">useOnlineGame.js:202-294</span></td></tr>
+          <tr><td class="id">TEST-6</td><td><span class="sev P1">P1</span></td><td><span class="t">Duck castling execution + rights updates untested</span><div class="d">Rook relocation, rights loss on king/rook move and on captured corner rook — ahead of variant work.</div></td><td><span class="loc">duckChess.js:77-88, 126-131</span></td></tr>
+          <tr><td class="id">TEST-7</td><td><span class="sev P2">P2</span></td><td><span class="t">Secondary gaps (bundle)</span><div class="d"><code>deriveCaptured</code>/SAN labels · ProfileContext import/export · ChatBox · lobby/play config derivation · <code>statusText</code> table test · <code>pairMoves</code>/<code>resultText</code> · plus regression tests encoding CORR-1/2/3 once fixed. Existing suite: 124 green; pure logic core well covered.</div></td><td><span class="loc">various</span></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </details>
+
+    <details class="cat" id="cat-deps">
+      <summary id="deps"><span class="chev">▶</span><span class="h">Dependencies</span>
+        <span class="pillrow"><span class="pill sev P1">1× P1</span><span class="pill sev P2">3× P2</span><span class="pill sev P3">bundle</span><span class="pill hpill warn">Warn</span></span>
+      </summary>
+      <div class="inner">
+      <table>
+        <thead><tr><th>#</th><th>Sev</th><th style="width:56%">Finding</th><th>Package</th></tr></thead>
+        <tbody>
+          <tr><td class="id">DEP-1</td><td><span class="sev P1">P1</span></td><td><span class="t">GHSA-5xrq-8626-4rwp — file read/RCE via UI/API server (CVSS 9.8, fixed 3.2.6)</span><div class="d"><b>DA correction:</b> triggers on network-exposed <code>api.host</code> <em>or Windows even on localhost</em> — broader than “must run --ui”. Dev-workstation risk only (not the deployed site); calibrated P1. Upgrade vitest (major).</div><div class="v da">Accept · DA-corrected</div></td><td><span class="loc">vitest 1.6.1 → ≥3.2.6</span></td></tr>
+          <tr><td class="id">DEP-2</td><td><span class="sev P2">P2</span></td><td><span class="t">Router advisories clear with in-range bumps</span><div class="d"><b>DA correction:</b> GHSA-2j2x-hqr9-3h42 (open redirect) patched in <b>6.30.4</b>; GHSA-2w69-qvjg-hvjx (XSS) lives in transitive <code>@remix-run/router</code>, patched <b>1.23.2</b>. No v7 migration needed. Exploitability low — routes verified to use no user-derived redirects.</div><div class="v da">Accept · DA-corrected</div></td><td><span class="loc">react-router-dom 6.30.2 → 6.30.4</span></td></tr>
+          <tr><td class="id">DEP-3</td><td><span class="sev P2">P2</span></td><td><span class="t">Dev-server advisories cleared by the vite major</span><div class="d">vite path traversal (GHSA-4w7w-66w2-5vf9) + esbuild request leak (GHSA-67mh-4wv8-2f99) — dev-only; audit’s fix is vite 8, which also clears the vitest/vite-node chain. Plan the major.</div><div class="v">Accept</div></td><td><span class="loc">vite 5.4.21 · esbuild ≤0.24.2</span></td></tr>
+          <tr><td class="id">DEP-4</td><td><span class="sev P3">P3</span></td><td><span class="t">In-range build/lint-chain advisories</span><div class="d">postcss 8.5.6→8.5.15 · rollup · flatted · minimatch · picomatch · brace-expansion — one <code>npm audit fix</code> sweep (no --force); none on a runtime path.</div><div class="v">Accept</div></td><td><span class="loc">transitive dev deps</span></td></tr>
+          <tr><td class="id">DEP-5</td><td><span class="sev P2">P2</span></td><td><span class="t">Major-version staleness (advisory)</span><div class="d">React 18→19 · react-chessboard 4→5 (rewrite) · Tailwind 3→4 · ESLint 8 (EOL)→flat config · jsdom 24→29 · lucide 0.344→1.x · plugin-react 4→6. Sequence after robustness work; supabase-js minor is trivial.</div><div class="v">Accept</div></td><td><span class="loc">20 outdated direct deps</span></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </details>
+
+    <details class="cat" id="cat-tooling">
+      <summary id="tooling"><span class="chev">▶</span><span class="h">Tooling</span>
+        <span class="pillrow"><span class="pill sev P2">3× P2</span><span class="pill sev P3">2× P3</span><span class="pill hpill pass">Pass†</span></span>
+      </summary>
+      <div class="inner">
+      <table>
+        <thead><tr><th>#</th><th>Sev</th><th style="width:64%">Finding</th><th>Area</th></tr></thead>
+        <tbody>
+          <tr><td class="id">TOOL-1</td><td><span class="sev P2">P2</span></td><td><span class="t">No formatter</span><div class="d">No Prettier/Biome or .editorconfig for a contributions-welcoming repo.</div></td><td>format</td></tr>
+          <tr><td class="id">TOOL-2</td><td><span class="sev P2">P2</span></td><td><span class="t">No pre-commit hooks</span><div class="d">husky + lint-staged; lint/test currently CI-only.</div></td><td>hooks</td></tr>
+          <tr><td class="id">TOOL-3</td><td><span class="sev P2">P2</span></td><td><span class="t">Lint gap: warnings don’t fail & <code>.mjs/.cjs</code> never linted</span><div class="d">ESLint 8 default ext skips the CI-executed build scripts and the config itself (verified via --debug). <code>--max-warnings=0 --ext .js,.jsx,.mjs,.cjs</code> or flat config.</div></td><td>lint</td></tr>
+          <tr><td class="id">TOOL-4</td><td><span class="sev P3">P3</span></td><td><span class="t">No coverage reporting</span><div class="d"><code>@vitest/coverage-v8</code> + thresholds — pairs with the Test Coverage column.</div></td><td>test</td></tr>
+          <tr><td class="id">TOOL-5</td><td><span class="sev P3">P3</span></td><td><span class="t">Optional: checkJs types</span><div class="d"><code>jsconfig.json</code> + JSDoc on the protocol code (type stubs already installed).</div></td><td>types</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </details>
+
+    <details class="cat" id="cat-dead">
+      <summary id="dead"><span class="chev">▶</span><span class="h">Dead Code</span>
+        <span class="pillrow"><span class="pill sev P2">2× P2</span><span class="pill sev P3">2× P3</span><span class="pill hpill pass">Pass†</span></span>
+      </summary>
+      <div class="inner">
+      <table>
+        <thead><tr><th>#</th><th>Sev</th><th style="width:64%">Finding</th><th>Scale</th></tr></thead>
+        <tbody>
+          <tr><td class="id">DEAD-1</td><td><span class="sev P2">P2</span></td><td><span class="t">Orphaned route cluster from the Arena-first pivot — decision needed</span><div class="d"><code>HomePage</code>, <code>GlossaryPage</code>, <code>LessonPage</code>, <code>MySystemPage</code>, <code>TrainingPage</code>, <code>PickProfile</code>, <code>LessonView</code>, <code>StepPanel</code>, <code>GlossaryLink</code>, <code>ui/SectionHeader</code>, <code>content/mySystem.js</code> — all unreachable (App.jsx redirects the routes to <code>/</code>; the <code>/glossary → /#make-your-own</code> anchor doesn’t exist). These are real content features: <b>delete or re-route.</b> Removal order: leaves → StepPanel → LessonView → routes → newly-orphaned registry/progress/lesson exports.</div></td><td>11 files · ~982 lines</td></tr>
+          <tr><td class="id">DEAD-2</td><td><span class="sev P2">P2</span></td><td><span class="t">Test-only / dead exports</span><div class="d"><code>registry.listByKind</code> · <code>glossaryLinks.findTermLinks</code> · <code>board.indexToSquare</code> · dead <code>flattenMySystemChapters</code> · knip-flagged unused deps (<code>tailwind-merge</code>, <code>@testing-library/user-event</code>) to confirm.</div></td><td>4 exports</td></tr>
+          <tr><td class="id">DEAD-3</td><td><span class="sev P3">P3</span></td><td><span class="t">Forward-fix items</span><div class="d">Dead <code>'error'</code> status branch (fix forward per CORR-8, don’t delete) · vestigial <code>hintsUsed</code> field.</div></td><td>2 items</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section id="disputes">
+  <div class="wrap">
+    <h2><span class="idx">04</span>Devil’s-Advocate disputes</h2>
+    <p class="lede">Two original claims were corrected during verification — surfaced here per the evaluation rules rather than silently fixed.</p>
+    <div class="dispute">
+      <h4>DEP-1 · vitest precondition was overstated as “requires --ui”</h4>
+      <p>The advisory (GHSA-5xrq-8626-4rwp) actually triggers when <code>api.host</code> exposes the server to the network <b>or on Windows even via localhost</b>. Verdict kept Accept; precondition corrected; severity calibrated to P1 dev-tooling for this static app (macOS dev = low practical risk).</p>
+    </div>
+    <div class="dispute">
+      <h4>DEP-2 · “both router advisories patched in 6.30.4” was wrong</h4>
+      <p>Only the open-redirect advisory is patched in react-router 6.30.4. The XSS advisory (GHSA-2w69-qvjg-hvjx) lives in the transitive <code>@remix-run/router</code> ≤1.23.1, patched in 1.23.2. Both still resolve with in-range bumps — no v7 migration required.</p>
+    </div>
+  </div>
+</section>
+
+<section id="plan">
+  <div class="wrap">
+    <h2><span class="idx">05</span>Recommended sequence</h2>
+    <p class="lede">Analysis only — nothing was applied. Ordered so the robustness fixes land first and become the foundation for the lobby, chat, and duck-chess-decay work.</p>
+    <div class="steps">
+      <div class="step"><div><div class="t">Protocol epoch + wire-input guards</div><div class="d">CORR-1/2/3/6 + SEC-1/2/3 — fixes “unreliable joins” at the root; prerequisite for a lobby.</div></div></div>
+      <div class="step"><div><div class="t">Identity &amp; presence</div><div class="d">CORR-4/5/7/8/9 — per-tab identity, host-presence gating, terminal error state. This <em>is</em> the waiting-room groundwork.</div></div></div>
+      <div class="step"><div><div class="t">Quick CI/security batch</div><div class="d">API-1 <b>before 2026-06-16</b> · SEC-8/9/10 · TOOL-3 · DEP-2/4 bumps · deploy <code>cancel-in-progress: false</code>.</div></div></div>
+      <div class="step"><div><div class="t">Dead-code decision</div><div class="d">DEAD-1 — delete or revive the study-content routes (~982 lines).</div></div></div>
+      <div class="step"><div><div class="t">Refactor seams for the roadmap</div><div class="d">QUAL-1 variant registry + QUAL-2 serializer evolution <b>before</b> building duck-chess decay; QUAL-4 shared board input; extract <code>useGameChat</code> before chat features.</div></div></div>
+      <div class="step"><div><div class="t">Tests that lock it in</div><div class="d">TEST-1/2/3 + regression tests encoding the protocol fixes.</div></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:0">
+    <span>chess-academy · project health audit · 2026-06-10</span>
+    <span>full detail: .turbo/audit.md · fix tracker: .turbo/fix-plan.md · threat model: .turbo/threat-model.md</span>
+  </div>
+</footer>
+
+<script>
+const toc=document.getElementById('toc');
+addEventListener('scroll',()=>toc.classList.toggle('scrolled',scrollY>8),{passive:true});
+addEventListener('beforeprint',()=>document.querySelectorAll('details.cat').forEach(d=>d.open=true));
+document.querySelectorAll('nav.toc a').forEach(a=>a.addEventListener('click',()=>{
+  const id=a.getAttribute('href').slice(1);
+  const det=document.getElementById('cat-'+id)||document.getElementById(id)?.closest('details.cat');
+  if(det)det.open=true;
+}));
+</script>
+</body>
+</html>
