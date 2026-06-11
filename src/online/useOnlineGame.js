@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { isPromotion, opposite } from '../lesson/moves.js';
 import { isSquare } from '../engine/duck/board.js';
+import { randomId } from '../lib/ids.js';
 import { createVariantGame, lastMoveOf } from './rules.js';
 import { useGameChannel } from './useGameChannel.js';
 import { loadSnapshot, saveSnapshot } from './localSnapshot.js';
@@ -26,6 +27,8 @@ import { loadSnapshot, saveSnapshot } from './localSnapshot.js';
 const RESYNC_INTERVAL_MS = 900; // joiner polls this fast until first synced (handshake)
 const IDLE_RESYNC_MS = 6000; // once synced, joiner pulls this slowly while waiting on the opponent
 const MOVE_RETRY_MS = 2500; // joiner resends an unconfirmed move-intent this often
+const CHAT_MAX_MESSAGES = 200; // a hostile sender can bypass the input's maxLength — cap on receive
+const CHAT_MAX_LENGTH = 2000;
 
 // A fresh epoch marks a new game instance under the same game id (New game, or a host with no
 // persisted state for the id). Timestamp-based so a host that lost its storage still mints an epoch
@@ -248,7 +251,9 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   // Chat is peer-to-peer (both sides send and receive), independent of the host-authoritative game
   // sync, so its handler is wired for both roles.
   const handleChat = useCallback((message) => {
-    if (message?.text) setMessages((prev) => [...prev, message]);
+    if (typeof message?.text !== 'string' || !message.text) return; // wire input — shape-guarded
+    const entry = { ...message, text: message.text.slice(0, CHAT_MAX_LENGTH) };
+    setMessages((prev) => [...prev.slice(-(CHAT_MAX_MESSAGES - 1)), entry]);
   }, []);
 
   const channel = useGameChannel({
@@ -416,11 +421,12 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     (text) => {
       const trimmed = text.trim();
       if (!trimmed) return;
-      const message = { id: `${selfId}-${Date.now()}`, by: selfColor, text: trimmed };
-      setMessages((prev) => [...prev, message]); // show our own message at once (broadcast self:false)
+      const message = { id: randomId(), by: selfColor, text: trimmed };
+      // Show our own message at once (broadcast self:false), under the same cap as received ones.
+      setMessages((prev) => [...prev.slice(-(CHAT_MAX_MESSAGES - 1)), message]);
       channelRef.current?.sendChat(message);
     },
-    [selfId, selfColor],
+    [selfColor],
   );
 
   // Only computed during your own duck phase (a narrow window), so the per-render scan is negligible.

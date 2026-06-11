@@ -132,7 +132,7 @@ export function ProfileProvider({ children }) {
       // imported profile a fresh id so it can't clobber an existing one.
       const profile = {
         id: randomId(),
-        name: String(data.profile.name ?? 'Player').slice(0, 20) || 'Player',
+        name: (String(data.profile.name ?? '').trim() || 'Player').slice(0, 20),
         avatar: AVATARS.includes(data.profile.avatar) ? data.profile.avatar : AVATARS[0],
         createdAt: Number.isFinite(data.profile.createdAt) ? data.profile.createdAt : Date.now(),
       };

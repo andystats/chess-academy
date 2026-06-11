@@ -73,7 +73,7 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
 
     function connect() {
       const channel = supabase.channel(`game:${gameId}`, {
-        config: { broadcast: { self: false, ack: true }, presence: { key: selfId } },
+        config: { broadcast: { self: false }, presence: { key: selfId } },
       });
       channelRef.current = channel;
 

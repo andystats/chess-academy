@@ -51,7 +51,7 @@ function idbStore(db) {
       const keys = await promisifyRequest(store.getAllKeys());
       const values = await promisifyRequest(store.getAll());
       const prefix = `${profileId}:`;
-      const out = {};
+      const out = Object.create(null); // a '__proto__' lesson key must not pollute the prototype
       keys.forEach((key, i) => {
         if (String(key).startsWith(prefix)) out[String(key).slice(prefix.length)] = values[i];
       });
@@ -72,7 +72,7 @@ function memoryStore() {
     putProgress: async (profileId, lessonId, value) => void progress.set(progressKey(profileId, lessonId), value),
     async listProgress(profileId) {
       const prefix = `${profileId}:`;
-      const out = {};
+      const out = Object.create(null);
       for (const [key, value] of progress) {
         if (key.startsWith(prefix)) out[key.slice(prefix.length)] = value;
       }

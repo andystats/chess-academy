@@ -35,7 +35,7 @@ future session can resume cold from here.
 | E | Identity & presence (lobby groundwork) | ✅ done 2026-06-11 (commit pending; manual two-tab check open) |
 | F | Engine UX (false error banner, interrupt) | ✅ done 2026-06-11 (commit pending) |
 | G | Lesson fixes (underpromotion, frozen step) | ✅ done 2026-06-11 (commit pending) |
-| H | UX & app hardening (chat, WebGL, CSP, links) | ☐ not started |
+| H | UX & app hardening (chat, WebGL, CSP, links) | ✅ done 2026-06-11 (commit pending; live CSP check open) |
 | I | Dead-code decision (~982 orphaned lines) | ☐ not started |
 | J | Roadmap seams (variant registry, serializer v2, shared hooks) | ☐ not started |
 | K | Test hardening | ☐ not started |
@@ -138,14 +138,16 @@ Files: `src/online/localSnapshot.js`, `src/online/useGameChannel.js`, `src/onlin
 
 ## Bite H — UX & app hardening (CORR-16, CORR-17, CORR-18, SEC-6, SEC-10, CORR-19 picks)
 
-- [ ] Invite link: treat missing/invalid `?host` as a "link looks broken — ask your friend to re-copy it" state instead of defaulting to white. [CORR-16]
-- [ ] Chat autoscroll: scroll the chat container (`el.scrollTop = el.scrollHeight`), not `scrollIntoView`. [CORR-17]
-- [ ] Chat receive guards: cap stored messages (e.g. last 200) and truncate `text` (e.g. 2000 chars) in `handleChat`; locally trim/disable empty send in ChatBox. [SEC-6 + CORR-19]
-- [ ] App-level `ErrorBoundary` in `App.jsx`; try/catch around `new WebGLRenderer` in `StylizedKingScene` with a static fallback; single-frame render under reduced motion. [CORR-18 + CORR-19]
-- [ ] CSP: `<meta http-equiv="Content-Security-Policy">` in index.html + `headers` block in vercel.json — `default-src 'self'`; `connect-src 'self' https://*.supabase.co wss://*.supabase.co`; fonts origins; `frame-ancestors 'none'`; hash/nonce the inline 404-restore script. Test online play still connects after adding it. [SEC-10]
-- [ ] Small sweep from CORR-19 while nearby: lazy `useState(() => …loadSnapshot…)`; chat id uniqueness; `Object.create(null)` in `listProgress`; trim imported profile names; `body?.entries ?? []` in registry; `eventsPerSecond` removal [API-2]; drop or consume `broadcast.ack` [API-3].
+- [x] Invite link: a joiner whose link is missing/invalid `?v` OR `?host` now gets a "This invite link looks broken" screen (both params are load-bearing for seat/variant); host path unaffected. [CORR-16]
+- [x] Chat autoscroll scrolls the chat container itself (`scrollTop = scrollHeight`) — no more page yank; empty/whitespace sends blocked locally + Send button disabled when blank. [CORR-17 + CORR-19]
+- [x] Chat receive guards in `handleChat`: string-typed text only, truncated to 2000 chars, last 200 messages kept (own sends under the same cap); chat ids now `randomId()` (no same-millisecond key collisions). [SEC-6 + CORR-19]
+- [x] New `src/components/ErrorBoundary.jsx` (reload prompt) wrapping the app shell; `StylizedKingScene` guards `new WebGLRenderer` (no WebGL → empty hero, no crash) and renders a single static frame under reduced motion (re-drawn on resize) instead of a perpetual identical-frame RAF loop. [CORR-18 + CORR-19]
+- [x] CSP shipped as a **build-time vite plugin** rather than a static meta in index.html — dev needs inline scripts for React Fast Refresh, and the plugin hashes the inline 404-restore snippet from the FINAL built HTML so editing it can't silently break the policy. Directives: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' + hashes (wasm for the Stockfish worker under header-sending hosts); style 'unsafe-inline' + fonts.googleapis.com; font gstatic; img 'self' data: (duck glyph); connect Supabase https+wss; worker 'self'; object/base-uri locked. frame-ancestors is meta-ignored per spec → covered on Vercel via new `headers` in vercel.json (X-Frame-Options DENY, nosniff, Referrer-Policy). Verified in dist/index.html. [SEC-10]
+- [x] CORR-19 sweep: `Object.create(null)` in both `listProgress` impls; imported profile names trimmed before defaulting; `body?.entries ?? []` in registry ×2; dead `eventsPerSecond` removed [API-2]; inert `broadcast.ack` dropped [API-3]. (Lazy loadSnapshot landed back in Bite D.)
+- [x] Verify: lint clean · 152/152 tests (new chat-cap test) · build green with the CSP meta present and correctly hashed.
+- [ ] Manual verify on the live site after deploy: online game still connects under the CSP (watch the console for CSP violations during a real game + an engine game).
 
-**Landed:** _(commit)_
+**Landed:** 2026-06-11 — _commit pending; stamp the hash here once committed._
 
 ## Bite I — Dead-code decision (DEAD-1, DEAD-2)
 

@@ -14,6 +14,4 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const isRealtimeConfigured = Boolean(url && anonKey);
 
-export const supabase = isRealtimeConfigured
-  ? createClient(url, anonKey, { realtime: { params: { eventsPerSecond: 10 } } })
-  : null;
+export const supabase = isRealtimeConfigured ? createClient(url, anonKey) : null;

@@ -455,4 +455,18 @@ describe('chat', () => {
     expect(result.current.messages).toHaveLength(2); // whitespace-only is dropped
     expect(transport.sendChat).toHaveBeenCalledTimes(1);
   });
+
+  it('caps and sanitizes incoming chat from the wire', () => {
+    const { result } = renderHook(() => useOnlineGame(props));
+    act(() => transport.handlers.onChat({ id: 'n1', by: 'black', text: 42 })); // non-string — dropped
+    act(() => transport.handlers.onChat({ id: 'n2', by: 'black', text: 'x'.repeat(5000) }));
+    expect(result.current.messages).toHaveLength(1);
+    expect(result.current.messages[0].text).toHaveLength(2000); // truncated on receive
+
+    act(() => {
+      for (let i = 0; i < 250; i += 1) transport.handlers.onChat({ id: `m${i}`, by: 'black', text: `m${i}` });
+    });
+    expect(result.current.messages).toHaveLength(200); // bounded against a flood
+    expect(result.current.messages.at(-1).text).toBe('m249'); // newest kept
+  });
 });

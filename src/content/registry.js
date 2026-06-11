@@ -49,11 +49,11 @@ export function listTracks() {
  * glossary page and by [[term]] links in lesson prose.
  */
 export function getGlossaryIndex() {
-  return indexGlossaryEntries(listByKind('glossary').flatMap((env) => env.body.entries));
+  return indexGlossaryEntries(listByKind('glossary').flatMap((env) => env.body?.entries ?? []));
 }
 
 /** All glossary entries, sorted by term, for the glossary index page. */
 export function listGlossaryEntries() {
-  const entries = listByKind('glossary').flatMap((env) => env.body.entries);
+  const entries = listByKind('glossary').flatMap((env) => env.body?.entries ?? []);
   return entries.sort((a, b) => a.term.localeCompare(b.term));
 }

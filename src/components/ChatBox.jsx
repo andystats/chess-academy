@@ -7,22 +7,25 @@ import { Send } from 'lucide-react';
 // session (see src/online/useOnlineGame.js).
 export default function ChatBox({ messages, onSend, selfColor }) {
   const [text, setText] = useState('');
-  const endRef = useRef(null);
+  const listRef = useRef(null);
 
-  // Keep the latest message in view as the conversation grows.
+  // Keep the latest message in view as the conversation grows — by scrolling the chat container
+  // itself. scrollIntoView would also scroll every ancestor and yank the page off the board.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: 'end' });
+    const list = listRef.current;
+    if (list) list.scrollTop = list.scrollHeight;
   }, [messages.length]);
 
   const submit = (event) => {
     event.preventDefault();
+    if (!text.trim()) return;
     onSend(text);
     setText('');
   };
 
   return (
     <div className="flex flex-col border-3 border-foreground bg-white">
-      <div className="h-48 space-y-1.5 overflow-y-auto p-3 text-sm">
+      <div ref={listRef} className="h-48 space-y-1.5 overflow-y-auto p-3 text-sm">
         {messages.length === 0 ? (
           <p className="text-gray-400">Say hi to your opponent 👋</p>
         ) : (
@@ -39,7 +42,6 @@ export default function ChatBox({ messages, onSend, selfColor }) {
             </div>
           ))
         )}
-        <div ref={endRef} />
       </div>
       <form onSubmit={submit} className="flex gap-2 border-t-3 border-foreground p-2">
         <input
@@ -50,7 +52,7 @@ export default function ChatBox({ messages, onSend, selfColor }) {
           maxLength={500}
           className="min-h-touch flex-1 px-2 text-sm focus:outline-none"
         />
-        <button type="submit" className="tao-btn-primary px-3" aria-label="Send message">
+        <button type="submit" disabled={!text.trim()} className="tao-btn-primary px-3 disabled:opacity-40" aria-label="Send message">
           <Send size={16} />
         </button>
       </form>

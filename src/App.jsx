@@ -1,5 +1,6 @@
 import { Navigate, Routes, Route } from 'react-router-dom';
 import AppHeader from './components/AppHeader.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 import ArenaPage from './routes/ArenaPage.jsx';
 import ScenarioPage from './routes/ScenarioPage.jsx';
 import FreePlayPage from './routes/FreePlayPage.jsx';
@@ -14,34 +15,36 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white">
-      <AppHeader />
-      {!ready ? (
-        <p className="py-20 text-center text-gray-400">Loading…</p>
-      ) : (
-        <main>
-          <Routes>
-            <Route path="/" element={<ArenaPage />} />
-            <Route path="/training" element={<Navigate to="/" replace />} />
-            <Route path="/lesson/*" element={<Navigate to="/" replace />} />
-            <Route path="/my-system" element={<Navigate to="/" replace />} />
-            <Route path="/glossary" element={<Navigate to="/#make-your-own" replace />} />
-            <Route path="/arena" element={<ArenaPage />} />
-            <Route path="/arena/free" element={<FreePlayPage />} />
-            <Route path="/arena/online" element={<OnlineLobbyPage />} />
-            <Route path="/play/:gameId" element={<OnlinePlayPage />} />
-            <Route path="/arena/scenario/*" element={<ScenarioPage />} />
-            <Route
-              path="/puzzles"
-              element={<ComingSoonPage title="Puzzles" blurb="A puzzle trainer with friendly difficulty levels is coming soon." />}
-            />
-            <Route
-              path="/reference/:section"
-              element={<ComingSoonPage title="Reference" blurb="Openings, middlegame, endgame, and pawn structure guides are on the way." />}
-            />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </main>
-      )}
+      <ErrorBoundary>
+        <AppHeader />
+        {!ready ? (
+          <p className="py-20 text-center text-gray-400">Loading…</p>
+        ) : (
+          <main>
+            <Routes>
+              <Route path="/" element={<ArenaPage />} />
+              <Route path="/training" element={<Navigate to="/" replace />} />
+              <Route path="/lesson/*" element={<Navigate to="/" replace />} />
+              <Route path="/my-system" element={<Navigate to="/" replace />} />
+              <Route path="/glossary" element={<Navigate to="/#make-your-own" replace />} />
+              <Route path="/arena" element={<ArenaPage />} />
+              <Route path="/arena/free" element={<FreePlayPage />} />
+              <Route path="/arena/online" element={<OnlineLobbyPage />} />
+              <Route path="/play/:gameId" element={<OnlinePlayPage />} />
+              <Route path="/arena/scenario/*" element={<ScenarioPage />} />
+              <Route
+                path="/puzzles"
+                element={<ComingSoonPage title="Puzzles" blurb="A puzzle trainer with friendly difficulty levels is coming soon." />}
+              />
+              <Route
+                path="/reference/:section"
+                element={<ComingSoonPage title="Reference" blurb="Openings, middlegame, endgame, and pawn structure guides are on the way." />}
+              />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </main>
+        )}
+      </ErrorBoundary>
     </div>
   );
 }

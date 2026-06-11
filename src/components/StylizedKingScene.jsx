@@ -75,7 +75,12 @@ export default function StylizedKingScene({ className = 'h-[18rem] w-full md:h-[
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
     camera.position.set(0, 0.2, 8.4);
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    } catch {
+      return undefined; // no WebGL (old device, blocked context) — the decorative hero stays empty
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.domElement.style.display = 'block';
     renderer.domElement.style.height = '100%';
@@ -123,21 +128,22 @@ export default function StylizedKingScene({ className = 'h-[18rem] w-full md:h-[
       renderer.setSize(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
+      if (reduceMotion) renderer.render(scene, camera); // static mode still redraws on resize
     };
 
     const animate = () => {
       if (disposed) return;
-      if (!reduceMotion) {
-        king.rotation.y += 0.006;
-        king.position.y = Math.sin(performance.now() * 0.0012) * 0.035;
-      }
+      king.rotation.y += 0.006;
+      king.position.y = Math.sin(performance.now() * 0.0012) * 0.035;
       renderer.render(scene, camera);
       frame = window.requestAnimationFrame(animate);
     };
 
     resize();
     window.addEventListener('resize', resize);
-    animate();
+    // Reduced motion: one static frame instead of a perpetual identical-frame render loop.
+    if (reduceMotion) renderer.render(scene, camera);
+    else animate();
 
     return () => {
       disposed = true;
