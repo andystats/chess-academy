@@ -59,3 +59,34 @@ describe('state (de)serialization', () => {
     expect(() => new Chess(fen)).not.toThrow();
   });
 });
+
+describe('hostile wire input', () => {
+  it('deserialize throws on malformed state instead of producing corrupt state', () => {
+    const bad = [
+      42, // non-string
+      '', // empty
+      'rnbq w piece -', // too few fields
+      `${START_PLACEMENT} x piece - KQkq - 0 1`, // bad turn
+      `${START_PLACEMENT} w flying - KQkq - 0 1`, // bad phase
+      `${START_PLACEMENT} w duck z9 KQkq - 0 1`, // off-board duck square
+      `${START_PLACEMENT} w piece - XYZW - 0 1`, // bad castling field
+      `${START_PLACEMENT} w piece - KQkq j9 0 1`, // bad en-passant square
+      `${START_PLACEMENT} w piece - KQkq - x 1`, // non-numeric halfmove
+      `${START_PLACEMENT} w piece - KQkq - 0 -3`, // negative fullmove
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNRR w piece - KQkq - 0 1', // 65th square
+      'rnbqkbnr/pppppppp5/8/8/8/8/PPPPPPPP/RNBQKBNR w piece - KQkq - 0 1', // overfull rank
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBN w piece - KQkq - 0 1', // 63 squares
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNZ w piece - KQkq - 0 1', // bad piece letter
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBKR w piece - KQkq - 0 1', // two white kings
+    ];
+    for (const wire of bad) {
+      expect(() => deserialize(wire), `should reject: ${wire}`).toThrow();
+    }
+  });
+
+  it('squareToIndex maps non-squares (including non-strings) to -1', () => {
+    for (const input of ['z9', 'a9', 'i1', 'aa', '', 'e44', 42, null, undefined, {}]) {
+      expect(squareToIndex(input)).toBe(-1);
+    }
+  });
+});

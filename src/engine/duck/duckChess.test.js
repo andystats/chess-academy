@@ -26,6 +26,16 @@ describe('turn machine', () => {
     expect(game.movePiece({ from: 'd2', to: 'd4' }).ok).toBe(false); // must place the duck first
   });
 
+  it('rejects malformed duck squares (off-board, aliased like "z9", non-string)', () => {
+    const game = createDuckGame();
+    game.movePiece({ from: 'e2', to: 'e4' });
+    for (const square of ['z9', 'a9', 'i1', '', 'e2e4', 42, null, undefined, {}]) {
+      expect(game.placeDuck(square).ok).toBe(false);
+    }
+    expect(game.phase()).toBe('duck'); // still awaiting a real square
+    expect(game.placeDuck('e6').ok).toBe(true);
+  });
+
   it('round-trips through serialize → createDuckGame', () => {
     const game = createDuckGame();
     game.movePiece({ from: 'e2', to: 'e4' });

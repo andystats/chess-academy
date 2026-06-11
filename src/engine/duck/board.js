@@ -16,8 +16,16 @@ export const FILES = 'abcdefgh';
 /** Standard chess starting placement (the piece-placement field of a FEN). */
 export const START_PLACEMENT = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
 
-/** Square string like "e4" → flat board index (a8 = 0 … h1 = 63). */
+const SQUARE_RE = /^[a-h][1-8]$/;
+
+/** True for a real square string ("a1"–"h8"); false for anything else, including non-strings. */
+export function isSquare(value) {
+  return typeof value === 'string' && SQUARE_RE.test(value);
+}
+
+/** Square string like "e4" → flat board index (a8 = 0 … h1 = 63), or -1 for a non-square. */
 export function squareToIndex(square) {
+  if (!isSquare(square)) return -1; // board[-1] is undefined, matching pieceAt's off-board contract
   const file = square.charCodeAt(0) - 97; // 'a' → 0
   const rank = square.charCodeAt(1) - 48; // '1' → 1
   return (8 - rank) * 8 + file;
@@ -48,16 +56,32 @@ export function colorOf(piece) {
   return piece === piece.toUpperCase() ? 'w' : 'b';
 }
 
-/** Parse a FEN placement field into the flat 64-cell board. */
+/**
+ * Parse a FEN placement field into the flat 64-cell board. Throws on malformed input — this sits on
+ * the multiplayer wire-decode boundary, so a bad field is rejected rather than silently mis-sized.
+ */
 export function parsePlacement(placement) {
   const board = new Array(64).fill(null);
   let i = 0;
   for (const ch of placement) {
-    if (ch === '/') continue;
+    if (ch === '/') {
+      if (i % 8 !== 0) throw new Error(`Malformed placement rank: ${placement}`);
+      continue;
+    }
     if (ch >= '1' && ch <= '8') i += Number(ch);
-    else {
+    else if ('pnbrqk'.includes(ch.toLowerCase())) {
       board[i] = ch;
       i += 1;
+    } else {
+      throw new Error(`Invalid placement character '${ch}': ${placement}`);
+    }
+    if (i > 64) throw new Error(`Placement overflows the board: ${placement}`);
+  }
+  if (i !== 64) throw new Error(`Placement covers ${i} squares, not 64: ${placement}`);
+  // At most one king per side; zero is valid (a captured king is the variant's terminal state).
+  for (const king of ['K', 'k']) {
+    if (board.filter((cell) => cell === king).length > 1) {
+      throw new Error(`More than one '${king}' on the board: ${placement}`);
     }
   }
   return board;
@@ -119,9 +143,21 @@ export function serialize(state) {
   ].join(' ');
 }
 
-/** Parse a wire string back into full game state. */
+/**
+ * Parse a wire string back into full game state. Throws on malformed input: snapshots arrive over
+ * the public realtime channel, so every field is validated rather than trusted (threat model 3.3).
+ */
 export function deserialize(str) {
-  const [placement, turn, phase, duck, castling, ep, halfmove, fullmove] = str.split(' ');
+  if (typeof str !== 'string') throw new Error('State must be a string');
+  const fields = str.split(' ');
+  if (fields.length !== 8) throw new Error(`Expected 8 wire fields, got ${fields.length}: ${str}`);
+  const [placement, turn, phase, duck, castling, ep, halfmove, fullmove] = fields;
+  if (turn !== 'w' && turn !== 'b') throw new Error(`Invalid turn '${turn}': ${str}`);
+  if (phase !== 'piece' && phase !== 'duck') throw new Error(`Invalid phase '${phase}': ${str}`);
+  if (duck !== '-' && !isSquare(duck)) throw new Error(`Invalid duck square '${duck}': ${str}`);
+  if (castling !== '-' && !/^[KQkq]{1,4}$/.test(castling)) throw new Error(`Invalid castling '${castling}': ${str}`);
+  if (ep !== '-' && !isSquare(ep)) throw new Error(`Invalid en-passant square '${ep}': ${str}`);
+  if (!/^\d+$/.test(halfmove) || !/^\d+$/.test(fullmove)) throw new Error(`Invalid move clocks: ${str}`);
   return {
     board: parsePlacement(placement),
     turn,

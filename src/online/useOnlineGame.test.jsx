@@ -240,6 +240,55 @@ describe('robustness', () => {
   });
 });
 
+describe('hostile wire input', () => {
+  it('host ignores malformed move-intents without crashing, mutating, or broadcasting', () => {
+    const props = { gameId: 'w1', variant: 'duck', selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
+    const { result } = renderHook(() => useOnlineGame(props));
+    act(() => result.current.onPieceDrop('e2', 'e4'));
+    act(() => result.current.onSquareClick('d3')); // turn committed → the wire side (black) to move
+    const fenBefore = result.current.fen;
+    transport.broadcastSnapshot.mockClear();
+
+    const garbage = [
+      null,
+      'not an intent',
+      { by: 'joiner' }, // no pieceMove
+      { by: 'joiner', pieceMove: 42 },
+      { by: 'joiner', pieceMove: { from: 7, to: 'e5' } },
+      { by: 'joiner', pieceMove: { from: 'e7', to: 'z9' } },
+      { by: 'joiner', pieceMove: { from: 'e7', to: 'e5', promotion: 13 } },
+      { by: 'joiner', pieceMove: { from: 'e7', to: 'e5', promotion: 'king' } },
+      { by: 'joiner', pieceMove: { from: 'e7', to: 'e5' }, duckSquare: 42 },
+      { by: 'joiner', pieceMove: { from: 'e7', to: 'e5' }, duckSquare: {} },
+      { by: 'joiner', pieceMove: { from: 'e7', to: 'e5' }, duckSquare: 'z9' },
+    ];
+    for (const intent of garbage) act(() => transport.handlers.onMoveIntent(intent));
+    expect(result.current.fen).toBe(fenBefore);
+    expect(transport.broadcastSnapshot).not.toHaveBeenCalled(); // shape-garbage is dropped silently
+  });
+
+  it('joiner drops snapshots that fail validation and still adopts the next good one', () => {
+    const props = { gameId: 'w2', variant: 'standard', selfColor: 'black', isHost: false, hostColor: 'white', selfId: 'joiner' };
+    const { result } = renderHook(() => useOnlineGame(props));
+    const players = { white: 'host', black: 'joiner' };
+    act(() => transport.handlers.onSnapshot({ epoch: 1, seq: 2, variant: 'standard', hostColor: 'white', players, state: fenAfter('standard', { from: 'e2', to: 'e4' }) }));
+    const fenBefore = result.current.fen;
+
+    const garbage = [
+      { epoch: 9, seq: 9, variant: 'standard', players, state: 42 }, // non-string state
+      { epoch: 9, seq: 9, variant: 'standard', players, state: '' }, // would silently reset the board
+      { epoch: 9, seq: 9, variant: 'standard', players, state: 'total garbage' }, // unparseable FEN
+      { epoch: 9, seq: 9, variant: 'duck', players, state: fenAfter('duck', { from: 'e2', to: 'e4' }) }, // wrong variant
+    ];
+    for (const snapshot of garbage) act(() => transport.handlers.onSnapshot(snapshot));
+    expect(result.current.fen).toBe(fenBefore); // nothing adopted
+
+    // (epoch, seq) advance only on adoption, so the rejected seq-9 snapshots can't block a real one.
+    act(() => transport.handlers.onSnapshot({ epoch: 1, seq: 3, variant: 'standard', hostColor: 'white', players, state: fenAfter('standard', { from: 'e2', to: 'e4' }, { from: 'e7', to: 'e5' }) }));
+    expect(result.current.fen).not.toBe(fenBefore); // healthy adoption resumed
+  });
+});
+
 describe('epoch — new game and stuck-joiner recovery', () => {
   const hostProps = { gameId: 'e1', variant: 'standard', selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
   const joinerProps = { gameId: 'e2', variant: 'standard', selfColor: 'black', isHost: false, hostColor: 'white', selfId: 'joiner' };

@@ -147,8 +147,9 @@ export function createDuckGame(serialized) {
 
   function placeDuck(square) {
     if (result() || state.phase !== 'duck') return { ok: false };
-    const index = squareToIndex(square);
-    if (state.board[index] !== null || square === state.duck) return { ok: false };
+    // Membership in the generated targets rejects occupied squares, the current duck square, and
+    // malformed input (off-board strings, aliased coordinates like "z9", non-strings) in one check.
+    if (!legalDuckTargets(state).includes(square)) return { ok: false };
 
     state.duck = square;
     // A game resumed from a mid-turn snapshot starts with an empty history (the wire format drops

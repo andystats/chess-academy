@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { opposite } from '../lesson/moves.js';
+import { isSquare } from '../engine/duck/board.js';
 import { createVariantGame, lastMoveOf } from './rules.js';
 import { useGameChannel } from './useGameChannel.js';
 import { loadSnapshot, saveSnapshot } from './localSnapshot.js';
@@ -57,15 +58,24 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
 
   // Lazily build the starting rules instance: host resumes from its persisted snapshot on reload;
   // the joiner starts from any persisted snapshot and otherwise waits for the host's first snapshot.
+  // Persisted state shares the wire format (and its trust model — see adoptSnapshot): if it fails
+  // to parse, start fresh rather than crash on mount.
+  const restoredRef = useRef(false);
   if (gameRef.current === null) {
     const persisted = loadSnapshot(gameId);
     if (persisted && persisted.state) {
-      gameRef.current = createVariantGame(persisted.variant || variant, persisted.state);
-      seqRef.current = persisted.seq || 0;
-      // A host resuming a pre-epoch snapshot starts a fresh instance so joiners follow it.
-      epochRef.current = persisted.epoch || (isHost ? mintEpoch(0) : 0);
-      if (persisted.players) playersRef.current = persisted.players;
-    } else {
+      try {
+        gameRef.current = createVariantGame(persisted.variant || variant, persisted.state);
+        seqRef.current = persisted.seq || 0;
+        // A host resuming a pre-epoch snapshot starts a fresh instance so joiners follow it.
+        epochRef.current = persisted.epoch || (isHost ? mintEpoch(0) : 0);
+        if (persisted.players) playersRef.current = persisted.players;
+        restoredRef.current = true;
+      } catch {
+        gameRef.current = null; // corrupt snapshot — fall through to the fresh-game path
+      }
+    }
+    if (gameRef.current === null) {
       gameRef.current = createVariantGame(variant);
       if (isHost) {
         seqRef.current = 1;
@@ -78,7 +88,9 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   const [view, setView] = useState(() => snapshotView(gameRef.current));
   const [selection, setSelection] = useState({ selectedSquare: null, legalTargets: [] });
   const [orientation, setOrientation] = useState(selfColor);
-  const [synced, setSynced] = useState(isHost || Boolean(loadSnapshot(gameId)));
+  // `synced` mirrors whether the lazy init above actually restored a snapshot — not just whether
+  // one exists in storage — so a corrupt snapshot can't present a fresh board as synced.
+  const [synced, setSynced] = useState(isHost || restoredRef.current);
   const [messages, setMessages] = useState([]); // chat — peer-to-peer, ephemeral
 
   const sync = useCallback(() => {
@@ -117,6 +129,12 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   const applyIntent = useCallback(
     (intent) => {
       if (!isHost || !intent?.pieceMove) return;
+      // Shape-check the payload before anything else: the channel is public, so a malformed intent
+      // is ignored outright — it must never crash the host or reach the engine (threat model 3.3).
+      const { from, to, promotion } = intent.pieceMove;
+      if (!isSquare(from) || !isSquare(to)) return;
+      if (promotion != null && !['q', 'r', 'b', 'n'].includes(promotion)) return;
+      if (intent.duckSquare != null && !isSquare(intent.duckSquare)) return;
       const game = gameRef.current;
       const color = game.turnColor();
       // The first id to move on an unclaimed color claims that seat for the game; afterwards, intents
@@ -171,16 +189,32 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   const adoptSnapshot = useCallback(
     (snapshot) => {
       if (!snapshot) return;
-      const epoch = snapshot.epoch || 0;
+      const epoch = Number(snapshot.epoch) || 0;
+      const seq = Number(snapshot.seq) || 0;
       const newer =
-        epoch > epochRef.current || (epoch === epochRef.current && snapshot.seq > seqRef.current);
+        epoch > epochRef.current || (epoch === epochRef.current && seq > seqRef.current);
       if (!newer) return;
+      // The channel is public: validate the claimed state before committing anything. A snapshot
+      // for the wrong variant or with a non-string/empty state is dropped (an empty state would
+      // silently reset a standard game — chess.js treats it as "no FEN"), and a state that fails
+      // to parse is dropped too. (epoch, seq) only advance on adoption, so a rejected snapshot
+      // can never block a later real one.
+      if (snapshot.variant && snapshot.variant !== variant) return;
+      if (typeof snapshot.state !== 'string' || snapshot.state === '') return;
+      let game;
+      try {
+        game = createVariantGame(snapshot.variant || variant, snapshot.state);
+      } catch {
+        return;
+      }
       epochRef.current = epoch;
-      seqRef.current = snapshot.seq;
+      seqRef.current = seq;
       pendingIntentRef.current = null; // a newer authoritative state means our move was applied or rolled back
       pendingPieceMoveRef.current = null; // and any half-entered local turn is superseded with it
-      if (snapshot.players) playersRef.current = snapshot.players;
-      gameRef.current = createVariantGame(snapshot.variant || variant, snapshot.state);
+      if (snapshot.players && typeof snapshot.players === 'object') {
+        playersRef.current = { white: snapshot.players.white ?? null, black: snapshot.players.black ?? null };
+      }
+      gameRef.current = game;
       saveSnapshot(gameId, snapshot);
       setSynced(true);
       sync();

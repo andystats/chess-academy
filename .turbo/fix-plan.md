@@ -31,7 +31,7 @@ future session can resume cold from here.
 | A | CI quick wins (⏰ before 2026-06-16) | ✅ done 2026-06-11 (commit pending; CI-on-push check open) |
 | B | Protocol epoch — the P0 join deadlock | ✅ done 2026-06-11 (commit pending; manual two-browser check open) |
 | C | Atomic turn apply + mid-turn safety | ✅ done 2026-06-11 (commit pending) |
-| D | Wire-input guards (peer payload hardening) | ☐ not started |
+| D | Wire-input guards (peer payload hardening) | ✅ done 2026-06-11 (commit pending) |
 | E | Identity & presence (lobby groundwork) | ☐ not started |
 | F | Engine UX (false error banner, interrupt) | ☐ not started |
 | G | Lesson fixes (underpromotion, frozen step) | ☐ not started |
@@ -92,15 +92,15 @@ Files: `src/online/useOnlineGame.js` (`applyIntent`), `src/engine/duck/duckChess
 Anyone with the game id can broadcast; one malformed payload must never crash a client.
 Files: `src/online/useOnlineGame.js`, `src/online/rules.js`, `src/engine/duck/board.js`, `src/engine/duck/duckChess.js`.
 
-- [ ] Wrap every `createVariantGame(...)` from wire/storage data (adoptSnapshot, lazy init) in try/catch → on failure ignore the snapshot (and for storage, fall back to a fresh game). [SEC-1]
-- [ ] Top of `applyIntent`: validate shape — `pieceMove.from/to` are strings matching `/^[a-h][1-8]$/`, `promotion` ∈ {q,r,b,n,undefined}, `duckSquare` absent or a valid square string. Reject silently otherwise. [SEC-2]
-- [ ] `board.js deserialize`: require string input, exactly 8 fields, `turn` ∈ {w,b}, `phase` ∈ {piece,duck}, finite ints for clocks, placement parses to exactly 64 cells → else `throw` (callers now catch per SEC-1). [SEC-3]
-- [ ] `parsePlacement`: stop/throw when index ≥ 64 (or count > 64 squares). [SEC-4]
-- [ ] `squareToIndex`: return -1 for non-`[a-h][1-8]` input; `placeDuck` additionally checks the square is in `legalDuckTargets(state)`. [SEC-5]
-- [ ] `adoptSnapshot`: sanity-check `snapshot.players` is a plain object and `snapshot.variant` matches the local variant before adopting; validate exactly one king per side or derive result defensively. [SEC-7]
-- [ ] Tests: fuzz-ish table test feeding garbage snapshots/intents (numbers, objects, truncated strings, 65-square placements, `"z9"`) — assert no throw and state unchanged.
+- [x] Every `createVariantGame(...)` from wire/storage data is guarded: `adoptSnapshot` validates **before committing** ((epoch, seq) advance only on adoption — a rejected snapshot can never block a later real one), and the lazy init falls back to a fresh game on a corrupt persisted snapshot instead of crashing on mount. Bonus: `synced` now reflects whether a snapshot actually restored (new `restoredRef`), not merely whether storage holds one — this also removed the per-render `loadSnapshot` read flagged in CORR-19. [SEC-1]
+- [x] `applyIntent` shape-checks the payload before the seat-claim and the engine: `from`/`to` must be real squares, `promotion` ∈ {q,r,b,n,null}, `duckSquare` absent or a real square; garbage is dropped silently (and can no longer claim a seat). New shared `isSquare` exported from board.js. [SEC-2]
+- [x] `deserialize` validates everything: string input, exactly 8 fields, turn ∈ {w,b}, phase ∈ {piece,duck}, duck/ep squares, castling `[KQkq]{1,4}` or `-`, digit-only clocks — throws on violation (callers catch). [SEC-3]
+- [x] `parsePlacement` validates: only real piece letters/digits, rank boundaries on `/`, overflow >64 throws, total must be exactly 64. [SEC-4]
+- [x] `squareToIndex` returns -1 for any non-square (incl. non-strings; verified all other callers pass generator-produced squares); `placeDuck` now checks membership in `legalDuckTargets(state)` — one check rejects occupied squares, the current duck, "z9"-style aliases, and non-strings. [SEC-5]
+- [x] `adoptSnapshot` rejects wrong-variant snapshots, rejects non-string/empty `state` (an **empty string would otherwise silently reset a standard game** — chess.js treats `''` as "no FEN"; found while implementing), normalizes `players` to `{white, black}` from object payloads only, and coerces epoch/seq via `Number()`. King count: `parsePlacement` enforces at most one per side (zero stays valid — a captured king is the variant's terminal state). [SEC-7]
+- [x] Tests (5 new): deserialize garbage table (15 cases incl. 65-square, overfull-rank, two-kings, NaN clocks), squareToIndex non-square table, placeDuck malformed-square table, host intent-garbage table (silent — no broadcast, board unchanged), joiner snapshot-garbage table (drops all, then a real snapshot still adopts). Suite: 134/134; lint clean.
 
-**Landed:** _(commit)_
+**Landed:** 2026-06-11 — _commit pending; stamp the hash here once committed._
 
 ## Bite E — Identity & presence: lobby groundwork (CORR-4, CORR-5, CORR-7, CORR-8, CORR-9, CORR-10/API-4)
 
