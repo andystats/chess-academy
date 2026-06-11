@@ -26,6 +26,7 @@ export function createStockfish() {
   let worker = null;
   let pending = null; // { match, resolve, reject, timer } for the one outstanding command, or null
   let lastScore = null;
+  let searching = false; // capture score lines only while a bestmove is pending
 
   function settle(error, value) {
     if (!pending) return;
@@ -53,7 +54,7 @@ export function createStockfish() {
 
   function handleLine(line) {
     const score = parseScore(line);
-    if (score) lastScore = score;
+    if (score && searching) lastScore = score; // a stray info line outside a search is not ours
     if (!pending) return;
     const hit = pending.match(line);
     if (hit === false || hit === undefined) return; // not the line we're waiting for
@@ -91,13 +92,18 @@ export function createStockfish() {
     if (!worker) await init();
     lastScore = null;
     send(`position fen ${fen}`);
-    send(depth ? `go depth ${depth}` : `go movetime ${Math.round(movetime)}`);
-    const line = await waitFor((l) => (l.startsWith('bestmove') ? l : false), MOVE_TIMEOUT_MS, 'a move');
-    const uci = line.split(/\s+/)[1];
-    return {
-      move: isUci(uci) ? uci : null,
-      evaluation: normalizeScore(lastScore, fen),
-    };
+    searching = true;
+    try {
+      send(depth ? `go depth ${depth}` : `go movetime ${Math.round(movetime)}`);
+      const line = await waitFor((l) => (l.startsWith('bestmove') ? l : false), MOVE_TIMEOUT_MS, 'a move');
+      const uci = line.split(/\s+/)[1];
+      return {
+        move: isUci(uci) ? uci : null,
+        evaluation: normalizeScore(lastScore, fen),
+      };
+    } finally {
+      searching = false;
+    }
   }
 
   // True while a command is outstanding — lets the caller decide to tear down a thinking engine on
@@ -107,7 +113,9 @@ export function createStockfish() {
   }
 
   function dispose() {
-    settle(new Error('The chess engine was stopped.'));
+    const stopped = new Error('The chess engine was stopped.');
+    stopped.isInterrupt = true; // an intentional stop (reset/unmount), not an engine failure
+    settle(stopped);
     if (worker) {
       try {
         worker.postMessage('quit');

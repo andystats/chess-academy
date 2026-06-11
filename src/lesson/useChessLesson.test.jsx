@@ -125,6 +125,92 @@ describe('useChessLesson — tap-to-move', () => {
   });
 });
 
+describe('useChessLesson — tap-path promotion picker', () => {
+  const promoStep = {
+    id: 'pr',
+    type: 'single-move',
+    fen: '7k/P7/8/8/8/8/8/7K w - - 0 1',
+    markdown: 'x',
+    solution: { san: ['a8=N'] },
+    feedback: { correct: 'C', wrong: 'W' },
+  };
+  const promoEnv = wrap([promoStep]);
+
+  it('opens the picker instead of silently queening, then applies the chosen piece', () => {
+    const { result } = renderHook(() => useChessLesson(promoEnv));
+    act(() => result.current.onSquareClick('a7'));
+    act(() => result.current.onSquareClick('a8'));
+    expect(result.current.promotionTarget).toBe('a8'); // picker open, nothing moved
+    expect(result.current.status).toBe('awaiting');
+    expect(result.current.fen).toBe(promoStep.fen);
+
+    act(() => result.current.onPromotionPieceSelect('wN')); // manual dialog: no from/to args
+    expect(result.current.promotionTarget).toBe(null);
+    expect(result.current.status).toBe('complete'); // a8=N was the solution — no forced queen
+    expect(result.current.fen.split(' ')[0]).toContain('N');
+  });
+
+  it('classifies the picked piece (a wrong promotion gets feedback, board untouched)', () => {
+    const { result } = renderHook(() => useChessLesson(promoEnv));
+    act(() => result.current.onSquareClick('a7'));
+    act(() => result.current.onSquareClick('a8'));
+    act(() => result.current.onPromotionPieceSelect('wQ'));
+    expect(result.current.status).toBe('awaiting');
+    expect(result.current.feedback).toEqual({ kind: 'wrong', text: 'W' });
+    expect(result.current.fen).toBe(promoStep.fen);
+  });
+
+  it('closes the picker without moving when dismissed', () => {
+    const { result } = renderHook(() => useChessLesson(promoEnv));
+    act(() => result.current.onSquareClick('a7'));
+    act(() => result.current.onSquareClick('a8'));
+    act(() => result.current.onPromotionPieceSelect()); // dismissed
+    expect(result.current.promotionTarget).toBe(null);
+    expect(result.current.status).toBe('awaiting');
+    expect(result.current.fen).toBe(promoStep.fen);
+  });
+});
+
+describe('useChessLesson — accepted alternative with an unplayable scripted reply', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  // Mainline: Kd1 then the knight grabs the a1 bishop. The accepted alternative Bb2 moves the
+  // bishop away, making the scripted Nxa1 illegal — the step must recover, not freeze.
+  const altStep = {
+    id: 'alt',
+    type: 'line',
+    fen: 'k7/8/8/8/8/1n6/8/B3K3 w - - 0 1',
+    markdown: 'x',
+    mainline: ['Kd1', 'Nxa1'],
+    acceptableAt: { 0: ['Bb2'] },
+  };
+  const altEnv = wrap([altStep]);
+
+  it('credits the step as complete when the scripted reply is illegal after an alternative', () => {
+    const { result } = renderHook(() => useChessLesson(altEnv));
+    let ret;
+    act(() => {
+      ret = result.current.onPieceDrop('a1', 'b2'); // the accepted alternative
+    });
+    expect(ret).toBe(true);
+    expect(result.current.status).toBe('playing-opponent');
+
+    act(() => vi.advanceTimersByTime(600)); // the scripted Nxa1 is now illegal
+    expect(result.current.status).toBe('complete'); // recovered — previously frozen forever
+    expect(result.current.canAdvance).toBe(true);
+  });
+
+  it('still plays the scripted reply on the mainline path', () => {
+    const { result } = renderHook(() => useChessLesson(altEnv));
+    act(() => result.current.onPieceDrop('e1', 'd1')); // the mainline move
+    expect(result.current.status).toBe('playing-opponent');
+    act(() => vi.advanceTimersByTime(600));
+    expect(result.current.status).toBe('complete'); // reply applied, line finished
+    expect(result.current.fen.split(' ')[0]).not.toContain('B'); // the knight took the bishop
+  });
+});
+
 describe('useChessLesson — multi-move line', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());

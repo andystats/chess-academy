@@ -17,6 +17,7 @@ export default function EngineGameView({ game, panel }) {
           onPieceDrop={game.onPieceDrop}
           onPromotionPieceSelect={game.onPromotionPieceSelect}
           onSquareClick={game.onSquareClick}
+          promotionTarget={game.promotionTarget}
           highlights={highlights}
           selectedSquare={game.selectedSquare}
           legalTargets={game.legalTargets}

@@ -1,9 +1,29 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { randomId } from '../lib/ids.js';
 import { createStore } from './storage.js';
 import { lessonContentHash, reconcile, sanitizeProgress } from './progress.js';
 
 const ACTIVE_KEY = 'chess-academy:activeProfile';
 export const AVATARS = ['🦊', '🐼', '🦉', '🐙', '🦄', '🐢', '🦁', '🐸', '🐝', '🦖'];
+
+// localStorage throws when storage is blocked outright (private mode / disabled); the provider must
+// still boot into the non-persistent path — same degrade-don't-crash rule as ./storage.js.
+function readActiveId() {
+  try {
+    return localStorage.getItem(ACTIVE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeActiveId(id) {
+  try {
+    if (id === null) localStorage.removeItem(ACTIVE_KEY);
+    else localStorage.setItem(ACTIVE_KEY, id);
+  } catch {
+    /* storage unavailable — the selection just won't survive a reload */
+  }
+}
 
 const ProfileContext = createContext(null);
 
@@ -22,7 +42,7 @@ export function ProfileProvider({ children }) {
       const s = await createStore();
       const list = await s.listProfiles();
       if (cancelled) return;
-      const savedId = localStorage.getItem(ACTIVE_KEY);
+      const savedId = readActiveId();
       const active = list.find((p) => p.id === savedId) ? savedId : null;
       setStore(s);
       setPersistent(s.persistent);
@@ -38,7 +58,7 @@ export function ProfileProvider({ children }) {
 
   const selectProfile = useCallback(
     async (id) => {
-      localStorage.setItem(ACTIVE_KEY, id);
+      writeActiveId(id);
       setActiveProfileId(id);
       if (store) setProgressCache(await store.listProgress(id));
     },
@@ -47,7 +67,7 @@ export function ProfileProvider({ children }) {
 
   const createProfile = useCallback(
     async (name, avatar) => {
-      const profile = { id: crypto.randomUUID(), name: name.trim() || 'Player', avatar, createdAt: Date.now() };
+      const profile = { id: randomId(), name: name.trim() || 'Player', avatar, createdAt: Date.now() };
       await store.putProfile(profile);
       setProfiles((prev) => [...prev, profile]);
       await selectProfile(profile.id);
@@ -57,7 +77,7 @@ export function ProfileProvider({ children }) {
   );
 
   const switchProfile = useCallback(() => {
-    localStorage.removeItem(ACTIVE_KEY);
+    writeActiveId(null);
     setActiveProfileId(null);
     setProgressCache({});
   }, []);
@@ -111,7 +131,7 @@ export function ProfileProvider({ children }) {
       // Normalize untrusted fields to the same invariants as the create path, and give the
       // imported profile a fresh id so it can't clobber an existing one.
       const profile = {
-        id: crypto.randomUUID(),
+        id: randomId(),
         name: String(data.profile.name ?? 'Player').slice(0, 20) || 'Player',
         avatar: AVATARS.includes(data.profile.avatar) ? data.profile.avatar : AVATARS[0],
         createdAt: Number.isFinite(data.profile.createdAt) ? data.profile.createdAt : Date.now(),

@@ -73,6 +73,7 @@ export default function BoardPanel({
   onPieceDrop,
   onPromotionPieceSelect,
   onSquareClick,
+  promotionTarget = null,
   arrows = [],
   highlights = [],
   selectedSquare = null,
@@ -96,6 +97,9 @@ export default function BoardPanel({
         onPieceDrop={onPieceDrop}
         onPromotionPieceSelect={onPromotionPieceSelect}
         onSquareClick={onSquareClick}
+        // Tap-to-move promotions: the controller hooks stash the pending move and open the picker.
+        showPromotionDialog={Boolean(promotionTarget)}
+        promotionToSquare={promotionTarget}
         customArrows={buildArrows(arrows)}
         customSquareStyles={buildSquareStyles({ highlights, selectedSquare, legalTargets, duckSquare, duckTargets })}
         customBoardStyle={{ borderRadius: 0 }}

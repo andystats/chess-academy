@@ -8,6 +8,7 @@ import {
   compileToLan,
   acceptableLans,
   legalTargets,
+  isPromotion,
   mainlineIndexForPlayerMove,
 } from './moves.js';
 
@@ -61,6 +62,21 @@ describe('legalTargets', () => {
     const targets = legalTargets(new Chess(START), 'e2');
     expect(targets).toEqual(expect.arrayContaining(['e3', 'e4']));
     expect(legalTargets(new Chess(START), 'e4')).toEqual([]); // empty square
+  });
+});
+
+describe('isPromotion', () => {
+  it('detects pawns reaching their last rank, for either color', () => {
+    expect(isPromotion('7k/P7/8/8/8/8/8/7K w - - 0 1', 'a7', 'a8')).toBe(true);
+    expect(isPromotion('7k/8/8/8/8/8/p7/7K b - - 0 1', 'a2', 'a1')).toBe(true);
+  });
+
+  it('rejects non-pawns, wrong ranks, wrong directions, and empty squares', () => {
+    expect(isPromotion('N6k/8/8/8/8/8/8/7K w - - 0 1', 'a8', 'b6')).toBe(false); // knight
+    expect(isPromotion(START, 'e2', 'e4')).toBe(false); // pawn, mid-board
+    expect(isPromotion('7k/8/P7/8/8/8/8/7K w - - 0 1', 'a6', 'a7')).toBe(false); // not last rank
+    expect(isPromotion('7k/p7/8/8/8/8/8/7K b - - 0 1', 'a7', 'a8')).toBe(false); // black pawn, wrong way
+    expect(isPromotion('7k/8/8/8/8/8/8/7K w - - 0 1', 'a7', 'a8')).toBe(false); // empty square
   });
 });
 

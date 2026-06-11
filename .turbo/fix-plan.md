@@ -33,8 +33,8 @@ future session can resume cold from here.
 | C | Atomic turn apply + mid-turn safety | ✅ done 2026-06-11 (commit pending) |
 | D | Wire-input guards (peer payload hardening) | ✅ done 2026-06-11 (commit pending) |
 | E | Identity & presence (lobby groundwork) | ✅ done 2026-06-11 (commit pending; manual two-tab check open) |
-| F | Engine UX (false error banner, interrupt) | ☐ not started |
-| G | Lesson fixes (underpromotion, frozen step) | ☐ not started |
+| F | Engine UX (false error banner, interrupt) | ✅ done 2026-06-11 (commit pending) |
+| G | Lesson fixes (underpromotion, frozen step) | ✅ done 2026-06-11 (commit pending) |
 | H | UX & app hardening (chat, WebGL, CSP, links) | ☐ not started |
 | I | Dead-code decision (~982 orphaned lines) | ☐ not started |
 | J | Roadmap seams (variant registry, serializer v2, shared hooks) | ☐ not started |
@@ -57,7 +57,7 @@ Deadline-driven: GitHub runners default to Node 24 on **2026-06-16**; v4 actions
 - [x] `react-router-dom ^6.30.2 → ^6.30.4` (transitive `@remix-run/router` now 1.23.3 — clears both router advisories) + `npm audit fix` (no --force): **13 advisories → 4**; the remaining 4 are the vite/esbuild/vite-node/vitest chain reserved for the Bite L majors. [DEP-2, DEP-4]
 - [x] Optional hardening done: all four actions pinned to full commit SHAs with `# vX.Y.Z` comments (checkout v5.0.1, setup-node v5.0.0, upload-pages-artifact v3.0.1, deploy-pages v5.0.0 — resolved via `git ls-remote`, all lightweight tags so the SHAs are commit SHAs) + new `.github/dependabot.yml` (github-actions ecosystem, monthly — keeps the pins fresh). [SEC-9]
 - [x] Local verify: `npm run lint` clean · `npm test` 124/124 · `npm run build` ok (pre-existing chunk-size note only).
-- [ ] Remote verify after pushing: CI workflow green on branch/PR; deploy workflow green on main.
+- [x] Remote verify: CI + Pages deploy green on main for every bite commit (checked 2026-06-11; live site last-modified matches the Bite E deploy). Dependabot already filing action-bump PRs as configured.
 
 **Landed:** 2026-06-11 — _commit pending; stamp the hash here once committed._
 
@@ -120,20 +120,21 @@ Files: `src/online/localSnapshot.js`, `src/online/useGameChannel.js`, `src/onlin
 
 ## Bite F — Engine UX (CORR-11, CORR-12, CORR-13, API-5/6 quick wins)
 
-- [ ] `stockfishClient dispose()`: settle with a sentinel (`err.isInterrupt = true`); `useStockfish.requestMove` catch: don't `setError` for interrupts, and gate `setError` on `mountedRef.current`. [CORR-11]
-- [ ] `interrupt()`: dispose whenever an engine exists (not only when `isBusy()`), so resign/take-back during the init handshake actually stops it. [CORR-12]
-- [ ] Scope `lastScore` to the pending search (capture only while a bestmove wait is active; reset on dispatch). [CORR-13]
-- [ ] Shared `genId()` util (guarded `crypto.randomUUID` — pattern already in `localSnapshot.js:32`) used by `ProfileContext`; wrap ProfileContext's three raw `localStorage` calls in the safe helpers. [API-5, API-6]
+- [x] `dispose()` settles with `err.isInterrupt = true`; `requestMove`'s catch skips `setError` for interrupts AND gates it on `mountedRef.current` (also closes the post-unmount setState noted in peer review). No more false "engine was stopped" banner after New game / resign / take-back. [CORR-11]
+- [x] Interrupt-during-init fixed via a different (better) route than the plan's "dispose unconditionally": the real gap was that `engineRef` was only assigned *after* `init()` resolved, so `interrupt()` couldn't reach a warming engine at all. The engine now goes into the ref *before* the handshake (with the failure path nulling it), so `interrupt()` stops a mid-handshake engine — while the documented idle-engine-survives-reset optimization is preserved. The interrupted handshake rejects with the isInterrupt sentinel → no banner. [CORR-12]
+- [x] `lastScore` scoped to the active search: a module-level `searching` flag set around the bestmove wait (try/finally); stray info lines outside a search are no longer captured. [CORR-13]
+- [x] New shared `src/lib/ids.js` `randomId()` (guarded `crypto.randomUUID` + fallback) — now the single source used by both `localSnapshot.js` (which previously had its own copy) and `ProfileContext` (which previously called `crypto.randomUUID()` unguarded, ×2). ProfileContext's three raw `localStorage` calls wrapped in `readActiveId`/`writeActiveId` (degrade-don't-crash, mirroring storage.js). [API-5, API-6]
+- [x] Verify: 143/143 tests, lint clean. (Dedicated stockfishClient/useStockfish unit tests remain a Bite K item as planned.)
 
-**Landed:** _(commit)_
+**Landed:** 2026-06-11 — _commit pending; stamp the hash here once committed._
 
 ## Bite G — Lesson fixes (CORR-14, CORR-15)
 
-- [ ] Tap-path promotion: in `useChessLesson.onSquareClick` (and the same logic in the other hooks until Bite J unifies them), when the selected piece is a pawn reaching the last rank, open the promotion picker instead of forcing `'q'`. [CORR-14]
-- [ ] Opponent reply after accepted alternatives: derive the reply against the live position (or author `opponentReplies` per alternative); when `applyMove` throws in `scheduleOpponent`, recover the step to `complete`/`awaiting` instead of silently freezing in `playing-opponent`. [CORR-15]
-- [ ] Tests: drag/tap underpromotion lands the chosen piece; an accepted-alternative line never leaves the step stuck.
+- [x] Tap-path promotion in **all three** controller hooks (lesson, engine, online): a tap onto a legal last-rank pawn target stashes the move (`pendingPromotion`) and opens react-chessboard's manual promotion dialog (`showPromotionDialog`/`promotionToSquare`, wired through BoardPanel + EngineGameView as `promotionTarget`). `onPromotionPieceSelect` falls back to the stashed move when the manual dialog omits from/to, and a dismissed dialog closes without moving. New shared `isPromotion(fen, from, to)` in `lesson/moves.js` — pure FEN inspection, so the same helper serves chess.js and the duck engine. (Bite J's `useBoardInput` extraction will collapse the three copies.) [CORR-14]
+- [x] Frozen-step recovery: when the scripted opponent reply is illegal in the position reached via an accepted alternative, `scheduleOpponent` now credits the step as `complete` instead of silently returning and freezing in `playing-opponent`. (Deriving a fresh reply automatically was rejected — there's no scripted continuation to derive from; crediting the demonstrated idea is the authorable behavior.) [CORR-15]
+- [x] Tests (8 new): isPromotion table ×2; lesson tap-promotion (picker opens / chosen piece classified / wrong promotion gets feedback / dismissal); alternative-with-unplayable-reply recovers + mainline path still plays the reply; online tap-promotion sends the chosen piece. Suite 151/151; lint clean — the strict gate even caught 3 real missing hook deps in this change.
 
-**Landed:** _(commit)_
+**Landed:** 2026-06-11 — _commit pending; stamp the hash here once committed._
 
 ## Bite H — UX & app hardening (CORR-16, CORR-17, CORR-18, SEC-6, SEC-10, CORR-19 picks)
 

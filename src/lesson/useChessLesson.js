@@ -1,6 +1,6 @@
 import { useReducer, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Chess } from 'chess.js';
-import { acceptableLans, moveToLan, applyMove, legalTargets } from './moves.js';
+import { acceptableLans, moveToLan, applyMove, legalTargets, isPromotion } from './moves.js';
 import {
   normalizeStep,
   expectedSansAt,
@@ -37,6 +37,7 @@ const initialState = {
   feedback: null,
   selectedSquare: null,
   legalTargets: [],
+  pendingPromotion: null, // { from, to } while the tap-path promotion picker is open
   revealedHints: 0,
   chosenOptionId: null,
 };
@@ -52,11 +53,12 @@ function reducer(state, action) {
         feedback: null,
         selectedSquare: null,
         legalTargets: [],
+        pendingPromotion: null,
         revealedHints: 0,
         chosenOptionId: null,
       };
     case 'explore-moved':
-      return { ...state, fen: action.fen, selectedSquare: null, legalTargets: [] };
+      return { ...state, fen: action.fen, selectedSquare: null, legalTargets: [], pendingPromotion: null };
     case 'correct':
       return {
         ...state,
@@ -65,17 +67,20 @@ function reducer(state, action) {
         feedback: { kind: 'correct', text: action.text },
         selectedSquare: null,
         legalTargets: [],
+        pendingPromotion: null,
       };
     case 'opponent-next':
       return { ...state, status: 'awaiting', fen: action.fen, playerPly: action.playerPly };
     case 'opponent-complete':
       return { ...state, status: 'complete', fen: action.fen };
     case 'wrong':
-      return { ...state, feedback: { kind: 'wrong', text: action.text }, selectedSquare: null, legalTargets: [] };
+      return { ...state, feedback: { kind: 'wrong', text: action.text }, selectedSquare: null, legalTargets: [], pendingPromotion: null };
     case 'select':
-      return { ...state, selectedSquare: action.square, legalTargets: action.targets };
+      return { ...state, selectedSquare: action.square, legalTargets: action.targets, pendingPromotion: null };
     case 'deselect':
-      return { ...state, selectedSquare: null, legalTargets: [] };
+      return { ...state, selectedSquare: null, legalTargets: [], pendingPromotion: null };
+    case 'prompt-promotion':
+      return { ...state, pendingPromotion: { from: action.from, to: action.to } };
     case 'reveal-hint':
       return { ...state, revealedHints: Math.min(action.max, state.revealedHints + 1) };
     case 'choose':
@@ -128,7 +133,10 @@ export function useChessLesson(envelope) {
       try {
         applyMove(game, reply);
       } catch {
-        return; // validated content shouldn't reach here
+        // Reachable when the learner took an accepted alternative whose position makes the scripted
+        // reply illegal — the line can't continue, so credit the step instead of freezing it.
+        dispatch({ type: 'opponent-complete', fen: game.fen() });
+        return;
       }
       const nextOrdinal = ordinal + 1;
       if (game.isGameOver() || nextOrdinal >= playerOrdinalCount(d)) {
@@ -206,13 +214,17 @@ export function useChessLesson(envelope) {
     [attemptMove],
   );
 
-  // react-chessboard calls this when a promotion is chosen via the dialog.
+  // react-chessboard calls this when a promotion is chosen via the dialog. Drag promotions arrive
+  // with from/to; the tap path's manual dialog doesn't, so fall back to the pending tap promotion.
+  // A dismissed dialog (no piece) just closes.
   const onPromotionPieceSelect = useCallback(
     (piece, from, to) => {
-      if (!from || !to) return false;
-      return attemptMove({ from, to, promotion: piece ? piece[1].toLowerCase() : 'q' });
+      const source = from && to ? { from, to } : state.pendingPromotion;
+      if (state.pendingPromotion) dispatch({ type: 'deselect' });
+      if (!source || !piece) return false;
+      return attemptMove({ ...source, promotion: piece[1].toLowerCase() });
     },
-    [attemptMove],
+    [state.pendingPromotion, attemptMove],
   );
 
   // Tap-to-move: first tap selects + highlights legal targets, second tap moves.
@@ -228,6 +240,11 @@ export function useChessLesson(envelope) {
           dispatch({ type: 'deselect' });
           return;
         }
+        // A pawn reaching its last rank opens the promotion picker — never silently queen a tap.
+        if (state.legalTargets.includes(square) && isPromotion(state.fen, state.selectedSquare, square)) {
+          dispatch({ type: 'prompt-promotion', from: state.selectedSquare, to: square });
+          return;
+        }
         const moved = attemptMove({ from: state.selectedSquare, to: square, promotion: 'q' });
         if (!moved) {
           // Re-select if they tapped another of their own pieces; otherwise just clear.
@@ -241,7 +258,7 @@ export function useChessLesson(envelope) {
       const targets = legalTargets(game, square);
       if (targets.length) dispatch({ type: 'select', square, targets });
     },
-    [descriptor, state.status, state.selectedSquare, attemptMove],
+    [descriptor, state.status, state.selectedSquare, state.legalTargets, state.fen, attemptMove],
   );
 
   const chooseOption = useCallback(
@@ -295,6 +312,7 @@ export function useChessLesson(envelope) {
     arePiecesDraggable,
     selectedSquare: state.selectedSquare,
     legalTargets: state.legalTargets,
+    promotionTarget: state.pendingPromotion?.to ?? null,
     arrows,
     highlights,
     status: state.status,

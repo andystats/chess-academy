@@ -1,6 +1,6 @@
 import { useReducer, useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import { Chess } from 'chess.js';
-import { applyMove, legalTargets, opposite, acceptableLans, compileToLan, moveToLan, START_FEN } from '../lesson/moves.js';
+import { applyMove, legalTargets, opposite, acceptableLans, compileToLan, moveToLan, isPromotion, START_FEN } from '../lesson/moves.js';
 import { capturedPieces, gameResult } from './gameState.js';
 import { useStockfish } from './useStockfish.js';
 import { levelConfig } from './levels.js';
@@ -28,6 +28,7 @@ const initialState = {
   evaluation: null,
   selectedSquare: null,
   legalTargets: [],
+  pendingPromotion: null, // { from, to } while the tap-path promotion picker is open
   // Scenarios start in a 'guided' phase where the player's key move is checked against the
   // authored solution; once it's right (solved), play continues freely against the engine.
   phase: 'free', // 'guided' | 'free'
@@ -52,6 +53,7 @@ function reducer(state, action) {
         feedback: null,
         selectedSquare: null,
         legalTargets: [],
+        pendingPromotion: null,
       };
     case 'sync': // a move was committed; feedback is preserved so the "why" stays on screen
       return {
@@ -65,6 +67,7 @@ function reducer(state, action) {
         result: action.result ?? null,
         selectedSquare: null,
         legalTargets: [],
+        pendingPromotion: null,
       };
     case 'guided-correct':
       return {
@@ -81,15 +84,18 @@ function reducer(state, action) {
         feedback: { kind: 'correct', text: action.text },
         selectedSquare: null,
         legalTargets: [],
+        pendingPromotion: null,
       };
     case 'guided-wrong': // the live game is untouched; only the feedback changes
-      return { ...state, feedback: { kind: 'wrong', text: action.text }, selectedSquare: null, legalTargets: [] };
+      return { ...state, feedback: { kind: 'wrong', text: action.text }, selectedSquare: null, legalTargets: [], pendingPromotion: null };
     case 'thinking':
-      return { ...state, status: 'engine-thinking', selectedSquare: null, legalTargets: [] };
+      return { ...state, status: 'engine-thinking', selectedSquare: null, legalTargets: [], pendingPromotion: null };
     case 'select':
-      return { ...state, selectedSquare: action.square, legalTargets: action.targets };
+      return { ...state, selectedSquare: action.square, legalTargets: action.targets, pendingPromotion: null };
     case 'deselect':
-      return { ...state, selectedSquare: null, legalTargets: [] };
+      return { ...state, selectedSquare: null, legalTargets: [], pendingPromotion: null };
+    case 'prompt-promotion':
+      return { ...state, pendingPromotion: { from: action.from, to: action.to } };
     default:
       return state;
   }
@@ -254,12 +260,16 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
     [applyPlayerMove],
   );
 
+  // Drag promotions arrive with from/to; the tap path's manual dialog doesn't, so fall back to
+  // the pending tap promotion. A dismissed dialog (no piece) just closes.
   const onPromotionPieceSelect = useCallback(
     (piece, from, to) => {
-      if (!from || !to) return false;
-      return applyPlayerMove({ from, to, promotion: piece ? piece[1].toLowerCase() : 'q' });
+      const source = from && to ? { from, to } : state.pendingPromotion;
+      if (state.pendingPromotion) dispatch({ type: 'deselect' });
+      if (!source || !piece) return false;
+      return applyPlayerMove({ ...source, promotion: piece[1].toLowerCase() });
     },
-    [applyPlayerMove],
+    [state.pendingPromotion, applyPlayerMove],
   );
 
   // Tap-to-move: first tap selects + highlights legal targets, second tap moves.
@@ -270,6 +280,11 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
       if (state.selectedSquare) {
         if (square === state.selectedSquare) {
           dispatch({ type: 'deselect' });
+          return;
+        }
+        // A pawn reaching its last rank opens the promotion picker — never silently queen a tap.
+        if (state.legalTargets.includes(square) && isPromotion(state.fen, state.selectedSquare, square)) {
+          dispatch({ type: 'prompt-promotion', from: state.selectedSquare, to: square });
           return;
         }
         const moved = applyPlayerMove({ from: state.selectedSquare, to: square, promotion: 'q' });
@@ -283,7 +298,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
       const targets = legalTargets(game, square);
       if (targets.length) dispatch({ type: 'select', square, targets });
     },
-    [state.status, state.selectedSquare, applyPlayerMove],
+    [state.status, state.selectedSquare, state.legalTargets, state.fen, applyPlayerMove],
   );
 
   const newGame = useCallback(() => {
@@ -352,6 +367,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
     evaluation: state.evaluation,
     selectedSquare: state.selectedSquare,
     legalTargets: state.legalTargets,
+    promotionTarget: state.pendingPromotion?.to ?? null,
     arePiecesDraggable,
     engineReady: ready,
     engineError: error,

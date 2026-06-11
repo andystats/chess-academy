@@ -59,6 +59,35 @@ export function legalTargets(chess, square) {
   return chess.moves({ square, verbose: true }).map((m) => m.to);
 }
 
+/** The piece letter on `square` in a FEN's placement field, or null when the square is empty. */
+function pieceAtFen(fen, square) {
+  const row = fen.split(' ')[0].split('/')[8 - Number(square[1])];
+  let file = square.charCodeAt(0) - 97;
+  for (const ch of row ?? '') {
+    if (ch >= '1' && ch <= '8') {
+      file -= Number(ch);
+      if (file < 0) return null; // inside an empty run
+    } else if (file === 0) {
+      return ch;
+    } else {
+      file -= 1;
+    }
+  }
+  return null;
+}
+
+/**
+ * True when moving `from` → `to` would promote a pawn — used by the tap-to-move paths to open the
+ * promotion picker instead of silently defaulting to a queen. Pure FEN inspection, so it works for
+ * any engine that renders a standard board FEN (chess.js and the duck variant alike).
+ */
+export function isPromotion(fen, from, to) {
+  const rank = to[1];
+  if (rank !== '8' && rank !== '1') return false;
+  const piece = pieceAtFen(fen, from);
+  return (piece === 'P' && rank === '8') || (piece === 'p' && rank === '1');
+}
+
 /**
  * For a `line` step, the mainline interleaves both sides starting with the player's move when
  * there is no setup ply (authored lessons), or with the opponent's setup move when there is one

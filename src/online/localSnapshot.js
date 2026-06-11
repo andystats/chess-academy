@@ -12,6 +12,8 @@
 //   - latest snapshot: the authoritative game state, persisted before each broadcast, so the host can
 //                      resume after a reload. Both peers persist it so a Resync can be answered.
 
+import { randomId } from '../lib/ids.js';
+
 const NS = 'chess-academy:online';
 const SELF_ID_KEY = `${NS}:self-id`;
 
@@ -29,15 +31,6 @@ function write(key, value) {
   } catch {
     /* storage unavailable (private mode / disabled) — degrade silently */
   }
-}
-
-function randomId() {
-  try {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-  } catch {
-    /* fall through */
-  }
-  return `id-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
 }
 
 let memorySelfId = null; // fallback when sessionStorage is unavailable (private mode)

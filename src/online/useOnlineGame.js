@@ -17,7 +17,7 @@
 // A full turn is bundled as {pieceMove, duckSquare} so duck placement and the piece move sync together.
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { opposite } from '../lesson/moves.js';
+import { isPromotion, opposite } from '../lesson/moves.js';
 import { isSquare } from '../engine/duck/board.js';
 import { createVariantGame, lastMoveOf } from './rules.js';
 import { useGameChannel } from './useGameChannel.js';
@@ -87,6 +87,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
 
   const [view, setView] = useState(() => snapshotView(gameRef.current));
   const [selection, setSelection] = useState({ selectedSquare: null, legalTargets: [] });
+  const [pendingPromotion, setPendingPromotion] = useState(null); // { from, to } while the picker is open
   const [orientation, setOrientation] = useState(selfColor);
   // `synced` mirrors whether the lazy init above actually restored a snapshot — not just whether
   // one exists in storage — so a corrupt snapshot can't present a fresh board as synced.
@@ -101,6 +102,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   const sync = useCallback(() => {
     setView(snapshotView(gameRef.current));
     setSelection({ selectedSquare: null, legalTargets: [] });
+    setPendingPromotion(null); // a state change supersedes an open promotion picker
   }, []);
 
   const buildSnapshot = useCallback(
@@ -345,12 +347,16 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     [playPieceMove],
   );
 
+  // Drag promotions arrive with from/to; the tap path's manual dialog doesn't, so fall back to
+  // the pending tap promotion. A dismissed dialog (no piece) just closes.
   const onPromotionPieceSelect = useCallback(
     (piece, from, to) => {
-      if (!from || !to) return false;
-      return playPieceMove({ from, to, promotion: piece ? piece[1].toLowerCase() : 'q' });
+      const source = from && to ? { from, to } : pendingPromotion;
+      setPendingPromotion(null);
+      if (!source || !piece) return false;
+      return playPieceMove({ ...source, promotion: piece[1].toLowerCase() });
     },
-    [playPieceMove],
+    [pendingPromotion, playPieceMove],
   );
 
   const onSquareClick = useCallback(
@@ -368,6 +374,12 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
           setSelection({ selectedSquare: null, legalTargets: [] });
           return;
         }
+        // A pawn reaching its last rank opens the promotion picker — never silently queen a tap.
+        if (selection.legalTargets.includes(square) && isPromotion(view.fen, selection.selectedSquare, square)) {
+          setPendingPromotion({ from: selection.selectedSquare, to: square });
+          setSelection({ selectedSquare: null, legalTargets: [] });
+          return;
+        }
         if (playPieceMove({ from: selection.selectedSquare, to: square, promotion: 'q' })) return;
         const targets = game.legalPieceTargets(square);
         setSelection(targets.length ? { selectedSquare: square, legalTargets: targets } : { selectedSquare: null, legalTargets: [] });
@@ -376,7 +388,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       const targets = game.legalPieceTargets(square);
       if (targets.length) setSelection({ selectedSquare: square, legalTargets: targets });
     },
-    [view.phase, view.result, isMyTurn, canMovePiece, selection.selectedSquare, playPieceMove, commitTurn],
+    [view.phase, view.result, view.fen, isMyTurn, canMovePiece, selection.selectedSquare, selection.legalTargets, playPieceMove, commitTurn],
   );
 
   const newGame = useCallback(() => {
@@ -427,6 +439,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     captured: view.captured,
     selectedSquare: selection.selectedSquare,
     legalTargets: selection.legalTargets,
+    promotionTarget: pendingPromotion?.to ?? null,
     arePiecesDraggable: canMovePiece,
     onPieceDrop,
     onPromotionPieceSelect,

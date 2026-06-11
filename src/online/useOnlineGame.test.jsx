@@ -250,6 +250,27 @@ describe('robustness', () => {
   });
 });
 
+describe('tap-path promotion', () => {
+  it('opens the picker instead of silently queening, then sends the chosen piece', () => {
+    const props = { gameId: 'tp', variant: 'standard', selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
+    const players = { white: 'host', black: 'joiner' };
+    saveSnapshot('tp', { epoch: 1, seq: 1, variant: 'standard', hostColor: 'white', players, state: '7k/P7/8/8/8/8/8/7K w - - 0 1' });
+    const { result } = renderHook(() => useOnlineGame(props));
+    const fenBefore = result.current.fen;
+
+    act(() => result.current.onSquareClick('a7'));
+    act(() => result.current.onSquareClick('a8'));
+    expect(result.current.promotionTarget).toBe('a8'); // picker open, nothing moved or sent
+    expect(result.current.fen).toBe(fenBefore);
+    expect(transport.broadcastSnapshot).not.toHaveBeenCalled();
+
+    act(() => result.current.onPromotionPieceSelect('wN')); // manual dialog: no from/to args
+    expect(result.current.promotionTarget).toBe(null);
+    expect(result.current.fen.split(' ')[0]).toContain('N'); // under-promoted, not auto-queened
+    expect(transport.broadcastSnapshot).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('seats & identity', () => {
   const hostProps = { gameId: 's1', variant: 'standard', selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
 
