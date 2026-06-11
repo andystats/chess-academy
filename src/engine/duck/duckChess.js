@@ -151,7 +151,9 @@ export function createDuckGame(serialized) {
     if (state.board[index] !== null || square === state.duck) return { ok: false };
 
     state.duck = square;
-    turns[turns.length - 1].duck = square;
+    // A game resumed from a mid-turn snapshot starts with an empty history (the wire format drops
+    // it), so there may be no turn entry to annotate — the duck still places; only the log skips.
+    if (turns.length) turns[turns.length - 1].duck = square;
     if (state.turn === 'b') state.fullmove += 1; // a full move completes after Black's turn
     state.turn = state.turn === 'w' ? 'b' : 'w';
     state.phase = 'piece';

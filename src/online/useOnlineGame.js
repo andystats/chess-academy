@@ -132,13 +132,20 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
         return;
       }
 
-      if (!game.movePiece(intent.pieceMove).ok) return broadcastAuthoritative(true); // illegal → resync
-      if (game.phase() === 'duck' && !game.result()) {
-        if (!intent.duckSquare || !game.placeDuck(intent.duckSquare).ok) return broadcastAuthoritative(true);
+      // Validate the full turn on a throwaway clone first (the lesson engine's classify-on-a-clone
+      // pattern): a turn is atomic, and the authoritative game must never commit a piece move whose
+      // duck placement then fails — that would strand every client in a half-turn that no follow-up
+      // intent can complete. Once the probe passes, the same ops cannot fail on the real instance.
+      const probe = createVariantGame(variant, game.serialize());
+      if (!probe.movePiece(intent.pieceMove).ok) return broadcastAuthoritative(true); // illegal → resync
+      if (probe.phase() === 'duck' && !probe.result()) {
+        if (!intent.duckSquare || !probe.placeDuck(intent.duckSquare).ok) return broadcastAuthoritative(true);
       }
+      game.movePiece(intent.pieceMove);
+      if (game.phase() === 'duck' && !game.result()) game.placeDuck(intent.duckSquare);
       return broadcastAuthoritative(true);
     },
-    [isHost, broadcastAuthoritative],
+    [isHost, variant, broadcastAuthoritative],
   );
 
   // Host: answer a resync request. A requester strictly ahead of our (epoch, seq) would drop a

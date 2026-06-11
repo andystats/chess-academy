@@ -197,6 +197,28 @@ describe('robustness', () => {
     expect(result.current.currentTurn).toBe('white');
   });
 
+  it('rejects a remote turn whose duck placement is invalid without committing the piece move', () => {
+    const duckHost = { gameId: 'ra', variant: 'duck', selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
+    const { result } = renderHook(() => useOnlineGame(duckHost));
+    act(() => result.current.onPieceDrop('e2', 'e4'));
+    act(() => result.current.onSquareClick('d3')); // host's turn commits: duck on d3, black to move
+    const fenBefore = result.current.fen;
+    transport.broadcastSnapshot.mockClear();
+
+    // The joiner's chosen duck square (e4) is occupied on the host's board → reject the whole turn.
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: { from: 'e7', to: 'e5', promotion: 'q' }, duckSquare: 'e4' }));
+    expect(result.current.fen).toBe(fenBefore); // piece move not committed
+    expect(result.current.phase).toBe('piece'); // not stranded in the duck phase
+    expect(result.current.currentTurn).toBe('black'); // still the joiner's turn
+    expect(result.current.history).toHaveLength(1); // the host's own move list survives the rejection
+    expect(transport.broadcastSnapshot).toHaveBeenCalledTimes(1); // corrective resync sent
+
+    // A legal duck square completes the same turn — the game is not wedged.
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: { from: 'e7', to: 'e5', promotion: 'q' }, duckSquare: 'e6' }));
+    expect(result.current.currentTurn).toBe('white');
+    expect(result.current.duckSquare).toBe('e6');
+  });
+
   it('joiner resends an unconfirmed move-intent until a newer snapshot clears it', () => {
     vi.useFakeTimers();
     try {

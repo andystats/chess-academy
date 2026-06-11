@@ -30,7 +30,7 @@ future session can resume cold from here.
 |---|---|---|
 | A | CI quick wins (⏰ before 2026-06-16) | ✅ done 2026-06-11 (commit pending; CI-on-push check open) |
 | B | Protocol epoch — the P0 join deadlock | ✅ done 2026-06-11 (commit pending; manual two-browser check open) |
-| C | Atomic turn apply + mid-turn safety | ☐ not started |
+| C | Atomic turn apply + mid-turn safety | ✅ done 2026-06-11 (commit pending) |
 | D | Wire-input guards (peer payload hardening) | ☐ not started |
 | E | Identity & presence (lobby groundwork) | ☐ not started |
 | F | Engine UX (false error banner, interrupt) | ☐ not started |
@@ -80,12 +80,12 @@ whose `seq` ≥ host's drops everything forever. Files: `src/online/useOnlineGam
 
 Files: `src/online/useOnlineGame.js` (`applyIntent`), `src/engine/duck/duckChess.js` (`placeDuck`).
 
-- [ ] `applyIntent`: capture `const before = game.serialize()` before `movePiece`; if the piece move or the required duck placement fails, rebuild from `before` (`gameRef.current = createVariantGame(variant, before)`) and broadcast the *unchanged* state — the host must never commit a half-turn.
-- [ ] Don't bump `seq` for that no-op corrective broadcast unless Bite B chose bump-on-everything; stay consistent with B's decision.
-- [ ] `placeDuck` in duckChess.js: guard the history write — `if (turns.length) turns[turns.length - 1].duck = square; else turns.push({ san: null, duck: square })` — so a state deserialized mid-turn (refresh between piece move and duck placement) works.
-- [ ] Tests: (a) intent whose duck square is occupied on the host board → host state unchanged, broadcast sent, joiner converges; (b) `createDuckGame('<mid-turn duck-phase wire string>').placeDuck('e3')` does not throw and completes the turn.
+- [x] `applyIntent` is now atomic — implemented as **validate-on-a-throwaway-clone, then replay** (mirrors the lesson engine's classify-on-a-clone pattern) rather than the suggested serialize-and-rebuild: the probe applies the piece move and the required duck placement first, and only if the whole turn passes is it replayed on the real instance. Same atomicity, but the host's move-list history survives a rejected intent (a rebuild would have blanked it). Rejections broadcast a bumped corrective snapshot exactly as before; this also kills the seq-inflating retry loop on an unfinishable intent. [CORR-2]
+- [x] Kept Bite B's bump discipline: rejections bump (the sender's optimistic board must roll back); nothing else changed.
+- [x] `placeDuck` guards the history annotation (`if (turns.length) …`) — chose skip-the-log over the push-a-synthetic-entry alternative because a synthetic `pieceMove: null` entry would crash `lastMoveOf` and history is already empty after any resume (serialize drops it); the duck still places and the turn flips. [CORR-3]
+- [x] Tests: (a) occupied-duck-square intent → fen unchanged, phase stays 'piece', history survives, corrective broadcast sent, and the retried turn with a legal square completes (not wedged); (b) `createDuckGame(midTurnWire).placeDuck('e3')` succeeds, flips the turn, history stays empty. Suite: 129/129; lint clean.
 
-**Landed:** _(commit)_
+**Landed:** 2026-06-11 — _commit pending; stamp the hash here once committed._
 
 ## Bite D — Wire-input guards (SEC-1, SEC-2, SEC-3, SEC-4, SEC-5, SEC-7)
 

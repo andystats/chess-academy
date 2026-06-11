@@ -33,6 +33,17 @@ describe('turn machine', () => {
     const restored = createDuckGame(game.serialize());
     expect(restored.getState()).toEqual(game.getState());
   });
+
+  it('places the duck on a game resumed from a mid-turn snapshot (refresh between move and duck)', () => {
+    const game = createDuckGame();
+    game.movePiece({ from: 'e2', to: 'e4' });
+    const resumed = createDuckGame(game.serialize()); // the wire format drops history
+    expect(resumed.phase()).toBe('duck');
+    expect(resumed.placeDuck('e3').ok).toBe(true);
+    expect(resumed.duckSquare()).toBe('e3');
+    expect(resumed.turnColor()).toBe('black');
+    expect(resumed.history()).toHaveLength(0); // nothing to annotate — the half-turn predates the resume
+  });
 });
 
 describe('king capture wins immediately', () => {
