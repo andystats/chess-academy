@@ -32,7 +32,7 @@ future session can resume cold from here.
 | B | Protocol epoch — the P0 join deadlock | ✅ done 2026-06-11 (commit pending; manual two-browser check open) |
 | C | Atomic turn apply + mid-turn safety | ✅ done 2026-06-11 (commit pending) |
 | D | Wire-input guards (peer payload hardening) | ✅ done 2026-06-11 (commit pending) |
-| E | Identity & presence (lobby groundwork) | ☐ not started |
+| E | Identity & presence (lobby groundwork) | ✅ done 2026-06-11 (commit pending; manual two-tab check open) |
 | F | Engine UX (false error banner, interrupt) | ☐ not started |
 | G | Lesson fixes (underpromotion, frozen step) | ☐ not started |
 | H | UX & app hardening (chat, WebGL, CSP, links) | ☐ not started |
@@ -106,16 +106,17 @@ Files: `src/online/useOnlineGame.js`, `src/online/rules.js`, `src/engine/duck/bo
 
 Files: `src/online/localSnapshot.js`, `src/online/useGameChannel.js`, `src/online/useOnlineGame.js`, `src/components/OnlineGamePanel.jsx`.
 
-- [ ] Per-tab identity: `selfId()` → sessionStorage first (falls back to localStorage value for continuity, then random); two tabs must be two identities. [CORR-4]
-- [ ] Second-tab host detection: when `loadHostConfig` matches but another live presence already tracks `isHost`, show "This game is open in another tab" instead of silently dual-hosting. (Simplest: include `isHost` in presence meta — already tracked — and have a host that *joins* and sees an existing host downgrade to spectator/notice.) [CORR-4]
-- [ ] Joiner playability gate: require a snapshot received **this session** (not just persisted) OR `peerPresent` before `canMovePiece`; render "Waiting for host…" otherwise. [CORR-5]
-- [ ] Terminal error state: in `useGameChannel`, after N (e.g. 6) consecutive failed attempts set status `'error'` (stop reconnecting until Resync) — this makes OnlineGamePanel's existing "Connection lost — try Resync" branch reachable; `resync()` should reset attempts and reconnect. [CORR-8]
-- [ ] Debounce `peerPresent` during reconnects (treat as unknown rather than false until the first presence sync after resubscribe). [CORR-9]
-- [ ] Per-attempt channel token: ignore subscribe-callback events from superseded channels; cancel any pending reconnect timer on successful SUBSCRIBED. [CORR-10, API-4]
-- [ ] Seat feedback: when an intent is ignored because the seat is claimed, host broadcasts a (new) `seat-taken` event or includes claimed seats in snapshots so the UI can say "seat already taken". [CORR-7]
-- [ ] Tests: TEST-1 (reconnect machine: error states, backoff cap, attempt reset, cancelled guard) and TEST-2 (seat claim + stray-id rejection) from audit.md — these two P0 coverage gaps live exactly here.
+- [x] Per-tab identity: `selfId()` now lives in **sessionStorage** (in-memory fallback when storage is blocked) — each tab is a distinct player; an id survives reloads of its own tab. Deliberately did NOT adopt the legacy localStorage id (two tabs would both inherit it, recreating the collision); instead, **seats follow presence** (below) so a player whose id changed is re-seated automatically — which also makes the identity migration self-healing for in-flight games. [CORR-4]
+- [x] Second-tab host detection: presence sync now derives `hostPresent` (any non-self presence tracking `isHost`) — a host seeing it renders "Game already open in another tab"; a joiner reads the same flag as "the host is here". [CORR-4]
+- [x] Joiner playability gate: new `liveSynced` (a snapshot adopted **this session**) — a storage-restored board renders immediately but stays read-only with "Waiting for host…" until the host speaks; the resync poll keeps pulling while `!liveSynced` even when the stale board claims it's your turn. [CORR-5]
+- [x] Terminal error state: after 6 consecutive failed attempts the channel status becomes `'error'` (no more auto-retries) — OnlineGamePanel's "Connection lost — try Resync" branch is finally reachable; `resync()` routes to the channel's new `reconnect()` (attempt counter reset, fresh channel), and `onSubscribed` re-syncs state as usual. [CORR-8]
+- [x] Presence flap fix: a transient drop no longer resets `peerPresent` — the indicator holds its last-known value until the next presence sync; a terminal error clears it (genuinely down). [CORR-9]
+- [x] Channel supersession: `teardownAndConnect` nulls `channelRef` before removing the old channel, and the subscribe callback ignores events from any channel the hook has replaced; a pending reconnect timer is cancelled on successful SUBSCRIBED. [CORR-10, API-4]
+- [x] Seat feedback: snapshots already carry the seat map, so the joiner derives `seatTaken` (their color claimed by another id) → spectator mode ("Seat taken — watching as spectator", moves gated); self-heals when the seat re-binds to them. Host-side reseat rule in `applyIntent`: unclaimed → first mover (unchanged trust-on-first-move); claimed-but-absent claimant → live sender may take over (same invite-link trust); the host's own seat never moves. [CORR-7]
+- [x] Tests — the two P0 coverage gaps closed: TEST-1 reconnect machine (backoff + reattempt, counter reset on success, terminal error after cap + recovery via reconnect(), presence retention vs terminal clear, no-reconnect-after-unmount) and TEST-2 seat authority (stray-third-party ignored silently, reseat-on-absence, host seat untouchable, seatTaken spectator + self-heal, storage-restored read-only gate). 9 new tests; suite 143/143; lint clean.
+- [ ] Manual verify: two tabs of one browser on the same game — second tab should show "Game already open in another tab" instead of wedging both; and a joiner reopening from the invite link in a fresh tab should get their seat back on their first move.
 
-**Landed:** _(commit)_
+**Landed:** 2026-06-11 — _commit pending; stamp the hash here once committed._
 
 ## Bite F — Engine UX (CORR-11, CORR-12, CORR-13, API-5/6 quick wins)
 

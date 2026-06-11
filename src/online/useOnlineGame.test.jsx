@@ -10,10 +10,13 @@ const { transport } = vi.hoisted(() => ({
     handlers: null,
     status: 'connected',
     peerPresent: false,
+    peerIds: [],
+    hostPresent: false,
     broadcastSnapshot: vi.fn(),
     sendMoveIntent: vi.fn(),
     requestSnapshot: vi.fn(),
     sendChat: vi.fn(),
+    reconnect: vi.fn(),
   },
 }));
 
@@ -23,6 +26,9 @@ vi.mock('./useGameChannel.js', () => ({
     return {
       status: transport.status,
       peerPresent: transport.peerPresent,
+      peerIds: transport.peerIds,
+      hostPresent: transport.hostPresent,
+      reconnect: transport.reconnect,
       broadcastSnapshot: transport.broadcastSnapshot,
       sendMoveIntent: transport.sendMoveIntent,
       requestSnapshot: transport.requestSnapshot,
@@ -43,10 +49,14 @@ beforeEach(() => {
   localStorage.clear();
   transport.handlers = null;
   transport.status = 'connected';
+  transport.peerPresent = false;
+  transport.peerIds = [];
+  transport.hostPresent = false;
   transport.broadcastSnapshot.mockClear();
   transport.sendMoveIntent.mockClear();
   transport.requestSnapshot.mockClear();
   transport.sendChat.mockClear();
+  transport.reconnect.mockClear();
 });
 
 describe('host (standard)', () => {
@@ -237,6 +247,74 @@ describe('robustness', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('seats & identity', () => {
+  const hostProps = { gameId: 's1', variant: 'standard', selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
+
+  it('ignores a stray third party while the claimed player is present', () => {
+    transport.peerIds = ['joiner', 'intruder'];
+    const { result } = renderHook(() => useOnlineGame(hostProps));
+    act(() => result.current.onPieceDrop('e2', 'e4'));
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: { from: 'e7', to: 'e5', promotion: 'q' }, duckSquare: null })); // claims black
+    act(() => result.current.onPieceDrop('d2', 'd4')); // black to move again
+    const fenBefore = result.current.fen;
+    transport.broadcastSnapshot.mockClear();
+
+    act(() => transport.handlers.onMoveIntent({ by: 'intruder', pieceMove: { from: 'd7', to: 'd5', promotion: 'q' }, duckSquare: null }));
+    expect(result.current.fen).toBe(fenBefore); // not applied
+    expect(transport.broadcastSnapshot).not.toHaveBeenCalled(); // ignored outright, no re-publish
+  });
+
+  it('re-seats a color when its claimant is no longer connected (per-tab id changed)', () => {
+    transport.peerIds = ['joiner-new-tab']; // the original claimant is gone
+    const { result } = renderHook(() => useOnlineGame(hostProps));
+    act(() => result.current.onPieceDrop('e2', 'e4'));
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: { from: 'e7', to: 'e5', promotion: 'q' }, duckSquare: null }));
+    act(() => result.current.onPieceDrop('d2', 'd4'));
+    transport.broadcastSnapshot.mockClear();
+
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner-new-tab', pieceMove: { from: 'd7', to: 'd5', promotion: 'q' }, duckSquare: null }));
+    expect(transport.broadcastSnapshot).toHaveBeenCalledTimes(1); // applied — the seat followed presence
+    expect(result.current.currentTurn).toBe('white');
+  });
+
+  it("never re-seats the host's own color", () => {
+    transport.peerIds = ['intruder'];
+    const { result } = renderHook(() => useOnlineGame(hostProps));
+    const fenBefore = result.current.fen; // white (the host) to move
+    transport.broadcastSnapshot.mockClear();
+
+    act(() => transport.handlers.onMoveIntent({ by: 'intruder', pieceMove: { from: 'e2', to: 'e4', promotion: 'q' }, duckSquare: null }));
+    expect(result.current.fen).toBe(fenBefore); // the host's seat cannot be taken over
+    expect(transport.broadcastSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("flags seatTaken when the joiner's color is claimed by another id, and self-heals", () => {
+    const joinerProps = { gameId: 's4', variant: 'standard', selfColor: 'black', isHost: false, hostColor: 'white', selfId: 'joiner' };
+    const { result } = renderHook(() => useOnlineGame(joinerProps));
+    act(() => transport.handlers.onSnapshot({ epoch: 1, seq: 2, variant: 'standard', hostColor: 'white', players: { white: 'host', black: 'rival' }, state: fenAfter('standard', { from: 'e2', to: 'e4' }) }));
+    expect(result.current.connection.seatTaken).toBe(true);
+    expect(result.current.arePiecesDraggable).toBe(false); // spectator despite it being black's move
+
+    act(() => transport.handlers.onSnapshot({ epoch: 1, seq: 3, variant: 'standard', hostColor: 'white', players: { white: 'host', black: 'joiner' }, state: fenAfter('standard', { from: 'e2', to: 'e4' }) }));
+    expect(result.current.connection.seatTaken).toBe(false); // the seat re-bound to us
+    expect(result.current.arePiecesDraggable).toBe(true);
+  });
+
+  it('keeps a storage-restored joiner read-only until the host speaks this session', () => {
+    const joinerProps = { gameId: 's5', variant: 'standard', selfColor: 'black', isHost: false, hostColor: 'white', selfId: 'joiner' };
+    const players = { white: 'host', black: 'joiner' };
+    saveSnapshot('s5', { epoch: 4, seq: 8, variant: 'standard', hostColor: 'white', players, state: fenAfter('standard', { from: 'e2', to: 'e4' }) });
+    const { result } = renderHook(() => useOnlineGame(joinerProps));
+    expect(result.current.connection.synced).toBe(true); // the board restores and renders…
+    expect(result.current.connection.liveSynced).toBe(false);
+    expect(result.current.arePiecesDraggable).toBe(false); // …but stays read-only: the host is silent
+
+    act(() => transport.handlers.onSnapshot({ epoch: 4, seq: 9, variant: 'standard', hostColor: 'white', players, state: fenAfter('standard', { from: 'e2', to: 'e4' }) }));
+    expect(result.current.connection.liveSynced).toBe(true);
+    expect(result.current.arePiecesDraggable).toBe(true);
   });
 });
 

@@ -91,6 +91,11 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   // `synced` mirrors whether the lazy init above actually restored a snapshot — not just whether
   // one exists in storage — so a corrupt snapshot can't present a fresh board as synced.
   const [synced, setSynced] = useState(isHost || restoredRef.current);
+  // A storage-restored board renders immediately, but a joiner may only MOVE once the host has
+  // spoken THIS session — otherwise a stale board plays intents into the void while the host is gone.
+  const [liveSynced, setLiveSynced] = useState(isHost);
+  // The joiner's color is claimed by a different id in the authoritative seat map → spectator mode.
+  const [seatTaken, setSeatTaken] = useState(false);
   const [messages, setMessages] = useState([]); // chat — peer-to-peer, ephemeral
 
   const sync = useCallback(() => {
@@ -137,10 +142,17 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       if (intent.duckSquare != null && !isSquare(intent.duckSquare)) return;
       const game = gameRef.current;
       const color = game.turnColor();
-      // The first id to move on an unclaimed color claims that seat for the game; afterwards, intents
-      // from any other id are ignored. With a public channel this is trust-on-first-move, which is
-      // fine for a private invite link shared between two friends (the link is the access control).
-      if (playersRef.current[color] == null) playersRef.current[color] = intent.by;
+      // Seats follow presence. An unclaimed color goes to the first id that moves on it — with a
+      // public channel this is trust-on-first-move, which is fine for a private invite link shared
+      // between two friends (the link is the access control). A seat whose claimant is no longer
+      // connected may be taken over by a live sender on the same trust, so a player whose per-tab
+      // id changed (new tab, cleared session) resumes their game. The host's own seat never moves.
+      const claimed = playersRef.current[color];
+      if (claimed == null) {
+        playersRef.current[color] = intent.by;
+      } else if (intent.by !== claimed && claimed !== selfId && !(channelRef.current?.peerIds ?? []).includes(claimed)) {
+        playersRef.current[color] = intent.by;
+      }
       if (intent.by !== playersRef.current[color]) {
         // Not whose turn it is. If it's the other known player resending a move we already applied
         // (their snapshot was lost), re-publish current state so they catch up; never re-apply. A
@@ -163,7 +175,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       if (game.phase() === 'duck' && !game.result()) game.placeDuck(intent.duckSquare);
       return broadcastAuthoritative(true);
     },
-    [isHost, variant, broadcastAuthoritative],
+    [isHost, variant, selfId, broadcastAuthoritative],
   );
 
   // Host: answer a resync request. A requester strictly ahead of our (epoch, seq) would drop a
@@ -217,9 +229,12 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       gameRef.current = game;
       saveSnapshot(gameId, snapshot);
       setSynced(true);
+      setLiveSynced(true); // the host has spoken this session
+      // Our color claimed by someone else → spectate; self-heals when the seat re-binds to us.
+      setSeatTaken(playersRef.current[selfColor] != null && playersRef.current[selfColor] !== selfId);
       sync();
     },
-    [variant, gameId, sync],
+    [variant, gameId, selfColor, selfId, sync],
   );
 
   // Joiner: pull the authoritative snapshot, telling the host where we are so it can detect (and
@@ -259,8 +274,10 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
 
   // Joiner pulls the authoritative snapshot: fast until first synced (handshake races / late host),
   // then slowly while waiting on the opponent as a safety net for a missed snapshot. No polling on
-  // your own turn — you already hold the latest state. The host is authoritative and never pulls.
-  const waitingForState = view.currentTurn !== selfColor || !synced;
+  // your own turn — you already hold the latest state — except while only storage-restored
+  // (!liveSynced), where the "turn" is stale and we keep pulling until the host speaks this session.
+  // The host is authoritative and never pulls.
+  const waitingForState = view.currentTurn !== selfColor || !synced || !liveSynced;
   useEffect(() => {
     if (isHost || channel.status !== 'connected') return undefined;
     requestAuthoritative();
@@ -284,7 +301,8 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
 
   const isMyTurn = view.currentTurn === selfColor;
   const canMovePiece =
-    channel.status === 'connected' && synced && isMyTurn && view.phase === 'piece' && !view.result;
+    channel.status === 'connected' && synced && liveSynced && !seatTaken &&
+    isMyTurn && view.phase === 'piece' && !view.result;
 
   // Commit a completed turn: the host broadcasts authoritatively; the joiner sends an intent.
   const commitTurn = useCallback(
@@ -376,9 +394,11 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   const flipBoard = useCallback(() => setOrientation(opposite), []);
 
   const resync = useCallback(() => {
+    // From the terminal error state, Resync restarts the channel; onSubscribed then re-syncs state.
+    if (channel.status === 'error') return channelRef.current?.reconnect();
     if (isHost) broadcastAuthoritative(false);
     else requestAuthoritative();
-  }, [isHost, broadcastAuthoritative, requestAuthoritative]);
+  }, [channel.status, isHost, broadcastAuthoritative, requestAuthoritative]);
 
   const sendChat = useCallback(
     (text) => {
@@ -424,6 +444,13 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     resync,
     messages,
     sendChat,
-    connection: { status: channel.status, peerPresent: channel.peerPresent, synced },
+    connection: {
+      status: channel.status,
+      peerPresent: channel.peerPresent,
+      hostPresent: channel.hostPresent,
+      synced,
+      liveSynced,
+      seatTaken,
+    },
   };
 }

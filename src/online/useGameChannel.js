@@ -12,7 +12,10 @@
 //
 // Robustness: the WebSocket can drop (sleep/wake, network blips, backgrounded tabs). We auto-reconnect
 // with backoff and fire `onSubscribed` on every (re)connect so the controller can re-sync (the joiner
-// re-requests a snapshot; the host re-broadcasts). Status is 'reconnecting' while down, never a dead end.
+// re-requests a snapshot; the host re-broadcasts). After MAX_RECONNECT_ATTEMPTS consecutive failures
+// the status becomes a terminal 'error' until `reconnect()` restarts it (the panel's Resync button).
+// Presence is NOT reset on a transient drop — the indicator holds its last-known value until the next
+// presence sync, so a blip can't flap "opponent present"; a terminal error clears it.
 //
 // We never set `private: true` (that would require Realtime Authorization/RLS); the channel is public,
 // authorized by the anon key alone. `broadcast.self:false` means a sender never hears its own events.
@@ -21,6 +24,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { isRealtimeConfigured, supabase } from '../lib/supabase.js';
 
 const MAX_BACKOFF_MS = 10000;
+const MAX_RECONNECT_ATTEMPTS = 6; // then status 'error' until reconnect() restarts the machine
 
 export function useGameChannel({ gameId, selfId, isHost, handlers }) {
   // Keep the latest handlers in a ref (updated after render, not during it) so changing them doesn't
@@ -30,8 +34,10 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
     handlersRef.current = handlers;
   });
   const channelRef = useRef(null);
+  const reconnectRef = useRef(null);
   const [status, setStatus] = useState(isRealtimeConfigured ? 'connecting' : 'unconfigured');
-  const [peerPresent, setPeerPresent] = useState(false);
+  const [peerIds, setPeerIds] = useState([]); // non-self presence keys, for seat re-binding
+  const [hostPresent, setHostPresent] = useState(false);
 
   useEffect(() => {
     if (!isRealtimeConfigured || !gameId || !selfId) return undefined;
@@ -41,6 +47,19 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
     let reconnectTimer = null;
     const fire = (name, payload) => handlersRef.current?.[name]?.(payload);
 
+    // Tear down the current channel and build a fresh one. channelRef is nulled FIRST so the late
+    // CLOSED the torn-down channel fires is ignored by the subscribe guard below.
+    const teardownAndConnect = () => {
+      const old = channelRef.current;
+      channelRef.current = null;
+      try {
+        supabase.removeChannel(old);
+      } catch {
+        /* already gone */
+      }
+      connect();
+    };
+
     const scheduleReconnect = () => {
       if (cancelled || reconnectTimer) return;
       const delay = Math.min(1000 * 2 ** attempt, MAX_BACKOFF_MS);
@@ -48,12 +67,7 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
       reconnectTimer = setTimeout(() => {
         reconnectTimer = null;
         if (cancelled) return;
-        try {
-          supabase.removeChannel(channelRef.current);
-        } catch {
-          /* already gone */
-        }
-        connect();
+        teardownAndConnect();
       }, delay);
     };
 
@@ -69,31 +83,59 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
         .on('broadcast', { event: 'request-snapshot' }, ({ payload }) => fire('onRequestSnapshot', payload))
         .on('broadcast', { event: 'chat' }, ({ payload }) => fire('onChat', payload))
         .on('presence', { event: 'sync' }, () => {
-          const ids = Object.keys(channel.presenceState());
-          setPeerPresent(ids.some((id) => id !== selfId));
+          const entries = Object.entries(channel.presenceState());
+          setPeerIds(entries.map(([key]) => key).filter((key) => key !== selfId));
+          // Any OTHER presence tracking isHost: a joiner reads it as "the host is here"; a host
+          // reads it as "this game is already hosted from another tab".
+          setHostPresent(entries.some(([key, metas]) => key !== selfId && metas.some((meta) => meta.isHost)));
         })
         .on('presence', { event: 'join' }, ({ key }) => {
           if (key !== selfId) fire('onPeerJoin', { id: key });
         })
         .subscribe((state) => {
-          if (cancelled) return;
+          // Ignore unmount stragglers and late events from a channel this hook already replaced.
+          if (cancelled || channelRef.current !== channel) return;
           if (state === 'SUBSCRIBED') {
             attempt = 0;
+            if (reconnectTimer) {
+              clearTimeout(reconnectTimer); // a failure event mid-connect may have queued one
+              reconnectTimer = null;
+            }
             setStatus('connected');
             channel.track({ id: selfId, isHost: Boolean(isHost) });
             fire('onSubscribed'); // (re)connected → controller re-syncs
           } else if (state === 'CHANNEL_ERROR' || state === 'TIMED_OUT' || state === 'CLOSED') {
+            // Presence is deliberately left as-is on a transient drop (see header); the next
+            // presence sync after resubscribing corrects it either way.
+            if (attempt >= MAX_RECONNECT_ATTEMPTS) {
+              setStatus('error'); // terminal — surfaced as "Connection lost, try Resync"
+              setPeerIds([]);
+              setHostPresent(false);
+              return;
+            }
             setStatus('reconnecting');
-            setPeerPresent(false);
             scheduleReconnect();
           }
         });
     }
 
+    // Manual restart out of the terminal 'error' state (the panel's Resync button).
+    reconnectRef.current = () => {
+      if (cancelled) return;
+      attempt = 0;
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+      setStatus('connecting');
+      teardownAndConnect();
+    };
+
     connect();
 
     return () => {
       cancelled = true;
+      reconnectRef.current = null;
       if (reconnectTimer) clearTimeout(reconnectTimer);
       try {
         supabase.removeChannel(channelRef.current);
@@ -110,7 +152,10 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
 
   return {
     status,
-    peerPresent,
+    peerPresent: peerIds.length > 0,
+    peerIds,
+    hostPresent,
+    reconnect: () => reconnectRef.current?.(),
     broadcastSnapshot: (snapshot) => send('snapshot', snapshot),
     sendMoveIntent: (intent) => send('move-intent', intent),
     // `position` is the requester's {epoch, seq} so the host can tell a routine poll from a peer

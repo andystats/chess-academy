@@ -17,13 +17,15 @@ function moveLabel(entry) {
 }
 
 function statusText(game) {
-  const { connection, result, currentTurn, selfColor, phase } = game;
+  const { connection, result, currentTurn, selfColor, phase, isHost } = game;
   if (result) return resultText(result);
   if (connection.status === 'unconfigured') return 'Online play is not configured';
   if (connection.status === 'connecting') return 'Connecting…';
   if (connection.status === 'reconnecting') return 'Reconnecting…';
   if (connection.status === 'error') return 'Connection lost — try Resync';
-  if (!connection.synced) return 'Waiting for host…';
+  if (isHost && connection.hostPresent) return 'Game already open in another tab';
+  if (connection.seatTaken) return 'Seat taken — watching as spectator';
+  if (!connection.synced || !connection.liveSynced) return 'Waiting for host…';
   if (!connection.peerPresent) return 'Waiting for opponent…';
   const myTurn = currentTurn === selfColor;
   if (phase === 'duck' && myTurn) return 'Place the duck 🦆';

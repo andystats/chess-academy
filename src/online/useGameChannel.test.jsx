@@ -2,16 +2,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // A hand-driven fake Supabase channel: records the handlers registered via `.on(...)` and lets the
-// test emit broadcast/presence events into them. `.subscribe()` resolves synchronously to SUBSCRIBED.
+// test emit broadcast/presence events into them. `.subscribe()` resolves to SUBSCRIBED while
+// `state.autoSubscribe` is on; `drive(state)` feeds the latest subscribe callback by hand, so the
+// reconnect machine can be walked through failures.
 const { fake } = vi.hoisted(() => {
   const handlers = {};
+  const state = { subscribeCb: null, subscribeCount: 0, autoSubscribe: true };
   const channel = {
     on(type, filter, cb) {
       handlers[`${type}:${filter.event}`] = cb;
       return channel;
     },
     subscribe(cb) {
-      cb('SUBSCRIBED');
+      state.subscribeCb = cb;
+      state.subscribeCount += 1;
+      if (state.autoSubscribe) cb('SUBSCRIBED');
       return channel;
     },
     track: vi.fn(),
@@ -22,7 +27,9 @@ const { fake } = vi.hoisted(() => {
     fake: {
       channel,
       handlers,
+      state,
       emit: (type, event, payload) => handlers[`${type}:${event}`]?.(payload),
+      drive: (subscribeState) => state.subscribeCb?.(subscribeState),
     },
   };
 });
@@ -38,6 +45,9 @@ beforeEach(() => {
   fake.channel.track.mockClear();
   fake.channel.send.mockClear();
   fake.channel.presenceState.mockReturnValue({});
+  fake.state.subscribeCb = null;
+  fake.state.subscribeCount = 0;
+  fake.state.autoSubscribe = true;
 });
 
 function setup(handlers = {}) {
@@ -101,5 +111,98 @@ describe('useGameChannel', () => {
     expect(fake.channel.send).toHaveBeenCalledWith({ type: 'broadcast', event: 'snapshot', payload: { seq: 2 } });
     expect(fake.channel.send).toHaveBeenCalledWith({ type: 'broadcast', event: 'request-snapshot', payload: { by: 'me', epoch: 4, seq: 9 } });
     expect(fake.channel.send).toHaveBeenCalledWith({ type: 'broadcast', event: 'chat', payload: { id: 'm1', by: 'white', text: 'gg' } });
+  });
+});
+
+describe('reconnect machine', () => {
+  it('backs off, reconnects, and resets the attempt counter once subscribed', () => {
+    vi.useFakeTimers();
+    try {
+      const { result } = setup();
+      expect(result.current.status).toBe('connected');
+
+      act(() => fake.drive('CHANNEL_ERROR'));
+      expect(result.current.status).toBe('reconnecting');
+      const before = fake.state.subscribeCount;
+      act(() => vi.advanceTimersByTime(1000)); // first backoff step
+      expect(fake.state.subscribeCount).toBe(before + 1);
+      expect(result.current.status).toBe('connected');
+
+      // The attempt counter reset on success: the next failure backs off at 1s again, not 2s.
+      act(() => fake.drive('CHANNEL_ERROR'));
+      const again = fake.state.subscribeCount;
+      act(() => vi.advanceTimersByTime(999));
+      expect(fake.state.subscribeCount).toBe(again);
+      act(() => vi.advanceTimersByTime(1));
+      expect(fake.state.subscribeCount).toBe(again + 1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('gives up with a terminal error after the attempt cap and recovers via reconnect()', () => {
+    vi.useFakeTimers();
+    try {
+      const { result } = setup();
+      fake.state.autoSubscribe = false; // every reconnect attempt now fails
+      act(() => fake.drive('CHANNEL_ERROR'));
+      for (let i = 0; i < 6; i += 1) {
+        act(() => vi.advanceTimersByTime(10000)); // ≥ max backoff covers every step
+        act(() => fake.drive('CHANNEL_ERROR'));
+      }
+      expect(result.current.status).toBe('error');
+
+      const stuck = fake.state.subscribeCount;
+      act(() => vi.advanceTimersByTime(60000));
+      expect(fake.state.subscribeCount).toBe(stuck); // terminal: no more scheduled retries
+
+      fake.state.autoSubscribe = true;
+      act(() => result.current.reconnect()); // the panel's Resync button
+      expect(result.current.status).toBe('connected');
+      expect(fake.state.subscribeCount).toBe(stuck + 1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps last-known presence through a transient drop and clears it on terminal error', () => {
+    vi.useFakeTimers();
+    try {
+      const { result } = setup();
+      fake.channel.presenceState.mockReturnValue({ me: [{ isHost: true }], them: [{ isHost: true }] });
+      act(() => fake.emit('presence', 'sync'));
+      expect(result.current.peerPresent).toBe(true);
+      expect(result.current.hostPresent).toBe(true); // a non-self presence tracks isHost
+
+      act(() => fake.drive('CHANNEL_ERROR')); // transient: the indicator must not flap
+      expect(result.current.status).toBe('reconnecting');
+      expect(result.current.peerPresent).toBe(true);
+      expect(result.current.hostPresent).toBe(true);
+
+      fake.state.autoSubscribe = false;
+      for (let i = 0; i < 6; i += 1) {
+        act(() => vi.advanceTimersByTime(10000));
+        act(() => fake.drive('CHANNEL_ERROR'));
+      }
+      expect(result.current.status).toBe('error'); // terminal: genuinely down
+      expect(result.current.peerPresent).toBe(false);
+      expect(result.current.hostPresent).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not reconnect after unmount', () => {
+    vi.useFakeTimers();
+    try {
+      const { unmount } = setup();
+      act(() => fake.drive('CHANNEL_ERROR')); // schedules a reconnect
+      const before = fake.state.subscribeCount;
+      unmount();
+      act(() => vi.advanceTimersByTime(60000));
+      expect(fake.state.subscribeCount).toBe(before);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
