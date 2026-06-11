@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, act, cleanup } from '@testing-library/react';
 
 // A hand-driven fake Supabase channel: records the handlers registered via `.on(...)` and lets the
 // test emit broadcast/presence events into them. `.subscribe()` resolves to SUBSCRIBED while
@@ -49,6 +49,10 @@ beforeEach(() => {
   fake.state.subscribeCount = 0;
   fake.state.autoSubscribe = true;
 });
+
+// The hook listens on document/window (wake-up recovery), so a hook instance left mounted by an
+// earlier test would react to the next test's dispatched events — unmount explicitly every time.
+afterEach(() => cleanup());
 
 function setup(handlers = {}) {
   return renderHook(() =>
@@ -201,6 +205,70 @@ describe('reconnect machine', () => {
       unmount();
       act(() => vi.advanceTimersByTime(60000));
       expect(fake.state.subscribeCount).toBe(before);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('wake-up recovery', () => {
+  const setVisibility = (value) => {
+    Object.defineProperty(document, 'visibilityState', { value, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  };
+  afterEach(() => setVisibility('visible'));
+
+  it('reconnects immediately on wake when the connection is known-broken', () => {
+    vi.useFakeTimers();
+    try {
+      const { result } = setup();
+      act(() => fake.drive('CHANNEL_ERROR')); // down, backoff pending
+      const before = fake.state.subscribeCount;
+      act(() => setVisibility('hidden'));
+      act(() => setVisibility('visible'));
+      expect(fake.state.subscribeCount).toBe(before + 1); // no waiting out the backoff
+      expect(result.current.status).toBe('connected');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('forces a fresh channel after a long suspension even when it looks healthy', () => {
+    vi.useFakeTimers();
+    try {
+      setup();
+      const before = fake.state.subscribeCount;
+      act(() => setVisibility('hidden'));
+      act(() => vi.advanceTimersByTime(31000)); // suspended past the wake threshold
+      act(() => setVisibility('visible'));
+      expect(fake.state.subscribeCount).toBe(before + 1); // the suspended socket is assumed dead
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('re-syncs without tearing down after a short hide', () => {
+    const onSubscribed = vi.fn();
+    setup({ onSubscribed });
+    onSubscribed.mockClear();
+    const before = fake.state.subscribeCount;
+    act(() => setVisibility('hidden'));
+    act(() => setVisibility('visible'));
+    expect(fake.state.subscribeCount).toBe(before); // the healthy channel is kept
+    expect(onSubscribed).toHaveBeenCalledTimes(1); // but state re-syncs through the normal path
+  });
+
+  it('reconnects when the browser comes back online while down', () => {
+    vi.useFakeTimers();
+    try {
+      const { result } = setup();
+      fake.state.autoSubscribe = false;
+      act(() => fake.drive('CHANNEL_ERROR'));
+      const before = fake.state.subscribeCount;
+      fake.state.autoSubscribe = true;
+      act(() => window.dispatchEvent(new Event('online')));
+      expect(fake.state.subscribeCount).toBe(before + 1);
+      expect(result.current.status).toBe('connected');
     } finally {
       vi.useRealTimers();
     }

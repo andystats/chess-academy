@@ -39,6 +39,7 @@ future session can resume cold from here.
 | I | Dead-code decision (~982 orphaned lines) | ✅ done 2026-06-11 — deleted, −1,056 lines (commit pending) |
 | J | Roadmap seams (variant registry, serializer v2, shared hooks) | ✅ done 2026-06-11 (commit pending) — **duck-decay prerequisites landed** |
 | J2 | useBoardInput unification (split from J) | ☐ not started |
+| M | Field reliability (2026-06-11 freeze report) | ✅ done 2026-06-11 (commit pending; field re-test open) |
 | K | Test hardening | ☐ not started |
 | L | Dependency majors (vitest/vite/React etc.) | ☐ not started |
 
@@ -211,6 +212,40 @@ behavior; add an engine-hook tap test if missing.
 - [ ] After each major: `npm run lint && npm test && npm run build` + a manual online-game smoke test.
 
 **Landed:** _(commit)_
+
+---
+
+## Bite M — Field reliability (from the 2026-06-11 freeze report)
+
+**Field report:** a live duck-chess game froze mid-play; on re-login the other player saw "Waiting
+for opponent". Diagnosis: that status means connected + synced but *no other presence* — i.e. the
+other side's tab genuinely wasn't on the channel. Two mechanisms fit, both now fixed:
+
+- [x] **Wake-up recovery** (the prime suspect): a suspended tab (phone screen off, closed lid,
+  mobile browsers freezing background pages) wakes with a dead socket that doesn't error until the
+  next heartbeat (~25s+, sometimes never on iOS). `useGameChannel` now listens for
+  `visibilitychange`/`online`: wake while known-down → reconnect immediately (skipping backoff and
+  the terminal error); wake after >30s hidden → fresh channel even if it looks healthy (a socket
+  rarely survives a real suspension); short blip → cheap state re-sync via the normal onSubscribed
+  path. The frozen-tab side now recovers in ~1s instead of "whenever the heartbeat notices".
+- [x] **Stuck-intent epoch heal** (the residual protocol wedge): Bite B fixed joiner-*ahead*
+  deadlocks, but a joiner whose optimistic board diverged at the SAME seq was numerically invisible
+  — its move-intents go nowhere, the host's no-bump corrections get dropped, and both players wait
+  forever ("it froze"). Now: after 3 silent retries (~10s) the joiner drops the intent and sends
+  `request-snapshot {stuck: true}`; the host answers a stuck requester with a fresh epoch
+  (unconditionally adoptable) → the joiner rolls back to the authoritative board and play resumes.
+- [x] **Opponent-absent guidance**: "Waiting for opponent…" now carries a hint ("they're not
+  connected right now — keep this tab open; the game resumes when they return, or re-send the
+  invite link") instead of reading like a dead end.
+- [x] Tests (6 new): wake-reconnect when known-broken / after long suspension / short-hide re-sync /
+  online-event recovery; joiner stuck-intent escalation (retries → heal request → no more resends →
+  epoch heal unfreezes); host heals a same-seq `stuck` requester. Plus a test-isolation fix the new
+  document-level listeners exposed (explicit RTL cleanup in the channel suite). 161/161; lint+build green.
+- [ ] **Field re-test**: after deploy, play another full duck game with a phone/laptop-sleep moment
+  in the middle — both sides should resume within a couple of seconds of waking. If a freeze recurs,
+  the next step is a small connection-event breadcrumb log to capture exactly what each side saw.
+
+**Landed:** 2026-06-11 — _commit pending; stamp the hash here once committed._
 
 ---
 

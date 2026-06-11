@@ -417,6 +417,43 @@ describe('epoch — new game and stuck-joiner recovery', () => {
     expect(result.current.fen).toBe(createVariantGame('standard').boardFen()); // old-epoch stragglers stay ignored
   });
 
+  it('host answers a stuck requester with a fresh epoch even at the same seq', () => {
+    const { result } = renderHook(() => useOnlineGame(hostProps));
+    act(() => result.current.onPieceDrop('e2', 'e4'));
+    const { epoch, seq } = transport.broadcastSnapshot.mock.calls.at(-1)[0];
+    transport.broadcastSnapshot.mockClear();
+
+    act(() => transport.handlers.onRequestSnapshot({ by: 'joiner', epoch, seq, stuck: true }));
+    const healed = transport.broadcastSnapshot.mock.calls.at(-1)[0];
+    expect(healed.epoch).toBeGreaterThan(epoch); // unconditionally adoptable by the diverged joiner
+    expect(healed.seq).toBe(seq + 1);
+  });
+
+  it('escalates a stuck move-intent to an epoch heal instead of retrying forever', () => {
+    vi.useFakeTimers();
+    try {
+      const { result } = renderHook(() => useOnlineGame(joinerProps));
+      const players = { white: 'host', black: 'joiner' };
+      act(() => transport.handlers.onSnapshot({ epoch: 2, seq: 2, variant: 'standard', hostColor: 'white', players, state: fenAfter('standard', { from: 'e2', to: 'e4' }) }));
+      act(() => result.current.onPieceDrop('e7', 'e5')); // optimistic; the host never answers
+      expect(transport.sendMoveIntent).toHaveBeenCalledTimes(1);
+      transport.requestSnapshot.mockClear();
+
+      act(() => vi.advanceTimersByTime(7800)); // three silent retries
+      expect(transport.sendMoveIntent.mock.calls.length).toBe(4); // initial send + 3 resends
+      act(() => vi.advanceTimersByTime(2600)); // the next tick gives up and asks for a heal
+      expect(transport.requestSnapshot).toHaveBeenCalledWith(expect.objectContaining({ stuck: true }));
+      act(() => vi.advanceTimersByTime(5200));
+      expect(transport.sendMoveIntent.mock.calls.length).toBe(4); // the intent was dropped — no more resends
+
+      // The heal arrives as a fresh epoch (always adoptable) and rolls the optimistic board back.
+      act(() => transport.handlers.onSnapshot({ epoch: 3, seq: 3, variant: 'standard', hostColor: 'white', players, state: fenAfter('standard', { from: 'e2', to: 'e4' }) }));
+      expect(result.current.currentTurn).toBe('black'); // back on the authoritative board, unfrozen
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('host heals a stuck-ahead requester by minting a fresh epoch, but answers a routine poll without bumping', () => {
     const { result } = renderHook(() => useOnlineGame(hostProps));
     act(() => result.current.onPieceDrop('e2', 'e4'));

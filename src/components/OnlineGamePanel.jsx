@@ -71,6 +71,13 @@ export default function OnlineGamePanel({ game }) {
         </span>
       </div>
 
+      {!game.result && game.connection.status === 'connected' && game.connection.synced && !game.connection.peerPresent && (
+        <p className="text-xs leading-5 text-gray-500">
+          Your opponent isn&rsquo;t connected right now. Keep this tab open — the game resumes the
+          moment they return — or re-send them the invite link above.
+        </p>
+      )}
+
       <CapturedPieces captured={game.captured} />
 
       <ChatBox messages={game.messages} onSend={game.sendChat} selfColor={game.selfColor} />

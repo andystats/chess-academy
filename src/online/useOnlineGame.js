@@ -27,6 +27,7 @@ import { loadSnapshot, saveSnapshot } from './localSnapshot.js';
 const RESYNC_INTERVAL_MS = 900; // joiner polls this fast until first synced (handshake)
 const IDLE_RESYNC_MS = 6000; // once synced, joiner pulls this slowly while waiting on the opponent
 const MOVE_RETRY_MS = 2500; // joiner resends an unconfirmed move-intent this often
+const STUCK_INTENT_RETRIES = 3; // then assume same-seq divergence and ask for an epoch heal
 
 // A fresh epoch marks a new game instance under the same game id (New game, or a host with no
 // persisted state for the id). Timestamp-based so a host that lost its storage still mints an epoch
@@ -54,8 +55,10 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   const playersRef = useRef({ white: null, black: null });
   const pendingPieceMoveRef = useRef(null);
   // The joiner's last move-intent that the host hasn't confirmed yet (cleared when a newer snapshot
-  // arrives). Resent on an interval so a single lost message can't deadlock the game.
+  // arrives). Resent on an interval so a single lost message can't deadlock the game; after
+  // STUCK_INTENT_RETRIES silent retries it is dropped in favour of an epoch heal (see below).
   const pendingIntentRef = useRef(null);
+  const intentRetriesRef = useRef(0);
 
   // Lazily build the starting rules instance: host resumes from its persisted snapshot on reload;
   // the joiner starts from any persisted snapshot and otherwise waits for the host's first snapshot.
@@ -180,19 +183,21 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     [isHost, variant, selfId, broadcastAuthoritative],
   );
 
-  // Host: answer a resync request. A requester strictly ahead of our (epoch, seq) would drop a
-  // plain re-publish (the adopt guard ignores non-newer snapshots) — that was how a joiner got
-  // stuck for good after the host lost its storage. Minting a fresh epoch makes the answer
-  // unconditionally adoptable; a routine poll is answered without bumping so it can never clear
-  // the requester's in-flight move-intent.
+  // Host: answer a resync request. A requester strictly ahead of our (epoch, seq) — or one that
+  // flagged itself `stuck` (its move-intents are going nowhere, so its optimistic board has likely
+  // diverged at the SAME seq, which the numeric guard cannot see) — would drop a plain re-publish,
+  // so those get a fresh epoch, which is unconditionally adoptable. A routine poll is answered
+  // without bumping so it can never clear the requester's in-flight move-intent.
   const answerSnapshotRequest = useCallback(
     (request) => {
-      const reqEpoch = request?.epoch || 0;
-      const reqSeq = request?.seq || 0;
-      const stuckAhead =
-        reqEpoch > epochRef.current || (reqEpoch === epochRef.current && reqSeq > seqRef.current);
-      if (stuckAhead) epochRef.current = mintEpoch(epochRef.current);
-      broadcastAuthoritative(stuckAhead);
+      const reqEpoch = Number(request?.epoch) || 0;
+      const reqSeq = Number(request?.seq) || 0;
+      const needsHeal =
+        request?.stuck === true ||
+        reqEpoch > epochRef.current ||
+        (reqEpoch === epochRef.current && reqSeq > seqRef.current);
+      if (needsHeal) epochRef.current = mintEpoch(epochRef.current);
+      broadcastAuthoritative(needsHeal);
     },
     [broadcastAuthoritative],
   );
@@ -224,6 +229,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       epochRef.current = epoch;
       seqRef.current = seq;
       pendingIntentRef.current = null; // a newer authoritative state means our move was applied or rolled back
+      intentRetriesRef.current = 0;
       pendingPieceMoveRef.current = null; // and any half-entered local turn is superseded with it
       if (snapshot.players && typeof snapshot.players === 'object') {
         playersRef.current = { white: snapshot.players.white ?? null, black: snapshot.players.black ?? null };
@@ -240,9 +246,10 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   );
 
   // Joiner: pull the authoritative snapshot, telling the host where we are so it can detect (and
-  // epoch-heal) a requester whose state ran ahead of it. Counterpart of broadcastAuthoritative.
-  const requestAuthoritative = useCallback(() => {
-    channelRef.current?.requestSnapshot({ epoch: epochRef.current, seq: seqRef.current });
+  // epoch-heal) a requester whose state ran ahead of it — or, via `{ stuck: true }`, one whose
+  // optimistic board diverged invisibly. Counterpart of broadcastAuthoritative.
+  const requestAuthoritative = useCallback((extra) => {
+    channelRef.current?.requestSnapshot({ epoch: epochRef.current, seq: seqRef.current, ...extra });
   }, []);
 
   // Chat is peer-to-peer (both sides send and receive), independent of the host-authoritative game
@@ -287,15 +294,26 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     return () => clearInterval(id);
   }, [isHost, synced, waitingForState, channel.status, requestAuthoritative]);
 
-  // Joiner: resend an unconfirmed move-intent until a newer snapshot clears it, so one dropped message
-  // can't leave both players waiting on each other forever.
+  // Joiner: resend an unconfirmed move-intent until a newer snapshot clears it, so one dropped
+  // message can't leave both players waiting on each other forever. If the host answers nothing
+  // for several retries, our optimistic board has likely diverged at the SAME seq (numerically
+  // invisible to the adopt guard) — drop the intent and ask for an epoch heal, which rolls us back
+  // to the authoritative board instead of freezing the game.
   useEffect(() => {
     if (isHost) return undefined;
     const id = setInterval(() => {
-      if (pendingIntentRef.current) channelRef.current?.sendMoveIntent(pendingIntentRef.current);
+      if (!pendingIntentRef.current) return;
+      if (intentRetriesRef.current >= STUCK_INTENT_RETRIES) {
+        pendingIntentRef.current = null;
+        intentRetriesRef.current = 0;
+        requestAuthoritative({ stuck: true });
+        return;
+      }
+      intentRetriesRef.current += 1;
+      channelRef.current?.sendMoveIntent(pendingIntentRef.current);
     }, MOVE_RETRY_MS);
     return () => clearInterval(id);
-  }, [isHost]);
+  }, [isHost, requestAuthoritative]);
 
   // --- Local interaction ---
 
@@ -314,6 +332,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       } else {
         const intent = { by: selfId, pieceMove, duckSquare };
         pendingIntentRef.current = intent; // retransmit until a newer snapshot confirms/rolls back
+        intentRetriesRef.current = 0;
         channelRef.current?.sendMoveIntent(intent);
         sync();
       }

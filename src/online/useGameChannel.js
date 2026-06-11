@@ -6,7 +6,7 @@
 // Protocol (host = game creator, the sole authority):
 //   - move-intent      {turnId, by, pieceMove:{from,to,promotion}, duckSquare?}  either player → host
 //   - snapshot         {epoch, seq, variant, hostColor, players:{white,black}, state}  host → everyone
-//   - request-snapshot {by, epoch, seq}   (requester's current position)          joiner/Resync → host
+//   - request-snapshot {by, epoch, seq, stuck?}  (requester's position; stuck = needs a heal)  joiner/Resync → host
 //   - chat             {id, by, text}                                             either player → both
 // Chat is peer-to-peer and ephemeral (not part of the authoritative game snapshot).
 //
@@ -17,6 +17,11 @@
 // Presence is NOT reset on a transient drop — the indicator holds its last-known value until the next
 // presence sync, so a blip can't flap "opponent present"; a terminal error clears it.
 //
+// Suspended tabs (phone screen off, closed lid, mobile browsers freezing background pages) wake with
+// a dead socket that may not error until the next heartbeat. We reconnect proactively on wake:
+// immediately when we already know we're down, with a fresh channel after a long suspension even if
+// we look healthy (a socket rarely survives one), and via a cheap state re-sync after a short hide.
+//
 // We never set `private: true` (that would require Realtime Authorization/RLS); the channel is public,
 // authorized by the anon key alone. `broadcast.self:false` means a sender never hears its own events.
 
@@ -25,6 +30,7 @@ import { isRealtimeConfigured, supabase } from '../lib/supabase.js';
 
 const MAX_BACKOFF_MS = 10000;
 const MAX_RECONNECT_ATTEMPTS = 6; // then status 'error' until reconnect() restarts the machine
+const WAKE_RECONNECT_AFTER_MS = 30000; // hidden longer than this → assume the socket died
 
 export function useGameChannel({ gameId, selfId, isHost, handlers }) {
   // Keep the latest handlers in a ref (updated after render, not during it) so changing them doesn't
@@ -45,7 +51,12 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
     let cancelled = false;
     let attempt = 0;
     let reconnectTimer = null;
+    let liveStatus = 'connecting'; // mirrors the status state for non-render callbacks (wake/online)
     const fire = (name, payload) => handlersRef.current?.[name]?.(payload);
+    const setLiveStatus = (next) => {
+      liveStatus = next;
+      setStatus(next);
+    };
 
     // Tear down the current channel and build a fresh one. channelRef is nulled FIRST so the late
     // CLOSED the torn-down channel fires is ignored by the subscribe guard below.
@@ -101,25 +112,26 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
               clearTimeout(reconnectTimer); // a failure event mid-connect may have queued one
               reconnectTimer = null;
             }
-            setStatus('connected');
+            setLiveStatus('connected');
             channel.track({ id: selfId, isHost: Boolean(isHost) });
             fire('onSubscribed'); // (re)connected → controller re-syncs
           } else if (state === 'CHANNEL_ERROR' || state === 'TIMED_OUT' || state === 'CLOSED') {
             // Presence is deliberately left as-is on a transient drop (see header); the next
             // presence sync after resubscribing corrects it either way.
             if (attempt >= MAX_RECONNECT_ATTEMPTS) {
-              setStatus('error'); // terminal — surfaced as "Connection lost, try Resync"
+              setLiveStatus('error'); // terminal — surfaced as "Connection lost, try Resync"
               setPeerIds([]);
               setHostPresent(false);
               return;
             }
-            setStatus('reconnecting');
+            setLiveStatus('reconnecting');
             scheduleReconnect();
           }
         });
     }
 
-    // Manual restart out of the terminal 'error' state (the panel's Resync button).
+    // Manual restart out of the terminal 'error' state (the panel's Resync button) and the
+    // wake-up handlers below.
     reconnectRef.current = () => {
       if (cancelled) return;
       attempt = 0;
@@ -127,15 +139,37 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;
       }
-      setStatus('connecting');
+      setLiveStatus('connecting');
       teardownAndConnect();
     };
+
+    // Wake-up recovery (see header): a suspended tab's socket is usually dead but errors late.
+    let hiddenAt = null;
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+        return;
+      }
+      if (cancelled) return;
+      const hiddenFor = hiddenAt ? Date.now() - hiddenAt : 0;
+      hiddenAt = null;
+      if (liveStatus !== 'connected') reconnectRef.current?.(); // skip the backoff / terminal error
+      else if (hiddenFor > WAKE_RECONNECT_AFTER_MS) reconnectRef.current?.(); // assume a dead socket
+      else fire('onSubscribed'); // short blip: cheap state re-sync through the normal path
+    };
+    const onOnline = () => {
+      if (!cancelled && liveStatus !== 'connected') reconnectRef.current?.();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('online', onOnline);
 
     connect();
 
     return () => {
       cancelled = true;
       reconnectRef.current = null;
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('online', onOnline);
       if (reconnectTimer) clearTimeout(reconnectTimer);
       try {
         supabase.removeChannel(channelRef.current);
