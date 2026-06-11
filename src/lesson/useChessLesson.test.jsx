@@ -134,7 +134,7 @@ describe('useChessLesson — multi-move line', () => {
       result.current.onPieceDrop(from, to);
     });
   };
-  const letOpponentReply = (result) => {
+  const letOpponentReply = () => {
     act(() => {
       vi.advanceTimersByTime(600);
     });
@@ -144,11 +144,11 @@ describe('useChessLesson — multi-move line', () => {
     const { result } = renderHook(() => useChessLesson(lineEnv));
     playMove(result, 'e2', 'e4');
     expect(result.current.status).toBe('playing-opponent');
-    letOpponentReply(result);
+    letOpponentReply();
     expect(result.current.status).toBe('awaiting');
 
     playMove(result, 'g1', 'f3');
-    letOpponentReply(result);
+    letOpponentReply();
     expect(result.current.status).toBe('awaiting');
 
     playMove(result, 'f1', 'b5'); // last player move, no reply
@@ -159,9 +159,9 @@ describe('useChessLesson — multi-move line', () => {
   it('accepts a converging alternative (Bc4) at the final move', () => {
     const { result } = renderHook(() => useChessLesson(lineEnv));
     playMove(result, 'e2', 'e4');
-    letOpponentReply(result);
+    letOpponentReply();
     playMove(result, 'g1', 'f3');
-    letOpponentReply(result);
+    letOpponentReply();
     playMove(result, 'f1', 'c4'); // acceptableAt[2]
     expect(result.current.status).toBe('complete');
   });
@@ -169,7 +169,7 @@ describe('useChessLesson — multi-move line', () => {
   it('restartStep returns to the start position', () => {
     const { result } = renderHook(() => useChessLesson(lineEnv));
     playMove(result, 'e2', 'e4');
-    letOpponentReply(result);
+    letOpponentReply();
     expect(result.current.fen).not.toBe(START);
     act(() => result.current.restartStep());
     expect(result.current.fen).toBe(START);

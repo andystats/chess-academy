@@ -28,7 +28,7 @@ future session can resume cold from here.
 
 | Bite | Theme | Status |
 |---|---|---|
-| A | CI quick wins (⏰ before 2026-06-16) | ☐ not started |
+| A | CI quick wins (⏰ before 2026-06-16) | ✅ done 2026-06-11 (commit pending; CI-on-push check open) |
 | B | Protocol epoch — the P0 join deadlock | ☐ not started |
 | C | Atomic turn apply + mid-turn safety | ☐ not started |
 | D | Wire-input guards (peer payload hardening) | ☐ not started |
@@ -50,15 +50,16 @@ I whenever, **J before starting lobby/chat/duck-decay features**, K alongside ev
 
 Deadline-driven: GitHub runners default to Node 24 on **2026-06-16**; v4 actions run on the deprecated Node 20 runtime.
 
-- [ ] Bump `actions/checkout@v4 → v5` and `actions/setup-node@v4 → v5` in `.github/workflows/ci.yml` and `.github/workflows/deploy.yml`; bump `actions/deploy-pages@v4 → v5` in deploy.yml (`upload-pages-artifact@v3` is current — leave it). [API-1]
-- [ ] Add to `ci.yml` top level: `permissions:\n  contents: read`. [SEC-8]
-- [ ] deploy.yml: change `cancel-in-progress: true → false` (matches GitHub's Pages starter; never cancels a mid-publish deploy). [CORR-19]
-- [ ] package.json lint script → `eslint . --ext .js,.jsx,.mjs,.cjs --max-warnings=0`; fix whatever it now reports in `scripts/*.mjs` (previously never linted). [TOOL-3]
-- [ ] `npm install react-router-dom@^6.30.4` (clears both router advisories via the transitive `@remix-run/router` ≥1.23.2), then `npm audit fix` (NO `--force`) for the in-range transitive sweep (postcss, rollup, minimatch, picomatch, brace-expansion, flatted). Verify `npm audit` afterwards; remaining advisories should be only the vite/vitest majors (Bite L). [DEP-2, DEP-4]
-- [ ] Optional hardening while in the files: pin actions to commit SHAs with `# vX.Y.Z` comments + add Dependabot `github-actions` config. [SEC-9]
-- [ ] Verify: push a branch, CI green; deploy workflow green on main.
+- [x] Bumped `actions/checkout@v4 → v5` and `actions/setup-node@v4 → v5` in both workflows; `actions/deploy-pages@v4 → v5` in deploy.yml (`upload-pages-artifact@v3` is current — left in place). [API-1]
+- [x] Added `permissions: contents: read` to `ci.yml` top level. [SEC-8]
+- [x] deploy.yml `cancel-in-progress: true → false` (+ rationale comment, matching GitHub's Pages starter). [CORR-19]
+- [x] Lint script → `eslint . --ext .js,.jsx,.mjs,.cjs --max-warnings=0`. Bonus discovery: ESLint 8 also skipped `.jsx` under `eslint .`, so CI now lints the React code for the first time. Fallout fixed: unused param in `useChessLesson.test.jsx`; unescaped apostrophes in `PickProfile.jsx` + `NotFoundPage.jsx`; eslintrc override silencing `react-refresh/only-export-components` for the two intentional mixed-export modules (`gamePanelParts.jsx`, `ProfileContext.jsx`); `materials/` added to ignorePatterns (gitignored local-only content). [TOOL-3]
+- [x] `react-router-dom ^6.30.2 → ^6.30.4` (transitive `@remix-run/router` now 1.23.3 — clears both router advisories) + `npm audit fix` (no --force): **13 advisories → 4**; the remaining 4 are the vite/esbuild/vite-node/vitest chain reserved for the Bite L majors. [DEP-2, DEP-4]
+- [x] Optional hardening done: all four actions pinned to full commit SHAs with `# vX.Y.Z` comments (checkout v5.0.1, setup-node v5.0.0, upload-pages-artifact v3.0.1, deploy-pages v5.0.0 — resolved via `git ls-remote`, all lightweight tags so the SHAs are commit SHAs) + new `.github/dependabot.yml` (github-actions ecosystem, monthly — keeps the pins fresh). [SEC-9]
+- [x] Local verify: `npm run lint` clean · `npm test` 124/124 · `npm run build` ok (pre-existing chunk-size note only).
+- [ ] Remote verify after pushing: CI workflow green on branch/PR; deploy workflow green on main.
 
-**Landed:** _(commit)_
+**Landed:** 2026-06-11 — _commit pending; stamp the hash here once committed._
 
 ## Bite B — Protocol epoch: fix the P0 join deadlock (CORR-1, CORR-6)
 

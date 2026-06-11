@@ -33,7 +33,7 @@ export default function PickProfile() {
 
       {!persistent && (
         <p className="mx-auto mt-4 max-w-md rounded-2xl bg-amber-50 px-4 py-3 text-center text-sm text-amber-800">
-          Heads up: storage is turned off in this browser, so progress won't be saved after you close the tab.
+          Heads up: storage is turned off in this browser, so progress won&apos;t be saved after you close the tab.
         </p>
       )}
 

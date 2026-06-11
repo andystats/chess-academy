@@ -10,16 +10,18 @@ permissions:
   pages: write
   id-token: write
 
+# Queue rather than cancel: interrupting actions/deploy-pages mid-publish can leave the
+# deployment in a bad state (GitHub's Pages starter workflow does the same).
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 20
           cache: npm
@@ -45,7 +47,7 @@ jobs:
           BASE_PATH: /${{ github.event.repository.name }}/
       # SPA deep links are handled by public/404.html (copied to dist by Vite) plus a restore
       # snippet in index.html — see those files. No copy step needed.
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: dist
 
@@ -57,4 +59,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
