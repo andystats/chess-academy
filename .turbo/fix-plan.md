@@ -29,7 +29,7 @@ future session can resume cold from here.
 | Bite | Theme | Status |
 |---|---|---|
 | A | CI quick wins (⏰ before 2026-06-16) | ✅ done 2026-06-11 (commit pending; CI-on-push check open) |
-| B | Protocol epoch — the P0 join deadlock | ☐ not started |
+| B | Protocol epoch — the P0 join deadlock | ✅ done 2026-06-11 (commit pending; manual two-browser check open) |
 | C | Atomic turn apply + mid-turn safety | ☐ not started |
 | D | Wire-input guards (peer payload hardening) | ☐ not started |
 | E | Identity & presence (lobby groundwork) | ☐ not started |
@@ -66,15 +66,15 @@ Deadline-driven: GitHub runners default to Node 24 on **2026-06-16**; v4 actions
 Root cause: `seq` is the only reconciliation primitive; resyncs/corrections don't bump it, so a joiner
 whose `seq` ≥ host's drops everything forever. Files: `src/online/useOnlineGame.js`, `src/online/localSnapshot.js`.
 
-- [ ] Add `epoch` to the snapshot shape (`buildSnapshot`): host mints `epoch: 1` on first creation; **`newGame()` increments `epoch` and resets `seqRef.current = 1`**.
-- [ ] Persist epoch with the snapshot (already automatic once it's in the snapshot object) and restore it in the lazy init alongside seq.
-- [ ] `adoptSnapshot`: adopt when `snapshot.epoch > epochRef.current`, or `epoch === epochRef.current && seq > seqRef.current`. On epoch adoption, clear `pendingIntentRef` and selection state.
-- [ ] Make corrections receivable: in `applyIntent`'s known-player resend path and in `onRequestSnapshot`, call `broadcastAuthoritative(true)` (bump) instead of `(false)` — or keep `(false)` everywhere and rely on epoch + a `force` flag the joiner always adopts. Pick one; document it in the useOnlineGame header comment.
-- [ ] Host with no persisted state for an existing gameId (new device / cleared storage) should mint `epoch: Date.now()`-style or `prevEpoch+1` — it can't know prevEpoch, so use a random 32-bit epoch on fresh host init to guarantee joiners adopt (document: epochs compare by inequality, adopt on *different + newer-seq-within*, simplest: joiner adopts any snapshot whose epoch ≠ its own).
-- [ ] Regression tests in `useOnlineGame.test.jsx`: (a) after a completed game, host `newGame()` → joiner adopts the fresh board; (b) joiner with seq 40 + host restarting at seq 1 → joiner heals on first snapshot; (c) the existing "ignores stale ones" test updated for epoch semantics (it currently encodes the bug as intended behavior).
-- [ ] Verify: two browsers (not two tabs — see Bite E), play, host hard-reloads with DevTools → Application → Clear storage, then "New game" — joiner must follow.
+- [x] `epoch` added to the snapshot shape (`buildSnapshot`); module-level `mintEpoch(current) = Math.max(Date.now(), current + 1)` — timestamp-based so a fresh host always outranks whatever a joiner holds; monotonic within one ms. `newGame()` mints a fresh epoch and resets `seqRef` to 0 → broadcasts (newEpoch, seq 1).
+- [x] Epoch persists automatically inside the snapshot; lazy init restores it. A host resuming a pre-epoch persisted snapshot (or with no persisted state at all) mints fresh — covers cleared-storage / new-device hosts. Joiner starts at epoch 0 until its first adopted snapshot.
+- [x] `adoptSnapshot`: adopt when `epoch > mine` OR (`epoch === mine` AND `seq > mine`); missing epoch normalizes to 0 (mixed-version games degrade to the old seq-only rule). On adopt it now clears `pendingIntentRef` AND `pendingPieceMoveRef` (a half-entered local turn is superseded).
+- [x] Corrections receivable — chose the *targeted* option, not blanket-bumping (bump-on-everything would let an idle poll response clear a joiner's in-flight move-intent): `request-snapshot` now carries the requester's `{epoch, seq}` (transport: `useGameChannel.requestSnapshot(position)`), and the host's new `answerSnapshotRequest` mints a fresh epoch + bumps **only when the requester is strictly ahead**; routine polls are answered without bump, exactly as before. Documented in both file headers.
+- [x] Fresh-host epoch: handled by the timestamp mint (no random epoch needed; strictly monotonic across devices with sane clocks).
+- [x] Regression tests ×3 in `useOnlineGame.test.jsx` (+1 updated in `useGameChannel.test.jsx` for the request payload): (a) `newGame` broadcasts fresh-epoch/seq-1/reset board; (b) joiner adopts higher-epoch-lower-seq and keeps ignoring old-epoch stragglers; (c) host epoch-heals a stuck-ahead requester but answers a routine poll with no epoch churn and no bump. The pre-existing "ignores stale ones" test still passes as the same-epoch case. Suite: 127/127; lint clean.
+- [ ] Manual verify (needs the live Supabase project): two browsers, play, host clears site data + reloads + "New game" — joiner must follow. Unit tests cover the protocol logic; this confirms it over real Realtime.
 
-**Landed:** _(commit)_
+**Landed:** 2026-06-11 — _commit pending; stamp the hash here once committed._
 
 ## Bite C — Atomic turn apply + mid-turn safety (CORR-2, CORR-3)
 

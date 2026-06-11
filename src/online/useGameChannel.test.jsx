@@ -94,12 +94,12 @@ describe('useGameChannel', () => {
     const { result } = setup();
     act(() => result.current.sendMoveIntent({ turnId: 7 }));
     act(() => result.current.broadcastSnapshot({ seq: 2 }));
-    act(() => result.current.requestSnapshot());
+    act(() => result.current.requestSnapshot({ epoch: 4, seq: 9 }));
     act(() => result.current.sendChat({ id: 'm1', by: 'white', text: 'gg' }));
 
     expect(fake.channel.send).toHaveBeenCalledWith({ type: 'broadcast', event: 'move-intent', payload: { turnId: 7 } });
     expect(fake.channel.send).toHaveBeenCalledWith({ type: 'broadcast', event: 'snapshot', payload: { seq: 2 } });
-    expect(fake.channel.send).toHaveBeenCalledWith({ type: 'broadcast', event: 'request-snapshot', payload: { by: 'me' } });
+    expect(fake.channel.send).toHaveBeenCalledWith({ type: 'broadcast', event: 'request-snapshot', payload: { by: 'me', epoch: 4, seq: 9 } });
     expect(fake.channel.send).toHaveBeenCalledWith({ type: 'broadcast', event: 'chat', payload: { id: 'm1', by: 'white', text: 'gg' } });
   });
 });

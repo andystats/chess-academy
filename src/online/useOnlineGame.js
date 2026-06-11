@@ -6,11 +6,14 @@
 // Authority model — the HOST (game creator) is the sole source of truth:
 //   - Both players apply their own completed turn to a local rules instance immediately (optimistic),
 //     so the board feels responsive.
-//   - The host then broadcasts a full authoritative snapshot (monotonic `seq`). The joiner instead
-//     sends a `move-intent`; the host validates + applies it and broadcasts the resulting snapshot.
-//   - Every client rebuilds its rules instance from any snapshot whose `seq` is higher than its own.
-//     Because snapshots are full state, a missed message self-heals on the next one — there is no
-//     move-log replay and no per-message gap math.
+//   - The host then broadcasts a full authoritative snapshot. The joiner instead sends a
+//     `move-intent`; the host validates + applies it and broadcasts the resulting snapshot.
+//   - Snapshots are ordered by (epoch, seq). `seq` is the monotonic version within one game
+//     instance; `epoch` identifies the instance itself and outranks `seq`, so "New game" (and a
+//     host starting over without its persisted state) ships a higher epoch that joiners adopt even
+//     though their seq may be far ahead. Within an epoch, a client rebuilds its rules instance from
+//     any snapshot with a higher seq. Because snapshots are full state, a missed message self-heals
+//     on the next one — there is no move-log replay and no per-message gap math.
 // A full turn is bundled as {pieceMove, duckSquare} so duck placement and the piece move sync together.
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -22,6 +25,11 @@ import { loadSnapshot, saveSnapshot } from './localSnapshot.js';
 const RESYNC_INTERVAL_MS = 900; // joiner polls this fast until first synced (handshake)
 const IDLE_RESYNC_MS = 6000; // once synced, joiner pulls this slowly while waiting on the opponent
 const MOVE_RETRY_MS = 2500; // joiner resends an unconfirmed move-intent this often
+
+// A fresh epoch marks a new game instance under the same game id (New game, or a host with no
+// persisted state for the id). Timestamp-based so a host that lost its storage still mints an epoch
+// above whatever a joiner holds; the max() keeps repeated mints monotonic within one millisecond.
+const mintEpoch = (current) => Math.max(Date.now(), (current || 0) + 1);
 
 function snapshotView(game) {
   const phase = game.phase();
@@ -40,6 +48,7 @@ function snapshotView(game) {
 export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, selfId }) {
   const gameRef = useRef(null);
   const seqRef = useRef(0);
+  const epochRef = useRef(0); // joiner stays at 0 until its first adopted snapshot
   const playersRef = useRef({ white: null, black: null });
   const pendingPieceMoveRef = useRef(null);
   // The joiner's last move-intent that the host hasn't confirmed yet (cleared when a newer snapshot
@@ -53,11 +62,14 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     if (persisted && persisted.state) {
       gameRef.current = createVariantGame(persisted.variant || variant, persisted.state);
       seqRef.current = persisted.seq || 0;
+      // A host resuming a pre-epoch snapshot starts a fresh instance so joiners follow it.
+      epochRef.current = persisted.epoch || (isHost ? mintEpoch(0) : 0);
       if (persisted.players) playersRef.current = persisted.players;
     } else {
       gameRef.current = createVariantGame(variant);
       if (isHost) {
         seqRef.current = 1;
+        epochRef.current = mintEpoch(0);
         playersRef.current = { [hostColor]: selfId, [opposite(hostColor)]: null };
       }
     }
@@ -76,6 +88,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
 
   const buildSnapshot = useCallback(
     () => ({
+      epoch: epochRef.current,
       seq: seqRef.current,
       variant,
       hostColor,
@@ -128,12 +141,37 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     [isHost, broadcastAuthoritative],
   );
 
-  // Joiner: adopt any snapshot newer than ours as the authoritative state.
+  // Host: answer a resync request. A requester strictly ahead of our (epoch, seq) would drop a
+  // plain re-publish (the adopt guard ignores non-newer snapshots) — that was how a joiner got
+  // stuck for good after the host lost its storage. Minting a fresh epoch makes the answer
+  // unconditionally adoptable; a routine poll is answered without bumping so it can never clear
+  // the requester's in-flight move-intent.
+  const answerSnapshotRequest = useCallback(
+    (request) => {
+      const reqEpoch = request?.epoch || 0;
+      const reqSeq = request?.seq || 0;
+      const stuckAhead =
+        reqEpoch > epochRef.current || (reqEpoch === epochRef.current && reqSeq > seqRef.current);
+      if (stuckAhead) epochRef.current = mintEpoch(epochRef.current);
+      broadcastAuthoritative(stuckAhead);
+    },
+    [broadcastAuthoritative],
+  );
+
+  // Joiner: adopt any snapshot newer than ours — a higher epoch (new game instance) outranks seq;
+  // within the same epoch, a higher seq wins. Snapshots from peers without an epoch (older build)
+  // compare as epoch 0, degrading to the original seq-only rule.
   const adoptSnapshot = useCallback(
     (snapshot) => {
-      if (!snapshot || snapshot.seq <= seqRef.current) return;
+      if (!snapshot) return;
+      const epoch = snapshot.epoch || 0;
+      const newer =
+        epoch > epochRef.current || (epoch === epochRef.current && snapshot.seq > seqRef.current);
+      if (!newer) return;
+      epochRef.current = epoch;
       seqRef.current = snapshot.seq;
       pendingIntentRef.current = null; // a newer authoritative state means our move was applied or rolled back
+      pendingPieceMoveRef.current = null; // and any half-entered local turn is superseded with it
       if (snapshot.players) playersRef.current = snapshot.players;
       gameRef.current = createVariantGame(snapshot.variant || variant, snapshot.state);
       saveSnapshot(gameId, snapshot);
@@ -142,6 +180,12 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     },
     [variant, gameId, sync],
   );
+
+  // Joiner: pull the authoritative snapshot, telling the host where we are so it can detect (and
+  // epoch-heal) a requester whose state ran ahead of it. Counterpart of broadcastAuthoritative.
+  const requestAuthoritative = useCallback(() => {
+    channelRef.current?.requestSnapshot({ epoch: epochRef.current, seq: seqRef.current });
+  }, []);
 
   // Chat is peer-to-peer (both sides send and receive), independent of the host-authoritative game
   // sync, so its handler is wired for both roles.
@@ -156,13 +200,11 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     handlers: {
       onChat: handleChat,
       // Fired on every (re)connect: the host re-publishes current state; the joiner pulls it.
-      onSubscribed: isHost
-        ? () => broadcastAuthoritative(false)
-        : () => channelRef.current?.requestSnapshot(),
+      onSubscribed: isHost ? () => broadcastAuthoritative(false) : requestAuthoritative,
       ...(isHost
         ? {
             onMoveIntent: applyIntent,
-            onRequestSnapshot: () => broadcastAuthoritative(false),
+            onRequestSnapshot: answerSnapshotRequest,
             onPeerJoin: () => broadcastAuthoritative(false),
           }
         : { onSnapshot: adoptSnapshot }),
@@ -180,12 +222,12 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   const waitingForState = view.currentTurn !== selfColor || !synced;
   useEffect(() => {
     if (isHost || channel.status !== 'connected') return undefined;
-    channelRef.current?.requestSnapshot();
+    requestAuthoritative();
     if (!waitingForState) return undefined;
     const interval = synced ? IDLE_RESYNC_MS : RESYNC_INTERVAL_MS;
-    const id = setInterval(() => channelRef.current?.requestSnapshot(), interval);
+    const id = setInterval(requestAuthoritative, interval);
     return () => clearInterval(id);
-  }, [isHost, synced, waitingForState, channel.status]);
+  }, [isHost, synced, waitingForState, channel.status, requestAuthoritative]);
 
   // Joiner: resend an unconfirmed move-intent until a newer snapshot clears it, so one dropped message
   // can't leave both players waiting on each other forever.
@@ -282,6 +324,10 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     if (!isHost) return;
     gameRef.current = createVariantGame(variant);
     pendingPieceMoveRef.current = null;
+    // New instance: a fresh epoch outranks any seq the joiner reached, so the reset board is
+    // adopted; seq restarts within the new epoch.
+    epochRef.current = mintEpoch(epochRef.current);
+    seqRef.current = 0;
     setOrientation(selfColor);
     broadcastAuthoritative(true);
   }, [isHost, variant, selfColor, broadcastAuthoritative]);
@@ -290,8 +336,8 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
 
   const resync = useCallback(() => {
     if (isHost) broadcastAuthoritative(false);
-    else channelRef.current?.requestSnapshot();
-  }, [isHost, broadcastAuthoritative]);
+    else requestAuthoritative();
+  }, [isHost, broadcastAuthoritative, requestAuthoritative]);
 
   const sendChat = useCallback(
     (text) => {

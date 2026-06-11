@@ -218,6 +218,54 @@ describe('robustness', () => {
   });
 });
 
+describe('epoch — new game and stuck-joiner recovery', () => {
+  const hostProps = { gameId: 'e1', variant: 'standard', selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
+  const joinerProps = { gameId: 'e2', variant: 'standard', selfColor: 'black', isHost: false, hostColor: 'white', selfId: 'joiner' };
+
+  it('newGame broadcasts a fresh-epoch snapshot at seq 1 with a reset board', () => {
+    const { result } = renderHook(() => useOnlineGame(hostProps));
+    act(() => result.current.onPieceDrop('e2', 'e4')); // (epoch E, seq 2)
+    const finished = transport.broadcastSnapshot.mock.calls.at(-1)[0];
+
+    act(() => result.current.newGame());
+    const fresh = transport.broadcastSnapshot.mock.calls.at(-1)[0];
+    expect(fresh.epoch).toBeGreaterThan(finished.epoch); // new instance outranks any joiner seq
+    expect(fresh.seq).toBe(1); // seq restarts within the new epoch
+    expect(result.current.currentTurn).toBe('white'); // board reset
+  });
+
+  it('joiner adopts a higher-epoch snapshot even at a lower seq (host restarted without storage)', () => {
+    const { result } = renderHook(() => useOnlineGame(joinerProps));
+    const players = { white: 'host', black: 'joiner' };
+    act(() => transport.handlers.onSnapshot({ epoch: 10, seq: 40, variant: 'standard', hostColor: 'white', players, state: fenAfter('standard', { from: 'd2', to: 'd4' }) }));
+    expect(result.current.connection.synced).toBe(true);
+
+    act(() => transport.handlers.onSnapshot({ epoch: 11, seq: 1, variant: 'standard', hostColor: 'white', players, state: fenAfter('standard') }));
+    expect(result.current.fen).toBe(createVariantGame('standard').boardFen()); // fresh board adopted despite seq 1 < 40
+
+    act(() => transport.handlers.onSnapshot({ epoch: 10, seq: 99, variant: 'standard', hostColor: 'white', players, state: fenAfter('standard', { from: 'e2', to: 'e4' }) }));
+    expect(result.current.fen).toBe(createVariantGame('standard').boardFen()); // old-epoch stragglers stay ignored
+  });
+
+  it('host heals a stuck-ahead requester by minting a fresh epoch, but answers a routine poll without bumping', () => {
+    const { result } = renderHook(() => useOnlineGame(hostProps));
+    act(() => result.current.onPieceDrop('e2', 'e4'));
+    const { epoch, seq } = transport.broadcastSnapshot.mock.calls.at(-1)[0];
+
+    transport.broadcastSnapshot.mockClear();
+    act(() => transport.handlers.onRequestSnapshot({ by: 'joiner', epoch, seq: seq + 50 })); // joiner ran ahead
+    const healed = transport.broadcastSnapshot.mock.calls.at(-1)[0];
+    expect(healed.epoch).toBeGreaterThan(epoch); // fresh epoch → unconditionally adoptable
+    expect(healed.seq).toBe(seq + 1);
+
+    transport.broadcastSnapshot.mockClear();
+    act(() => transport.handlers.onRequestSnapshot({ by: 'joiner', epoch: healed.epoch, seq: healed.seq }));
+    const replied = transport.broadcastSnapshot.mock.calls.at(-1)[0];
+    expect(replied.epoch).toBe(healed.epoch); // plain re-publish: no epoch churn...
+    expect(replied.seq).toBe(healed.seq); // ...and no bump, so it can't clear an in-flight intent
+  });
+});
+
 describe('chat', () => {
   const props = { gameId: 'gc', variant: 'standard', selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
 

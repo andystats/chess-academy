@@ -5,8 +5,8 @@
 //
 // Protocol (host = game creator, the sole authority):
 //   - move-intent      {turnId, by, pieceMove:{from,to,promotion}, duckSquare?}  either player → host
-//   - snapshot         {seq, variant, hostColor, players:{white,black}, state}    host → everyone
-//   - request-snapshot {by}                                                       joiner/Resync → host
+//   - snapshot         {epoch, seq, variant, hostColor, players:{white,black}, state}  host → everyone
+//   - request-snapshot {by, epoch, seq}   (requester's current position)          joiner/Resync → host
 //   - chat             {id, by, text}                                             either player → both
 // Chat is peer-to-peer and ephemeral (not part of the authoritative game snapshot).
 //
@@ -113,7 +113,9 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
     peerPresent,
     broadcastSnapshot: (snapshot) => send('snapshot', snapshot),
     sendMoveIntent: (intent) => send('move-intent', intent),
-    requestSnapshot: () => send('request-snapshot', { by: selfId }),
+    // `position` is the requester's {epoch, seq} so the host can tell a routine poll from a peer
+    // whose state ran ahead of it (which needs an epoch-bumped answer to be adoptable).
+    requestSnapshot: (position) => send('request-snapshot', { by: selfId, ...position }),
     sendChat: (message) => send('chat', message),
   };
 }
