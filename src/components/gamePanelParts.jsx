@@ -22,6 +22,21 @@ export function pairMoves(history, label = (entry) => entry ?? '') {
   return pairs;
 }
 
+/** The paired move history as a scrollable numbered list (rows from pairMoves above). */
+export function MoveList({ pairs, className = 'max-h-48', columnClassName = 'w-16' }) {
+  return (
+    <ol className={`${className} overflow-y-auto font-mono text-sm leading-7 text-gray-700`}>
+      {pairs.map((p) => (
+        <li key={p.num} className="flex gap-3">
+          <span className="w-6 shrink-0 text-gray-400">{p.num}.</span>
+          <span className={columnClassName}>{p.white}</span>
+          <span className={columnClassName}>{p.black}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 function CapturedRow({ label, color, pieces }) {
   return (
     <div className="min-w-0">

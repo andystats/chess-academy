@@ -1,6 +1,6 @@
 import { useReducer, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Chess } from 'chess.js';
-import { acceptableLans, moveToLan, applyMove, legalTargets, isPromotion } from './moves.js';
+import { acceptableLans, moveToLan, applyMove, legalTargets, isPromotion, START_FEN } from './moves.js';
 import {
   normalizeStep,
   expectedSansAt,
@@ -32,7 +32,7 @@ const initialState = {
   stepIndex: 0,
   reloadNonce: 0,
   status: 'awaiting',
-  fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+  fen: START_FEN,
   playerPly: 0,
   feedback: null,
   selectedSquare: null,

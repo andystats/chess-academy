@@ -23,12 +23,15 @@ export function isSquare(value) {
   return typeof value === 'string' && SQUARE_RE.test(value);
 }
 
+/** Flat board index for a 0-based file and 1-based rank — the single home of the index formula. */
+export function fileRankToIndex(file, rank) {
+  return (8 - rank) * 8 + file;
+}
+
 /** Square string like "e4" → flat board index (a8 = 0 … h1 = 63), or -1 for a non-square. */
 export function squareToIndex(square) {
   if (!isSquare(square)) return -1; // board[-1] is undefined, matching pieceAt's off-board contract
-  const file = square.charCodeAt(0) - 97; // 'a' → 0
-  const rank = square.charCodeAt(1) - 48; // '1' → 1
-  return (8 - rank) * 8 + file;
+  return fileRankToIndex(square.charCodeAt(0) - 97, square.charCodeAt(1) - 48); // 'a' → 0, '1' → 1
 }
 
 /** Flat board index → square string. */
@@ -47,7 +50,7 @@ export function fileRankToSquare(file, rank) {
  */
 export function pieceAt(board, file, rank) {
   if (file < 0 || file > 7 || rank < 1 || rank > 8) return undefined;
-  return board[(8 - rank) * 8 + file];
+  return board[fileRankToIndex(file, rank)];
 }
 
 /** 'w' for an UPPERCASE (white) piece, 'b' for lowercase (black), `null` for an empty/absent cell. */
@@ -122,16 +125,20 @@ export function initialState() {
     ep: null,
     halfmove: 0,
     fullmove: 1,
+    ext: {}, // variant extensions (see the wire format below); core rules never read it
   };
 }
 
 // The wire format is a FEN superset: the six standard FEN fields with `phase` and `duck` inserted
 // after the side-to-move, so the whole turn machine round-trips in one string for broadcasting.
-//   <placement> <turn> <phase> <duck|-> <castling|-> <ep|-> <halfmove> <fullmove>
+// Fields beyond the eighth are OPTIONAL `name=value` variant extensions (e.g. duck-decay's
+// per-square counters), carried opaquely in `state.ext` — the core engine round-trips them without
+// interpreting them, and plain games emit none (so older clients keep parsing their snapshots).
+//   <placement> <turn> <phase> <duck|-> <castling|-> <ep|-> <halfmove> <fullmove> [name=value ...]
 
 /** Serialize full game state to the wire string. */
 export function serialize(state) {
-  return [
+  const fields = [
     placementToString(state.board),
     state.turn,
     state.phase,
@@ -140,7 +147,9 @@ export function serialize(state) {
     state.ep ?? '-',
     state.halfmove,
     state.fullmove,
-  ].join(' ');
+  ];
+  for (const name of Object.keys(state.ext ?? {}).sort()) fields.push(`${name}=${state.ext[name]}`);
+  return fields.join(' ');
 }
 
 /**
@@ -150,14 +159,21 @@ export function serialize(state) {
 export function deserialize(str) {
   if (typeof str !== 'string') throw new Error('State must be a string');
   const fields = str.split(' ');
-  if (fields.length !== 8) throw new Error(`Expected 8 wire fields, got ${fields.length}: ${str}`);
-  const [placement, turn, phase, duck, castling, ep, halfmove, fullmove] = fields;
+  if (fields.length < 8) throw new Error(`Expected at least 8 wire fields, got ${fields.length}: ${str}`);
+  const [placement, turn, phase, duck, castling, ep, halfmove, fullmove, ...extras] = fields;
   if (turn !== 'w' && turn !== 'b') throw new Error(`Invalid turn '${turn}': ${str}`);
   if (phase !== 'piece' && phase !== 'duck') throw new Error(`Invalid phase '${phase}': ${str}`);
   if (duck !== '-' && !isSquare(duck)) throw new Error(`Invalid duck square '${duck}': ${str}`);
   if (castling !== '-' && !/^[KQkq]{1,4}$/.test(castling)) throw new Error(`Invalid castling '${castling}': ${str}`);
   if (ep !== '-' && !isSquare(ep)) throw new Error(`Invalid en-passant square '${ep}': ${str}`);
   if (!/^\d+$/.test(halfmove) || !/^\d+$/.test(fullmove)) throw new Error(`Invalid move clocks: ${str}`);
+  const ext = {};
+  for (const token of extras) {
+    // Lowercase names only — '__proto__'-style keys are unrepresentable in this charset.
+    const match = /^([a-z][a-z0-9-]*)=(\S+)$/.exec(token);
+    if (!match) throw new Error(`Invalid extension field '${token}': ${str}`);
+    ext[match[1]] = match[2];
+  }
   return {
     board: parsePlacement(placement),
     turn,
@@ -167,6 +183,7 @@ export function deserialize(str) {
     ep: ep === '-' ? null : ep,
     halfmove: Number(halfmove),
     fullmove: Number(fullmove),
+    ext,
   };
 }
 

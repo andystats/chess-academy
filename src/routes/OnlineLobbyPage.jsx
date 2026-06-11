@@ -2,17 +2,20 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import BackLink from '../components/ui/BackLink.jsx';
+import RealtimeNotConfigured from '../components/RealtimeNotConfigured.jsx';
 import SegmentedControl from '../components/ui/SegmentedControl.jsx';
 import { isRealtimeConfigured } from '../lib/supabase.js';
 import { newGameId, saveHostConfig } from '../online/localSnapshot.js';
+import { VARIANTS } from '../online/rules.js';
 
 // Create an online game: pick a variant and your colour, then we mint a game id, remember that this
 // browser is the host, and jump to /play/:id with the variant + host colour encoded in the URL so the
 // joiner can orient instantly (the host's first snapshot remains the source of truth).
-const VARIANT_OPTIONS = [
-  { value: 'standard', label: 'Standard', sublabel: 'classic chess' },
-  { value: 'duck', label: 'Duck Chess', sublabel: 'place the duck' },
-];
+const VARIANT_OPTIONS = Object.entries(VARIANTS).map(([value, { pickerLabel, sublabel }]) => ({
+  value,
+  label: pickerLabel,
+  sublabel,
+}));
 const COLOR_OPTIONS = [
   { value: 'white', label: 'White' },
   { value: 'black', label: 'Black' },
@@ -43,13 +46,8 @@ export default function OnlineLobbyPage() {
         </p>
 
         {!isRealtimeConfigured ? (
-          <div className="mt-8 border-3 border-foreground bg-brand-50/40 p-5 text-sm leading-6 text-gray-700">
-            <p className="font-bold text-foreground">Online play isn’t configured yet.</p>
-            <p className="mt-2">
-              Set <code className="font-mono">VITE_SUPABASE_URL</code> and{' '}
-              <code className="font-mono">VITE_SUPABASE_ANON_KEY</code> (see <code className="font-mono">.env.example</code>)
-              and reload. Lessons, the engine arena, and local two-player work without it.
-            </p>
+          <div className="mt-8">
+            <RealtimeNotConfigured />
           </div>
         ) : (
           <div className="mt-8 flex flex-col gap-6">

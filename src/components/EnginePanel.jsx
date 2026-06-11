@@ -1,19 +1,12 @@
 import clsx from 'clsx';
 import { RotateCcw, Undo2, Flag, RefreshCw, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { ENGINE_LEVEL_MARKS, ENGINE_MAX_LEVEL, ENGINE_MIN_LEVEL, levelConfig } from '../engine/levels.js';
+import { MoveList, pairMoves } from './gamePanelParts.jsx';
 
 // The play column for the Practice Arena: status, move list, strength dial, and game controls.
 // Driven entirely by the controller returned from useEngineGame. The board lives in the sibling
 // column (see LessonLayout). When `onSkillLevelChange` is provided a strength selector is shown
 // (free play); scenarios fix the strength and omit it.
-
-function pairMoves(history) {
-  const pairs = [];
-  for (let i = 0; i < history.length; i += 2) {
-    pairs.push({ num: i / 2 + 1, white: history[i], black: history[i + 1] ?? '' });
-  }
-  return pairs;
-}
 
 function resultHeadline(winner, playerSide) {
   if (winner === playerSide) return 'You won!';
@@ -208,15 +201,7 @@ export default function EnginePanel({ game, eyebrow, title, children, skillLevel
       <EvaluationCard evaluation={game.evaluation} playerSide={game.playerSide} />
 
       {pairs.length > 0 && (
-        <ol className="max-h-48 overflow-y-auto border-3 border-foreground bg-brand-50/40 p-3 font-mono text-sm leading-7 text-gray-700">
-          {pairs.map((p) => (
-            <li key={p.num} className="flex gap-3">
-              <span className="w-6 shrink-0 text-gray-400">{p.num}.</span>
-              <span className="w-16">{p.white}</span>
-              <span className="w-16">{p.black}</span>
-            </li>
-          ))}
-        </ol>
+        <MoveList pairs={pairs} className="max-h-48 border-3 border-foreground bg-brand-50/40 p-3" />
       )}
 
       <div className="flex flex-wrap items-center gap-3 pt-1">

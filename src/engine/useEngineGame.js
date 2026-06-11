@@ -1,6 +1,6 @@
 import { useReducer, useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import { Chess } from 'chess.js';
-import { applyMove, legalTargets, opposite, acceptableLans, compileToLan, moveToLan, isPromotion, START_FEN } from '../lesson/moves.js';
+import { applyMove, legalTargets, opposite, acceptableLans, compileToLan, moveToLan, isPromotion, SIDE_CHAR, START_FEN } from '../lesson/moves.js';
 import { capturedPieces, gameResult } from './gameState.js';
 import { useStockfish } from './useStockfish.js';
 import { levelConfig } from './levels.js';
@@ -15,8 +15,6 @@ const DEFAULT_WRONG = 'Not quite — look for the move the lesson points to and 
 // New game / Take back / Resign / change strength / unmount. We bump a monotonic runIdRef on every
 // such action; the reply captured before the request is dropped if the runId moved under it —
 // otherwise a late bestmove would apply an illegal-or-wrong move and corrupt the board.
-
-const SIDE_CHAR = { white: 'w', black: 'b' };
 
 const initialState = {
   fen: START_FEN,

@@ -37,7 +37,8 @@ future session can resume cold from here.
 | G | Lesson fixes (underpromotion, frozen step) | ✅ done 2026-06-11 (commit pending) |
 | H | UX & app hardening (chat, WebGL, CSP, links) | ✅ done 2026-06-11 (commit pending; live CSP check open) |
 | I | Dead-code decision (~982 orphaned lines) | ✅ done 2026-06-11 — deleted, −1,056 lines (commit pending) |
-| J | Roadmap seams (variant registry, serializer v2, shared hooks) | ☐ not started |
+| J | Roadmap seams (variant registry, serializer v2, shared hooks) | ✅ done 2026-06-11 (commit pending) — **duck-decay prerequisites landed** |
+| J2 | useBoardInput unification (split from J) | ☐ not started |
 | K | Test hardening | ☐ not started |
 | L | Dependency majors (vitest/vite/React etc.) | ☐ not started |
 
@@ -164,13 +165,30 @@ Files: `src/online/localSnapshot.js`, `src/online/useGameChannel.js`, `src/onlin
 
 ## Bite J — Roadmap seams: do BEFORE lobby/chat/duck-decay features (QUAL-1, QUAL-2, QUAL-3, QUAL-4, QUAL-5, QUAL-6)
 
-- [ ] **Variant registry** (`src/online/variants.js` or in rules.js): `VARIANTS = { standard: {label, sublabel, create}, duck: {...} }`; derive `createVariantGame`, lobby options, panel labels, and URL parsing from it; unknown variant in a link → explicit error, not silent standard. [QUAL-1]
-- [ ] **Serializer v2 with extension slot**: append an optional 9th field (e.g. `ext=k1:v1;k2:v2` or a `|`-delimited JSON segment) that `deserialize` round-trips and `boardFen()` strips; old 8-field strings keep parsing (back-compat with persisted snapshots). Duck-decay's per-square counters/repair clocks ride here. [QUAL-2]
-- [ ] Promote board-diff `deriveCaptured` (+`INITIAL_COUNTS`) into `gameState.js` as the shared snapshot-safe implementation; document the promotion-miscount tradeoff or move to move-log-derived captures (decay needs per-square history anyway). [QUAL-3]
-- [ ] Extract `useBoardInput({ attemptMove, listTargets, canSelect })` shared by the three controller hooks; extract shared `Feedback` + `pairMoves`/`MoveList` into `gamePanelParts.jsx`. [QUAL-4]
-- [ ] Extract `useGameChat` from `useOnlineGame` (messages state + send/receive, caps from Bite H) — the seam the chat-features work builds on. [QUAL-6]
-- [ ] Shared `RealtimeNotConfigured` component; route page headers through `SectionHeader`; shared `ContentCard` for Scenario/Lesson cards (if Bite I revived them). [QUAL-5]
-- [ ] Convention sweep: shared `COLOR_NAME`/`sideChar` in `lesson/moves.js`; route index math through board.js helpers; `START_FEN` import; document the controller status contract. [QUAL-6]
+- [x] **Variant registry** in rules.js: `VARIANTS = { standard, duck }` each with `{ label, pickerLabel, sublabel, create }` (key order = lobby display order). The lobby picker options, game-panel label, invite-link parser (`Object.hasOwn` guarded — prototype keys like `constructor` can't sneak through), and `createVariantGame` all derive from it; **unknown variants now throw** instead of silently becoming standard. Adding duck-decay = one registry entry + its engine. [QUAL-1]
+- [x] **Serializer extension slot**: optional `name=value` fields after the 8 core wire fields, carried opaquely in `state.ext` (the core engine round-trips without interpreting; `getState` clones it; `boardFen()` never includes it). Validated on parse (lowercase names — `__proto__`-style keys are unrepresentable); plain games emit no extras, so existing persisted snapshots and older clients keep working. Duck-decay's per-square counters/repair clocks ride here, e.g. `decay=e4:2,d5:1`. [QUAL-2]
+- [x] Board-diff captured derivation promoted to `gameState.capturedFromBoard` (shared, snapshot-safe, promotion-miscount tradeoff documented); the duck engine consumes it. [QUAL-3]
+- [x] QUAL-4 presentational half: `pairMoves` deduped (EnginePanel's local copy removed) + shared `MoveList` in gamePanelParts used by both panels. The `Feedback` duplication resolved itself in Bite I (its twin died with StepPanel). **The `useBoardInput` hook unification is split out to Bite J2** — it rewires three working reducers and deserves its own verification cycle.
+- [x] **`useGameChat` extracted** (`src/online/useGameChat.js`): messages state, receive shape-guard + caps, send — the seam the chat features build on; `useOnlineGame` just wires `onChat` and re-exports. [QUAL-6]
+- [x] Shared `RealtimeNotConfigured` component replaces the two drifted notices (lobby + play). The SectionHeader/ContentCard halves of QUAL-5 were mooted by Bite I's deletions. [QUAL-5]
+- [x] Convention sweep: `COLOR_NAME`/`SIDE_CHAR` exported from `lesson/moves.js` (rules.js, duckChess.js, useEngineGame, OnlinePlayPage all import them); new `fileRankToIndex` in board.js is the single home of the index formula (squareToIndex/pieceAt/duck-moves all route through it; `legalDuckTargets` uses `indexToSquare`); `START_FEN` imported in useChessLesson. Status-contract doc lands with J2's shared hook. [QUAL-6]
+- [x] Tests (5 new): unknown-variant throws (incl. prototype-key probes) + registry completeness; ext round-trip (sorted, never in boardFen) + legacy 8-field parse + malformed-ext rejection. Suite 155/155; lint clean; build + validate-content green.
+
+**Landed:** 2026-06-11 — _commit pending; stamp the hash here once committed._
+
+## Bite J2 — useBoardInput unification (split from Bite J for risk isolation)
+
+The remaining QUAL-4 half: extract `useBoardInput({ fen, canMove, attemptMove, listTargets })` owning
+selection + pendingPromotion state (cleared when `fen` changes, plus an explicit `clearSelection()` for
+same-fen resets like restartStep), returning `{ selectedSquare, legalTargets, promotionTarget,
+onPieceDrop, onPromotionPieceSelect, onSquareClick }`. The lesson/engine reducers drop their
+selection/promotion fields + actions; the online hook drops its selection/pendingPromotion useState;
+online wraps the click handler for its duck-phase branch, lesson for its mode/status guards. Document
+the shared controller status contract in the hook header. Existing tap/promotion tests cover the
+behavior; add an engine-hook tap test if missing.
+
+- [ ] Extract the hook; rewire all three controllers; reducers slim down.
+- [ ] Verify: full suite + a manual tap/drag/promotion pass in the arena and an online game.
 
 **Landed:** _(commit)_
 

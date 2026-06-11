@@ -8,44 +8,16 @@
 // serialized snapshot (the joiner adopting the host's state) reports the same thing as one played move
 // by move — important for the host-authoritative multiplayer sync.
 
+import { COLOR_NAME } from '../../lesson/moves.js';
+import { capturedFromBoard } from '../gameState.js';
 import { boardFen, colorOf, deserialize, initialState, serialize, squareToIndex } from './board.js';
 import { generatePieceMoves, legalDuckTargets, legalPieceTargets } from './moves.js';
-
-const COLOR_NAME = { w: 'white', b: 'black' };
-
-// Full starting material per color (kings excluded), used to derive captured pieces from the board.
-// The king is omitted on purpose: capturing it ends the game, which the result banner conveys — and
-// there is no king glyph in PIECE_SYMBOLS, so listing it would render blank.
-const INITIAL_COUNTS = { p: 8, n: 2, b: 2, r: 2, q: 1 };
 
 /** Winner (or null) inferred from a missing king — snapshot-safe. */
 function deriveResult(board) {
   if (!board.includes('K')) return { winner: 'black', reason: 'King captured' };
   if (!board.includes('k')) return { winner: 'white', reason: 'King captured' };
   return null;
-}
-
-/**
- * Captured pieces derived from the board, in the same shape as src/engine/gameState.js: `captured[c]`
- * lists the color-`c` pieces that have been captured (lowercase letters). Promotions can make this
- * cosmetically off (a promoted pawn reads as captured), which is acceptable for a casual game.
- */
-function deriveCaptured(board) {
-  const present = { w: {}, b: {} };
-  for (const piece of board) {
-    if (!piece) continue;
-    const color = colorOf(piece);
-    const type = piece.toLowerCase();
-    present[color][type] = (present[color][type] || 0) + 1;
-  }
-  const captured = { white: [], black: [] };
-  for (const [color, name] of [['w', 'white'], ['b', 'black']]) {
-    for (const [type, count] of Object.entries(INITIAL_COUNTS)) {
-      const missing = count - (present[color][type] || 0);
-      for (let i = 0; i < missing; i += 1) captured[name].push(type);
-    }
-  }
-  return captured;
 }
 
 /** Match an input {from,to,promotion} against the generated legal moves (default promotion: queen). */
@@ -163,7 +135,7 @@ export function createDuckGame(serialized) {
   }
 
   return {
-    getState: () => ({ ...state, board: state.board.slice() }),
+    getState: () => ({ ...state, board: state.board.slice(), ext: { ...state.ext } }),
     serialize: () => serialize(state),
     boardFen: () => boardFen(state),
     turnColor,
@@ -175,6 +147,6 @@ export function createDuckGame(serialized) {
     placeDuck,
     result,
     history: () => turns.map((turn) => ({ ...turn })),
-    captured: () => deriveCaptured(state.board),
+    captured: () => capturedFromBoard(state.board),
   };
 }

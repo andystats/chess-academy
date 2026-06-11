@@ -11,6 +11,10 @@ export const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0
 export function opposite(side) {
   return side === 'white' ? 'black' : 'white';
 }
+
+/** Chess colour code ↔ side name, shared by every layer that crosses the chess.js boundary. */
+export const COLOR_NAME = { w: 'white', b: 'black' };
+export const SIDE_CHAR = { white: 'w', black: 'b' };
 //
 // Design note: chess.js 1.x `.move()` THROWS on an illegal move (it never returns null), so
 // every caller relies on try/catch. We compare moves by their long-algebraic form (LAN, e.g.

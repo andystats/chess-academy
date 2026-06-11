@@ -58,6 +58,30 @@ describe('state (de)serialization', () => {
     expect(fen).toBe('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
     expect(() => new Chess(fen)).not.toThrow();
   });
+
+  it('round-trips variant extension fields opaquely, sorted by name', () => {
+    const wire = `${START_PLACEMENT} w duck e3 KQkq - 0 1 decay=e4:2,d5:1 repair=12`;
+    const state = deserialize(wire);
+    expect(state.ext).toEqual({ decay: 'e4:2,d5:1', repair: '12' });
+    expect(serialize(state)).toBe(wire); // emitted in sorted name order
+    expect(boardFen(state)).not.toContain('decay'); // extensions never leak into the render FEN
+  });
+
+  it('keeps parsing plain 8-field strings (no extensions) with an empty ext', () => {
+    const state = deserialize(`${START_PLACEMENT} w piece - KQkq - 0 1`);
+    expect(state.ext).toEqual({});
+    expect(serialize(state)).toBe(`${START_PLACEMENT} w piece - KQkq - 0 1`); // none emitted
+  });
+
+  it('rejects malformed extension fields', () => {
+    for (const wire of [
+      `${START_PLACEMENT} w piece - KQkq - 0 1 nonsense`, // no name=value shape
+      `${START_PLACEMENT} w piece - KQkq - 0 1 BAD=1`, // uppercase name
+      `${START_PLACEMENT} w piece - KQkq - 0 1 9lives=1`, // name can't start with a digit
+    ]) {
+      expect(() => deserialize(wire), `should reject: ${wire}`).toThrow();
+    }
+  });
 });
 
 describe('hostile wire input', () => {

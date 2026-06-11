@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createVariantGame, lastMoveOf } from './rules.js';
+import { createVariantGame, lastMoveOf, VARIANTS } from './rules.js';
 
 const INTERFACE = [
   'serialize',
@@ -60,5 +60,23 @@ describe('duck adapter', () => {
     expect(game.turnColor()).toBe('black');
     expect(game.duckSquare()).toBe('e3');
     expect(lastMoveOf(game)).toEqual({ from: 'e2', to: 'e4' });
+  });
+});
+
+describe('variant registry', () => {
+  it('rejects unknown variants instead of silently falling back to standard', () => {
+    for (const variant of ['duckDecay', '', undefined, 'constructor', '__proto__']) {
+      expect(() => createVariantGame(variant), `should reject: ${variant}`).toThrow(/Unknown variant/);
+    }
+  });
+
+  it('defines a complete entry per variant — the lobby, panel, and parser all derive from it', () => {
+    for (const [id, entry] of Object.entries(VARIANTS)) {
+      expect(entry.label, id).toBeTruthy();
+      expect(entry.pickerLabel, id).toBeTruthy();
+      expect(entry.sublabel, id).toBeTruthy();
+      expect(typeof entry.create, id).toBe('function');
+      expect(() => createVariantGame(id)).not.toThrow();
+    }
   });
 });

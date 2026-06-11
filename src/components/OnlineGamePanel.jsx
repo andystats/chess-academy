@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import clsx from 'clsx';
 import { Link2, RefreshCw, RotateCcw } from 'lucide-react';
-import { CapturedPieces, pairMoves, resultText } from './gamePanelParts.jsx';
+import { CapturedPieces, MoveList, pairMoves, resultText } from './gamePanelParts.jsx';
 import ChatBox from './ChatBox.jsx';
+import { VARIANTS } from '../online/rules.js';
 
 // Control panel for an online game: a compact header + connection/turn status, captured pieces, a
 // chat box with your opponent, a collapsible move list, and the invite-link / resync / flip / new-game
 // controls. Take-back is intentionally absent (cross-peer undo needs agreement).
-
-const VARIANT_LABEL = { standard: 'Standard chess', duck: 'Duck Chess' };
 
 // Each online history entry is one player's completed turn; show the duck square alongside the move.
 function moveLabel(entry) {
@@ -51,7 +50,7 @@ export default function OnlineGamePanel({ game }) {
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h1 className="font-display text-xl font-bold uppercase tracking-tight text-foreground">
-            {VARIANT_LABEL[game.variant] ?? 'Online game'}
+            {VARIANTS[game.variant]?.label ?? 'Online game'}
           </h1>
           <p className="font-mono text-xs font-bold uppercase tracking-wide text-gray-500">
             You&rsquo;re <span className="text-brand-600">{game.selfColor}</span>
@@ -81,15 +80,7 @@ export default function OnlineGamePanel({ game }) {
           <summary className="cursor-pointer px-3 py-2 font-mono text-xs font-bold uppercase tracking-wide text-gray-500">
             Moves ({pairs.length})
           </summary>
-          <ol className="max-h-40 overflow-y-auto px-3 pb-3 font-mono text-sm leading-7 text-gray-700">
-            {pairs.map((p) => (
-              <li key={p.num} className="flex gap-3">
-                <span className="w-6 shrink-0 text-gray-400">{p.num}.</span>
-                <span className="w-24">{p.white}</span>
-                <span className="w-24">{p.black}</span>
-              </li>
-            ))}
-          </ol>
+          <MoveList pairs={pairs} className="max-h-40 px-3 pb-3" columnClassName="w-24" />
         </details>
       )}
 

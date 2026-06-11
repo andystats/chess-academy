@@ -5,7 +5,7 @@
 // chess does). The duck (state.duck) is an impassable blocker: nothing may land on it or slide through
 // it, though knights still jump over it.
 
-import { FILES, colorOf, fileRankToSquare, pieceAt, squareToIndex } from './board.js';
+import { FILES, colorOf, fileRankToIndex, fileRankToSquare, indexToSquare, pieceAt, squareToIndex } from './board.js';
 
 const BISHOP_DIRS = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
 const ROOK_DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
@@ -14,7 +14,7 @@ const KNIGHT_HOPS = [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 
 
 /** True when the duck sits on this file/rank (so the square is impassable). */
 function isDuck(duckIndex, file, rank) {
-  return duckIndex !== null && duckIndex === (8 - rank) * 8 + file;
+  return duckIndex !== null && duckIndex === fileRankToIndex(file, rank);
 }
 
 /** Empty for movement purposes: no piece AND not the duck. */
@@ -80,7 +80,7 @@ function pawnMoves(board, duckIndex, file, rank, turn, ep, out) {
     if (target === undefined) continue;
     if (target && colorOf(target) !== turn) {
       addPawnMove(file, rank, cf, one, one === promoRank, out, { capture: true });
-    } else if (target === null && epIndex !== null && epIndex === (8 - one) * 8 + cf) {
+    } else if (target === null && epIndex !== null && epIndex === fileRankToIndex(cf, one)) {
       out.push(mk(file, rank, cf, one, { capture: true, ep: true }));
     }
   }
@@ -120,7 +120,7 @@ export function generatePieceMoves(state) {
   const out = [];
   for (let rank = 1; rank <= 8; rank += 1) {
     for (let file = 0; file < 8; file += 1) {
-      const piece = board[(8 - rank) * 8 + file];
+      const piece = board[fileRankToIndex(file, rank)];
       if (!piece || colorOf(piece) !== turn) continue;
       switch (piece.toUpperCase()) {
         case 'P':
@@ -164,7 +164,7 @@ export function legalDuckTargets(state) {
   const targets = [];
   for (let i = 0; i < 64; i += 1) {
     if (state.board[i] !== null) continue;
-    const square = FILES[i % 8] + (8 - Math.floor(i / 8));
+    const square = indexToSquare(i);
     if (square !== state.duck) targets.push(square);
   }
   return targets;
