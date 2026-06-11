@@ -36,7 +36,7 @@ future session can resume cold from here.
 | F | Engine UX (false error banner, interrupt) | ✅ done 2026-06-11 (commit pending) |
 | G | Lesson fixes (underpromotion, frozen step) | ✅ done 2026-06-11 (commit pending) |
 | H | UX & app hardening (chat, WebGL, CSP, links) | ✅ done 2026-06-11 (commit pending; live CSP check open) |
-| I | Dead-code decision (~982 orphaned lines) | ☐ not started |
+| I | Dead-code decision (~982 orphaned lines) | ✅ done 2026-06-11 — deleted, −1,056 lines (commit pending) |
 | J | Roadmap seams (variant registry, serializer v2, shared hooks) | ☐ not started |
 | K | Test hardening | ☐ not started |
 | L | Dependency majors (vitest/vite/React etc.) | ☐ not started |
@@ -151,14 +151,16 @@ Files: `src/online/localSnapshot.js`, `src/online/useGameChannel.js`, `src/onlin
 
 ## Bite I — Dead-code decision (DEAD-1, DEAD-2)
 
-**Decide:** delete the orphaned study-content cluster, or re-route it. (It contains real features —
-Glossary, Training, Lessons pages — orphaned by the Arena-first pivot; the lesson *engine* stays alive via ScenarioPage either way.)
+**Decided 2026-06-11: DELETE** (owner's call — keeps the Arena-first focus; git history preserves everything for a future revival).
 
-- [ ] If deleting — order: `SectionHeader`, `mySystem.js`, `GlossaryLink` → `StepPanel` → `LessonView` → `HomePage`/`GlossaryPage`/`LessonPage`/`MySystemPage`/`TrainingPage`/`PickProfile` → then newly-orphaned exports (`getGlossaryIndex`, `listGlossaryEntries`, `listTracks`, `withStepComplete`, `useChessLesson` hook export, `AVATARS` export, `flattenMySystemChapters`) and the `/glossary → /#make-your-own` redirect (anchor doesn't exist).
-- [ ] If reviving — restore real routes in `App.jsx`, fix HomePage's stale links, add the `make-your-own` anchor, and pull these pages through the shared abstractions from Bite J.
-- [ ] Either way: remove test-only exports (`listByKind`, `findTermLinks`, `indexToSquare`) or mark them deliberate; confirm/drop knip-flagged unused deps (`tailwind-merge`, `@testing-library/user-event`).
+- [x] All 11 orphan files deleted (**−1,056 lines**): `HomePage`, `GlossaryPage`, `LessonPage`, `MySystemPage`, `TrainingPage`, `PickProfile`, `LessonView`, `StepPanel`, `GlossaryLink`, `ui/SectionHeader`, `content/mySystem.js`. Every file's import graph was re-verified fresh before deletion — zero live importers (only intra-cluster references).
+- [x] Newly-orphaned exports cleaned: `getGlossaryIndex`/`listGlossaryEntries`/`listTracks` removed from registry (+ their tests); `AVATARS` un-exported (still the internal import allow-list); `flattenMySystemChapters` died with its file; the `/glossary → /#make-your-own` redirect retargeted to `/` (the anchor never existed).
+- [x] **Deliberately KEPT** (scoping decision — "study pages" ≠ "lesson engine"): `useChessLesson` + `lesson/engine.js` + their tests + the content JSONs + CI validator. The lesson engine is tested, roadmap-critical (puzzle trainer), and only its UI died. Also kept: `withStepComplete` (progress schema API), `listByKind` (content-pipeline tests), `indexToSquare` (board API; Bite J consolidation target).
+- [x] **Audit-finding correction discovered during verification**: `findTermLinks` and `indexGlossaryEntries` are NOT test-only — `scripts/validate-content.mjs` imports both in CI (the dead-code agent only grepped `src/`). Kept; deleting them would have broken the content pipeline.
+- [x] Unused deps confirmed by grep and uninstalled: `tailwind-merge`, `@testing-library/user-event`.
+- [x] Verify: lint clean · 150/150 tests (−2 tests of the deleted registry fns) · `validate-content` still green (20 files, 50 terms) · build green.
 
-**Landed:** _(commit)_
+**Landed:** 2026-06-11 — _commit pending; stamp the hash here once committed._
 
 ## Bite J — Roadmap seams: do BEFORE lobby/chat/duck-decay features (QUAL-1, QUAL-2, QUAL-3, QUAL-4, QUAL-5, QUAL-6)
 

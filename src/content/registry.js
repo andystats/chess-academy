@@ -1,5 +1,3 @@
-import { indexGlossaryEntries } from './glossaryLinks.js';
-
 // The content registry: a single source of truth derived from the files under src/content/.
 // We eagerly import every content JSON via import.meta.glob (no separately generated manifest to
 // keep in sync, and it works identically in dev/build/test). At Stage-1 scale eager loading is
@@ -28,32 +26,4 @@ export function listByKind(kind) {
 /** All practice-arena scenarios, in registry order. */
 export function listScenarios() {
   return listByKind('scenario');
-}
-
-/** Lessons grouped by track, in a stable display order. */
-export function listTracks() {
-  const order = ['classics', 'habits'];
-  const labels = { classics: 'Classics', habits: 'Thinking Habits' };
-  const lessons = listByKind('lesson');
-  return order
-    .map((track) => ({
-      id: track,
-      label: labels[track] ?? track,
-      lessons: lessons.filter((l) => l.track === track),
-    }))
-    .filter((t) => t.lessons.length > 0);
-}
-
-/**
- * A lookup of glossary term/alias -> entry, merged across all glossary files. Used by the
- * glossary page and by [[term]] links in lesson prose.
- */
-export function getGlossaryIndex() {
-  return indexGlossaryEntries(listByKind('glossary').flatMap((env) => env.body?.entries ?? []));
-}
-
-/** All glossary entries, sorted by term, for the glossary index page. */
-export function listGlossaryEntries() {
-  const entries = listByKind('glossary').flatMap((env) => env.body?.entries ?? []);
-  return entries.sort((a, b) => a.term.localeCompare(b.term));
 }

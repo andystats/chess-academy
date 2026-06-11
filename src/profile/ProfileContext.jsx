@@ -4,7 +4,8 @@ import { createStore } from './storage.js';
 import { lessonContentHash, reconcile, sanitizeProgress } from './progress.js';
 
 const ACTIVE_KEY = 'chess-academy:activeProfile';
-export const AVATARS = ['🦊', '🐼', '🦉', '🐙', '🦄', '🐢', '🦁', '🐸', '🐝', '🦖'];
+// Allow-list for imported profiles' avatars (the picker UI that exposed these was retired).
+const AVATARS = ['🦊', '🐼', '🦉', '🐙', '🦄', '🐢', '🦁', '🐸', '🐝', '🦖'];
 
 // localStorage throws when storage is blocked outright (private mode / disabled); the provider must
 // still boot into the non-persistent path — same degrade-don't-crash rule as ./storage.js.

@@ -26,7 +26,7 @@ export default function App() {
               <Route path="/training" element={<Navigate to="/" replace />} />
               <Route path="/lesson/*" element={<Navigate to="/" replace />} />
               <Route path="/my-system" element={<Navigate to="/" replace />} />
-              <Route path="/glossary" element={<Navigate to="/#make-your-own" replace />} />
+              <Route path="/glossary" element={<Navigate to="/" replace />} />
               <Route path="/arena" element={<ArenaPage />} />
               <Route path="/arena/free" element={<FreePlayPage />} />
               <Route path="/arena/online" element={<OnlineLobbyPage />} />
