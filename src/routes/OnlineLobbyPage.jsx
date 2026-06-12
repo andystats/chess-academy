@@ -50,7 +50,7 @@ export default function OnlineLobbyPage() {
 
       // Upsert profile based on local activeProfile
       if (activeProfile && currentUser) {
-        const { error: profileError } = await supabase
+        await supabase
           .from('profiles')
           .upsert({
             id: currentUser.id,
@@ -58,8 +58,6 @@ export default function OnlineLobbyPage() {
             avatar_url: activeProfile.avatar || null,
             updated_at: new Date().toISOString(),
           }, { onConflict: 'id' });
-        
-        if (profileError) console.error('Profile sync error:', profileError);
       }
 
       fetchGames();
@@ -85,8 +83,7 @@ export default function OnlineLobbyPage() {
       .eq('status', 'waiting')
       .order('created_at', { ascending: false });
 
-    if (error) console.error('Fetch games error:', error);
-    else setGames(data || []);
+    if (!error) setGames(data || []);
     setLoading(false);
   }
 
@@ -94,7 +91,6 @@ export default function OnlineLobbyPage() {
     if (!user) return;
     setCreating(true);
     
-    // Authored state for a fresh game is variant-specific
     const initialState = VARIANTS[variant].create().serialize();
 
     const { data, error } = await supabase
@@ -111,7 +107,6 @@ export default function OnlineLobbyPage() {
       .single();
 
     if (error) {
-      console.error('Create game error:', error);
       setCreating(false);
     } else {
       navigate(`/play/${data.id}?v=${variant}&host=${hostColor[0]}`);
@@ -130,40 +125,30 @@ export default function OnlineLobbyPage() {
       .eq('id', game.id)
       .eq('status', 'waiting');
 
-    if (error) {
-      console.error('Join game error:', error);
-    } else {
+    if (!error) {
       navigate(`/play/${game.id}?v=${game.variant}&host=${game.host_color[0]}`);
     }
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50/50">
       <BackLink to="/arena" label="Practice Arena" />
-      <section className="mx-auto max-w-4xl px-4 py-12">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-          <div className="max-w-2xl">
-            <p className="font-mono text-xs font-bold uppercase tracking-wide text-brand-600">Online Arena</p>
-            <h1 className="mt-1 font-display text-4xl font-bold uppercase tracking-tight text-foreground">
-              Multiplayer Lobby
+      
+      <section className="mx-auto max-w-5xl px-4 py-16">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+          <div className="max-w-2xl text-left">
+            <div className="inline-flex items-center gap-2 rounded-full bg-brand-100 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-brand-700 ring-1 ring-inset ring-brand-700/10">
+              <div className="h-1.5 w-1.5 rounded-full bg-brand-600 animate-pulse" />
+              Live Matchmaking
+            </div>
+            <h1 className="mt-4 font-display text-5xl font-bold uppercase tracking-tight text-foreground sm:text-6xl">
+              Online <span className="text-brand-600">Arena</span>
             </h1>
-            <p className="mt-3 text-sm leading-6 text-gray-600">
-              Join an open game or create your own. Games use anonymous accounts linked to your 
-              local profile for ease of play.
+            <p className="mt-4 text-base leading-7 text-gray-600">
+              Battle friends or find rivals in the lobby. Matches are persistent and 
+              synced to your global study profile.
             </p>
           </div>
-
-          {isRealtimeConfigured && (
-            <div className="flex shrink-0 gap-2">
-              <button
-                type="button"
-                onClick={() => document.getElementById('create-game-form')?.scrollIntoView({ behavior: 'smooth' })}
-                className="tao-btn-primary"
-              >
-                <Plus size={18} /> New Game
-              </button>
-            </div>
-          )}
         </div>
 
         {!isRealtimeConfigured ? (
@@ -171,51 +156,70 @@ export default function OnlineLobbyPage() {
             <RealtimeNotConfigured />
           </div>
         ) : loading ? (
-          <div className="mt-20 flex flex-col items-center justify-center gap-4 text-gray-500">
-            <Loader2 className="animate-spin" size={32} />
-            <p className="font-mono text-xs font-bold uppercase tracking-widest">Entering lobby…</p>
+          <div className="mt-32 flex flex-col items-center justify-center gap-6 text-gray-400">
+            <Loader2 className="animate-spin" size={40} />
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em]">Entering Lobby Room…</p>
           </div>
         ) : (
-          <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
-            <div className="lg:col-span-2">
-              <div className="flex items-center justify-between border-b-3 border-foreground pb-2 mb-6">
-                <h2 className="font-display text-xl font-bold uppercase tracking-tight flex items-center gap-2">
-                  <Users size={20} /> Open Games
+          <div className="mt-16 grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-start">
+            {/* Game List */}
+            <div className="lg:col-span-8">
+              <div className="flex items-center justify-between border-b-2 border-gray-200 pb-4 mb-8">
+                <h2 className="font-display text-2xl font-bold uppercase tracking-tight flex items-center gap-3">
+                  <Users className="text-brand-600" size={24} /> 
+                  Open Matches
                 </h2>
-                <span className="font-mono text-xs font-bold text-gray-500">{games.length} waiting</span>
+                <div className="flex items-center gap-2 font-mono text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                  {games.length} available
+                </div>
               </div>
 
               {games.length === 0 ? (
-                <div className="border-3 border-dashed border-gray-200 p-12 text-center">
-                  <p className="text-gray-500 text-sm">No open games right now. Why not create one?</p>
+                <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white/50 p-16 text-center shadow-inner">
+                  <div className="rounded-full bg-gray-100 p-4 mb-4">
+                    <Plus className="text-gray-300" size={32} />
+                  </div>
+                  <p className="font-display text-lg font-bold text-gray-400 uppercase tracking-tight">No open games</p>
+                  <p className="mt-1 text-sm text-gray-500">Be the first to create a match today!</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {games.map((game) => (
                     <div
                       key={game.id}
-                      className="group relative flex items-center justify-between border-3 border-foreground bg-white p-4 transition-transform hover:-translate-y-1"
+                      className="group flex flex-col justify-between rounded-2xl border-2 border-gray-200 bg-white p-5 transition-all hover:border-brand-600 hover:shadow-xl hover:shadow-brand-900/5 hover:-translate-y-1"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center border-3 border-foreground bg-brand-50 text-2xl">
+                      <div className="flex items-start justify-between">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 text-3xl transition-transform group-hover:scale-110">
                           {game.variant === 'duck' ? '🦆' : '♔'}
                         </div>
-                        <div>
-                          <p className="font-display text-lg font-bold uppercase tracking-tight">
-                            {VARIANTS[game.variant]?.label}
+                        <div className="text-right">
+                          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                            {game.variant}
                           </p>
-                          <p className="text-xs text-gray-500">
-                            Hosted by <span className="font-bold text-foreground">{game.host?.username || 'Anonymous'}</span>
-                          </p>
+                          <div className="mt-1 flex items-center justify-end gap-1.5">
+                             <div className={`h-2 w-2 rounded-full ${game.host_color === 'white' ? 'bg-white border border-gray-300' : 'bg-gray-900'}`} />
+                             <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{game.host_color}</span>
+                          </div>
                         </div>
                       </div>
+                      
+                      <div className="mt-6 border-t border-gray-100 pt-5">
+                        <p className="text-xs text-gray-500">Host</p>
+                        <p className="font-display text-lg font-bold uppercase tracking-tight text-foreground truncate">
+                          {game.host?.username || 'Anonymous'}
+                        </p>
+                      </div>
+
                       <button
                         type="button"
                         onClick={() => joinGame(game)}
                         disabled={game.host_id === user?.id}
-                        className="tao-btn-primary py-2"
+                        className="tao-btn-primary mt-6 w-full justify-center py-2.5 text-sm"
                       >
-                        {game.host_id === user?.id ? 'Your Game' : 'Join'} <ArrowRight size={18} />
+                        {game.host_id === user?.id ? 'Your Match' : 'Join Match'} 
+                        {game.host_id !== user?.id && <ArrowRight className="ml-2" size={16} />}
                       </button>
                     </div>
                   ))}
@@ -223,32 +227,48 @@ export default function OnlineLobbyPage() {
               )}
             </div>
 
-            <div id="create-game-form" className="flex flex-col gap-8 bg-brand-50/50 p-6 border-3 border-foreground">
-              <h2 className="font-display text-xl font-bold uppercase tracking-tight">Create a Game</h2>
-              
-              <div className="flex flex-col gap-6">
-                <div>
-                  <p className="mb-2 font-mono text-xs font-bold uppercase tracking-wide text-gray-500 text-left">Variant</p>
-                  <SegmentedControl options={VARIANT_OPTIONS} value={variant} onChange={setVariant} buttonClassName="flex-1" />
-                </div>
-                <div>
-                  <p className="mb-2 font-mono text-xs font-bold uppercase tracking-wide text-gray-500 text-left">Play as</p>
-                  <SegmentedControl options={COLOR_OPTIONS} value={hostColor} onChange={setHostColor} buttonClassName="flex-1" />
-                </div>
-                <button
-                  type="button"
-                  onClick={createGame}
-                  disabled={creating}
-                  className="tao-btn-primary w-full justify-center gap-2"
-                >
-                  {creating ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                  {creating ? 'Creating…' : 'Start Match'}
-                </button>
-              </div>
+            {/* Create Panel */}
+            <div id="create-game-form" className="lg:col-span-4">
+              <div className="sticky top-8 overflow-hidden rounded-3xl border-2 border-gray-900 bg-gray-900 p-1 shadow-2xl">
+                <div className="rounded-[22px] bg-white p-6 sm:p-8">
+                  <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-gray-900">
+                    Host Match
+                  </h2>
+                  <p className="mt-2 text-sm text-gray-500">Configure your rules and wait for a challenger.</p>
+                  
+                  <div className="mt-10 flex flex-col gap-8 text-left">
+                    <div>
+                      <label className="mb-3 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+                        Select Variant
+                      </label>
+                      <SegmentedControl options={VARIANT_OPTIONS} value={variant} onChange={setVariant} buttonClassName="flex-1" />
+                    </div>
+                    
+                    <div>
+                      <label className="mb-3 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+                        Play Side
+                      </label>
+                      <SegmentedControl options={COLOR_OPTIONS} value={hostColor} onChange={setHostColor} buttonClassName="flex-1" />
+                    </div>
 
-              <p className="text-xs leading-5 text-gray-500 text-center">
-                Your game will be visible to everyone in the lobby. You can also send the link directly to a friend.
-              </p>
+                    <button
+                      type="button"
+                      onClick={createGame}
+                      disabled={creating}
+                      className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl bg-gray-900 px-6 py-4 font-display text-sm font-bold uppercase tracking-widest text-white transition-all hover:bg-brand-600 disabled:opacity-50"
+                    >
+                      {creating ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} className="transition-transform group-hover:rotate-90" />}
+                      <span>{creating ? 'Preparing Board…' : 'Create Match'}</span>
+                    </button>
+                  </div>
+
+                  <div className="mt-8 rounded-xl bg-gray-50 p-4">
+                    <p className="text-center text-[10px] leading-5 text-gray-400 uppercase font-bold tracking-wider">
+                      Public matches are visible to all players in the lobby.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
