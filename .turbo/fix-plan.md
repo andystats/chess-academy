@@ -40,7 +40,7 @@ future session can resume cold from here.
 | J | Roadmap seams (variant registry, serializer v2, shared hooks) | ✅ done 2026-06-11 (`289fbe4`) — **duck-decay prerequisites landed** |
 | J2 | useBoardInput unification (split from J) | ✅ done 2026-06-12 via external Gemini commit `5435ff7`; manual board pass open |
 | M | Field reliability (2026-06-11 freeze report) | ✅ done 2026-06-11 (`7348034`); field re-test passed 2026-06-12 |
-| F1 | **Feature: database lobby** (external `5435ff7`+`462311b`, fixed here) | ✅ SQL run + probe green 2026-06-12; post-move crash + dead resign + status line fixed same day — commit & field-test |
+| F1 | **Feature: database lobby** (external `5435ff7`+`462311b`, fixed here) | ✅ complete 2026-06-12 (`3d1a50c` + `2db2496` deployed): SQL fix run, crash/resign/status fixed, names + expiry + rejoin shipped |
 | K | Test hardening | ☐ not started |
 | L | Dependency majors (vitest/vite/React etc.) | ☐ not started |
 
@@ -352,7 +352,7 @@ asset `index-D5ErVXJO.js` contains the fix markers. No code issue.)
 off the existing `connection.peerPresent`), player usernames in the game panel, then chat upgrades
 on the `useGameChat` seam.
 
-**Landed:** grants fix + crash/resign fix committed `3d1a50c` (CI + deploy green); polish round 2 — _commit pending; stamp the hash here once committed._ SQL fix: run by owner 2026-06-12.
+**Landed:** grants fix + crash/resign fix `3d1a50c`; polish round 2 `2db2496` — all CI + deploy green 2026-06-12. SQL fix: run by owner 2026-06-12. **Feature 1 complete.**
 
 ---
 
