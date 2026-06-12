@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Plus, Users, Loader2 } from 'lucide-react';
+import { ArrowRight, History, Plus, Users, Loader2 } from 'lucide-react';
 import BackLink from '../components/ui/BackLink.jsx';
 import RealtimeNotConfigured from '../components/RealtimeNotConfigured.jsx';
 import SegmentedControl from '../components/ui/SegmentedControl.jsx';
 import { isRealtimeConfigured, supabase } from '../lib/supabase.js';
 import { useProfile } from '../profile/ProfileContext.jsx';
-import { ensureSessionAndProfile } from '../online/lobbyApi.js';
+import { ensureSessionAndProfile, loadDisplayName, saveDisplayName } from '../online/lobbyApi.js';
 import { VARIANTS } from '../online/rules.js';
 
 const VARIANT_OPTIONS = Object.entries(VARIANTS).map(([value, { pickerLabel, sublabel }]) => ({
@@ -20,15 +20,24 @@ const COLOR_OPTIONS = [
   { value: 'black', label: 'Black' },
 ];
 
+// There is no reliable "host left" signal without server-side presence, so abandoned lobby
+// entries simply age out of the open list; hosts can also cancel their own match explicitly.
+const WAITING_SHELF_LIFE_MS = 60 * 60 * 1000; // open matches show for 1 hour
+const MY_GAMES_WINDOW_MS = 24 * 60 * 60 * 1000; // your own games stay rejoinable for a day
+
 export default function OnlineLobbyPage() {
   const navigate = useNavigate();
   const { activeProfile } = useProfile();
   const [variant, setVariant] = useState('standard');
   const [hostColor, setHostColor] = useState('white');
+  const [displayName, setDisplayName] = useState(loadDisplayName);
   const [games, setGames] = useState([]);
+  const [myGames, setMyGames] = useState([]); // your waiting/active games — the rejoin list
   const [loading, setLoading] = useState(isRealtimeConfigured);
   const [creating, setCreating] = useState(false);
   const [user, setUser] = useState(null);
+  // The postgres_changes subscription outlives renders, so fetchGames reads the uid from a ref.
+  const userRef = useRef(null);
   const [error, setError] = useState(null); // { context, message, hint } — shown above the lobby grid
 
   // 1. Authenticate and sync profile. The profiles row is mandatory, not cosmetic: games.host_id
@@ -38,10 +47,12 @@ export default function OnlineLobbyPage() {
 
     async function initLobby() {
       const { user: sessionUser, error: sessionError } = await ensureSessionAndProfile({
-        username: activeProfile?.name,
+        username: loadDisplayName() || activeProfile?.name,
         avatar: activeProfile?.avatar,
       });
+      userRef.current = sessionUser;
       setUser(sessionUser);
+      setDisplayName((current) => current || activeProfile?.name || '');
       if (sessionError) {
         console.error('Lobby sign-in error:', sessionError);
         setError({ context: 'Lobby sign-in failed', ...sessionError });
@@ -72,6 +83,7 @@ export default function OnlineLobbyPage() {
       .from('games')
       .select('*, host:host_id(username, avatar_url)')
       .eq('status', 'waiting')
+      .gte('created_at', new Date(Date.now() - WAITING_SHELF_LIFE_MS).toISOString())
       .order('created_at', { ascending: false });
 
     if (listError) {
@@ -80,13 +92,46 @@ export default function OnlineLobbyPage() {
     } else {
       setGames(data || []);
     }
+
+    // Your own recent games (active ones leave the open list by design — this is how you get back in).
+    const uid = userRef.current?.id;
+    if (uid) {
+      const { data: mine, error: mineError } = await supabase
+        .from('games')
+        .select('*, host:host_id(username), joiner:joiner_id(username)')
+        .or(`host_id.eq.${uid},joiner_id.eq.${uid}`)
+        .in('status', ['waiting', 'active'])
+        .gte('updated_at', new Date(Date.now() - MY_GAMES_WINDOW_MS).toISOString())
+        .order('updated_at', { ascending: false })
+        .limit(5);
+      if (mineError) console.error('My-games list error:', mineError);
+      else setMyGames(mine || []);
+    }
     setLoading(false);
   }
+
+  // Re-upsert the profile with the name currently in the box, so opponents see what was typed —
+  // not whatever the profile held at page load.
+  const syncDisplayName = async () => {
+    saveDisplayName(displayName.trim());
+    const { error: nameError } = await ensureSessionAndProfile({
+      username: displayName,
+      avatar: activeProfile?.avatar,
+    });
+    return nameError;
+  };
 
   const createGame = async () => {
     if (!user) return;
     setCreating(true);
     setError(null);
+
+    const nameError = await syncDisplayName();
+    if (nameError) {
+      setError({ context: 'Create match failed', ...nameError });
+      setCreating(false);
+      return;
+    }
 
     const initialState = VARIANTS[variant].create().serialize();
 
@@ -116,6 +161,12 @@ export default function OnlineLobbyPage() {
     if (!user) return;
     setError(null);
 
+    const nameError = await syncDisplayName();
+    if (nameError) {
+      setError({ context: 'Join match failed', ...nameError });
+      return;
+    }
+
     // The status guard makes this a compare-and-swap: only one joiner can win the seat.
     const { data, error: joinError } = await supabase
       .from('games')
@@ -135,6 +186,26 @@ export default function OnlineLobbyPage() {
       fetchGames();
     } else {
       navigate(`/play/${game.id}?v=${game.variant}&host=${game.host_color[0]}`);
+    }
+  };
+
+  // Host withdraws their own waiting match (the row just completes; nothing to clean up live).
+  const cancelGame = async (game) => {
+    if (!user) return;
+    setError(null);
+
+    const { error: cancelError } = await supabase
+      .from('games')
+      .update({ status: 'completed' })
+      .eq('id', game.id)
+      .eq('host_id', user.id)
+      .eq('status', 'waiting');
+
+    if (cancelError) {
+      console.error('Cancel match error:', cancelError);
+      setError({ context: 'Cancel failed', message: cancelError.message, hint: cancelError.hint });
+    } else {
+      fetchGames();
     }
   };
 
@@ -182,6 +253,59 @@ export default function OnlineLobbyPage() {
           <div className="mt-16 grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-start">
             {/* Game List */}
             <div className="lg:col-span-8">
+              {myGames.length > 0 && (
+                <div className="mb-12">
+                  <div className="flex items-center justify-between border-b-2 border-gray-200 pb-4 mb-6">
+                    <h2 className="font-display text-2xl font-bold uppercase tracking-tight flex items-center gap-3">
+                      <History className="text-brand-600" size={24} />
+                      Your Games
+                    </h2>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    {myGames.map((g) => {
+                      const youAreHost = g.host_id === user?.id;
+                      const opponent = youAreHost ? g.joiner?.username : g.host?.username;
+                      return (
+                        <div
+                          key={g.id}
+                          className="flex items-center justify-between gap-4 rounded-2xl border-2 border-gray-200 bg-white px-5 py-4"
+                        >
+                          <div className="flex min-w-0 items-center gap-4">
+                            <span className="text-2xl">{g.variant === 'duck' ? '🦆' : '♔'}</span>
+                            <div className="min-w-0">
+                              <p className="truncate font-display text-sm font-bold uppercase tracking-tight text-foreground">
+                                {opponent ? `vs ${opponent}` : 'Waiting for a challenger'}
+                              </p>
+                              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                {g.variant} · {g.status}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            {youAreHost && g.status === 'waiting' && (
+                              <button
+                                type="button"
+                                onClick={() => cancelGame(g)}
+                                className="rounded-lg border-2 border-red-200 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-red-600 transition-colors hover:bg-red-50"
+                              >
+                                Cancel
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/play/${g.id}?v=${g.variant}&host=${g.host_color[0]}`)}
+                              className="tao-btn-primary px-4 py-1.5 text-xs"
+                            >
+                              Rejoin
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between border-b-2 border-gray-200 pb-4 mb-8">
                 <h2 className="font-display text-2xl font-bold uppercase tracking-tight flex items-center gap-3">
                   <Users className="text-brand-600" size={24} /> 
@@ -230,15 +354,24 @@ export default function OnlineLobbyPage() {
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => joinGame(game)}
-                        disabled={game.host_id === user?.id}
-                        className="tao-btn-primary mt-6 w-full justify-center py-2.5 text-sm"
-                      >
-                        {game.host_id === user?.id ? 'Your Match' : 'Join Match'} 
-                        {game.host_id !== user?.id && <ArrowRight className="ml-2" size={16} />}
-                      </button>
+                      {game.host_id === user?.id ? (
+                        <button
+                          type="button"
+                          onClick={() => cancelGame(game)}
+                          className="mt-6 w-full rounded-xl border-2 border-red-200 py-2.5 text-sm font-bold uppercase tracking-widest text-red-600 transition-colors hover:bg-red-50"
+                        >
+                          Cancel Match
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => joinGame(game)}
+                          className="tao-btn-primary mt-6 w-full justify-center py-2.5 text-sm"
+                        >
+                          Join Match
+                          <ArrowRight className="ml-2" size={16} />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -255,6 +388,25 @@ export default function OnlineLobbyPage() {
                   <p className="mt-2 text-sm text-gray-500">Configure your rules and wait for a challenger.</p>
                   
                   <div className="mt-10 flex flex-col gap-8 text-left">
+                    <div>
+                      <label htmlFor="lobby-display-name" className="mb-3 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+                        Playing As
+                      </label>
+                      <input
+                        id="lobby-display-name"
+                        type="text"
+                        value={displayName}
+                        maxLength={20}
+                        placeholder="Player"
+                        onChange={(event) => setDisplayName(event.target.value)}
+                        onBlur={() => saveDisplayName(displayName.trim())}
+                        className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 font-display text-sm font-bold uppercase tracking-tight text-foreground placeholder:text-gray-300 focus:border-brand-600 focus:outline-none"
+                      />
+                      <p className="mt-2 text-[11px] leading-4 text-gray-400">
+                        Shown to opponents when you host or join. No account needed.
+                      </p>
+                    </div>
+
                     <div>
                       <label className="mb-3 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
                         Select Variant

@@ -10,9 +10,29 @@
 import { supabase } from '../lib/supabase.js';
 
 const USERNAME_MAX = 20; // mirrors the local profile-name cap in ProfileContext
+const NAME_KEY = 'chess-academy:displayName'; // the player's chosen lobby name, kept across visits
+
+/** The saved display name, '' when unset (or when storage is unavailable). */
+export function loadDisplayName() {
+  try {
+    return localStorage.getItem(NAME_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function saveDisplayName(name) {
+  try {
+    if (name) localStorage.setItem(NAME_KEY, name);
+  } catch {
+    /* storage unavailable — the name just won't survive a reload */
+  }
+}
 
 /**
  * Ensure an authenticated (anonymous) session and a matching profiles row.
+ * The profile name resolves explicit `username` → saved display name → 'Player', so a joiner
+ * landing on a direct /play link still gets the name they chose in the lobby.
  * Returns { user, error }: `user` is null only when sign-in itself failed; `error` is a
  * { message, hint } pair ready for the UI — `hint` says how to fix the project config.
  */
@@ -34,10 +54,11 @@ export async function ensureSessionAndProfile({ username, avatar } = {}) {
     user = signIn.user;
   }
 
+  const requested = (username ?? '').trim() || loadDisplayName().trim();
   const { error } = await supabase.from('profiles').upsert(
     {
       id: user.id,
-      username: (username || '').trim().slice(0, USERNAME_MAX) || 'Player',
+      username: requested.slice(0, USERNAME_MAX) || 'Player',
       avatar_url: avatar || null,
       updated_at: new Date().toISOString(),
     },

@@ -328,11 +328,31 @@ any variant, both sides). Fixed, plus two more regressions found in the same swe
   the row flips to `active` and the open-matches list updates live (postgres_changes relies on the
   `alter publication supabase_realtime add table games;` line from schema.sql having run).
 
-**Next lobby polish (queue behind the SQL fix):** host-side waiting-room panel on /play (big invite
-link + "opponent joined!" off the existing `connection.peerPresent`), joiner usernames from profiles
-in the game panel, stale-waiting-game cleanup, then chat upgrades on the `useGameChat` seam.
+**Lobby polish round 2 (2026-06-12, after the owner's first real lobby session).** Field notes:
+"Hector didn't go away when he left", "lobby was empty even though the game was active", "let
+people name themselves". (The "crash persists once, stable after refresh" report from the same
+session was the **stale cached bundle** — GitHub Pages caches index.html ~10 min; verified the live
+asset `index-D5ErVXJO.js` contains the fix markers. No code issue.)
+- [x] **Display names**: "Playing As" field in the Host Match panel (persisted to localStorage as
+  `chess-academy:displayName`); the profile row is re-upserted with the typed name on create AND
+  join, and `ensureSessionAndProfile` falls back explicit → saved → 'Player', so a direct-link
+  joiner keeps their chosen name too. Still fully anonymous — no account.
+- [x] **Stale waiting games**: the open list only shows matches created in the last hour
+  (`WAITING_SHELF_LIFE_MS`) — there's no reliable "host left" signal without server presence, so
+  ghosts age out — and hosts get an explicit **Cancel Match** button (own cards show Cancel instead
+  of a disabled "Your Match"; the row flips to `completed`).
+- [x] **"Your Games" rejoin section**: active games leave the open list *by design* (status filter),
+  which read as "the lobby is empty". The lobby now lists your own waiting/active games from the
+  last day (FK-embedded opponent name, "vs Hector · active") with Rejoin + Cancel. Same-browser
+  note: both tabs are the same anonymous auth user, so a second tab is "you", not a joiner — use a
+  second browser/incognito to test joining.
+- [x] Verify: lint clean · 182/182 tests (3 new display-name tests incl. storage-unavailable degrade) · build green.
 
-**Landed:** code 2026-06-12 — _commit pending; stamp the hash here once committed._ SQL fix: _pending owner run._
+**Next lobby polish:** host-side waiting-room panel on /play (big invite link + "opponent joined!"
+off the existing `connection.peerPresent`), player usernames in the game panel, then chat upgrades
+on the `useGameChat` seam.
+
+**Landed:** grants fix + crash/resign fix committed `3d1a50c` (CI + deploy green); polish round 2 — _commit pending; stamp the hash here once committed._ SQL fix: run by owner 2026-06-12.
 
 ---
 

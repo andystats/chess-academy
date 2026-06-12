@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ensureSessionAndProfile } from './lobbyApi.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ensureSessionAndProfile, loadDisplayName, saveDisplayName } from './lobbyApi.js';
 
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -90,5 +90,45 @@ describe('ensureSessionAndProfile', () => {
       expect.objectContaining({ username: 'x'.repeat(20) }),
       { onConflict: 'id' },
     );
+  });
+});
+
+describe('display name persistence', () => {
+  // These tests run in the node environment, so stand in for the browser's localStorage.
+  beforeEach(() => {
+    const store = new Map();
+    globalThis.localStorage = {
+      getItem: (key) => (store.has(key) ? store.get(key) : null),
+      setItem: (key, value) => store.set(key, String(value)),
+    };
+  });
+  afterEach(() => {
+    delete globalThis.localStorage;
+  });
+
+  it('round-trips the saved name and uses it when no explicit username is given', async () => {
+    saveDisplayName('Hector');
+    expect(loadDisplayName()).toBe('Hector');
+
+    await ensureSessionAndProfile(); // the direct-link joiner path passes no name
+    expect(mocks.upsert).toHaveBeenLastCalledWith(
+      expect.objectContaining({ username: 'Hector' }),
+      { onConflict: 'id' },
+    );
+  });
+
+  it('an explicit username outranks the saved one', async () => {
+    saveDisplayName('Hector');
+    await ensureSessionAndProfile({ username: 'Andy' });
+    expect(mocks.upsert).toHaveBeenLastCalledWith(
+      expect.objectContaining({ username: 'Andy' }),
+      { onConflict: 'id' },
+    );
+  });
+
+  it('degrades to empty/no-op when storage is unavailable', () => {
+    delete globalThis.localStorage;
+    expect(loadDisplayName()).toBe('');
+    expect(() => saveDisplayName('x')).not.toThrow();
   });
 });
