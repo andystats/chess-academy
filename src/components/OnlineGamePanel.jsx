@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import clsx from 'clsx';
-import { Link2, RefreshCw, RotateCcw } from 'lucide-react';
+import { Link2, RefreshCw, RotateCcw, Flag } from 'lucide-react';
 import { CapturedPieces, MoveList, pairMoves, resultText } from './gamePanelParts.jsx';
 import ChatBox from './ChatBox.jsx';
 import { VARIANTS } from '../online/rules.js';
@@ -99,6 +99,15 @@ export default function OnlineGamePanel({ game }) {
           <RotateCcw size={16} /> Flip
         </button>
         {game.isHost && (
+          <button type="button" onClick={game.newGame} className="tao-btn-ghost text-sm">
+            New game
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+ && (
           <button type="button" onClick={game.newGame} className="tao-btn-ghost text-sm">
             New game
           </button>

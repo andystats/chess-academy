@@ -91,6 +91,7 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
       channel
         .on('broadcast', { event: 'snapshot' }, ({ payload }) => fire('onSnapshot', payload))
         .on('broadcast', { event: 'move-intent' }, ({ payload }) => fire('onMoveIntent', payload))
+        .on('broadcast', { event: 'resign-intent' }, ({ payload }) => fire('onResignIntent', payload))
         .on('broadcast', { event: 'request-snapshot' }, ({ payload }) => fire('onRequestSnapshot', payload))
         .on('broadcast', { event: 'chat' }, ({ payload }) => fire('onChat', payload))
         .on('presence', { event: 'sync' }, () => {
@@ -192,6 +193,7 @@ export function useGameChannel({ gameId, selfId, isHost, handlers }) {
     reconnect: () => reconnectRef.current?.(),
     broadcastSnapshot: (snapshot) => send('snapshot', snapshot),
     sendMoveIntent: (intent) => send('move-intent', intent),
+    sendResignIntent: (intent) => send('resign-intent', intent),
     // `position` is the requester's {epoch, seq} so the host can tell a routine poll from a peer
     // whose state ran ahead of it (which needs an epoch-bumped answer to be adoptable).
     requestSnapshot: (position) => send('request-snapshot', { by: selfId, ...position }),

@@ -132,3 +132,29 @@ describe('history', () => {
     expect(history[0].duck).toBe('e3');
   });
 });
+
+describe('stalemate', () => {
+  it('detects stalemate when a player has no legal piece moves', () => {
+    // White to move.
+    // a1: K, b1: P, a2-a8: P.
+    // h8: k.
+    // Duck on b2 blocks both K and b1-P.
+    // All a-file pawns block each other.
+    const placement = 'P6k/P7/P7/P7/P7/P7/P7/KP6';
+    // placement turn phase duck castling ep halfmove fullmove
+    const serialized = `${placement} w piece b2 - - 0 1`;
+    const game = createDuckGame(serialized);
+
+    const res = game.result();
+    expect(res).toEqual({ winner: 'draw', reason: 'Stalemate' });
+  });
+
+  it('does NOT detect stalemate during duck phase', () => {
+    const placement = '7k/8/8/8/8/8/8/K7';
+    const serialized = `${placement} w duck h7 - - 0 1`;
+    const game = createDuckGame(serialized);
+
+    expect(game.result()).toBeNull();
+  });
+});
+

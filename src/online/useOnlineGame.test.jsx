@@ -20,6 +20,20 @@ const { transport } = vi.hoisted(() => ({
   },
 }));
 
+vi.mock('../lib/supabase.js', () => ({
+  isRealtimeConfigured: true,
+  supabase: {
+    auth: {
+      getSession: vi.fn(() => Promise.resolve({ data: { session: null } })),
+      signInAnonymously: vi.fn(() => Promise.resolve({ data: { user: { id: 'anon' } } })),
+    },
+    from: () => ({
+      update: () => ({ eq: () => Promise.resolve({ error: null }) }),
+      select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
+    }),
+  },
+}));
+
 vi.mock('./useGameChannel.js', () => ({
   useGameChannel: ({ handlers }) => {
     transport.handlers = handlers;

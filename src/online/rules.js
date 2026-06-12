@@ -36,6 +36,7 @@ export function createStandardGame(fen) {
     },
     // Degenerate for standard chess — the turn already completed in movePiece.
     placeDuck: () => ({ ok: true, result: gameResult(game) }),
+    resign: (color) => ({ winner: color === 'white' ? 'black' : 'white', reason: 'Resigned' }),
     result: () => gameResult(game),
     history: () =>
       game.history({ verbose: true }).map((move) => ({
@@ -49,7 +50,14 @@ export function createStandardGame(fen) {
 
 /** Duck Chess as a game instance — the engine already matches the interface. */
 export function createDuckChessGame(serialized) {
-  return createDuckGame(serialized);
+  const game = createDuckGame(serialized);
+  return {
+    ...game,
+    resign: (color) => {
+      game.resign(color);
+      return game.result();
+    },
+  };
 }
 
 /**

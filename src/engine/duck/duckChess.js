@@ -13,10 +13,17 @@ import { capturedFromBoard } from '../gameState.js';
 import { boardFen, colorOf, deserialize, initialState, serialize, squareToIndex } from './board.js';
 import { generatePieceMoves, legalDuckTargets, legalPieceTargets } from './moves.js';
 
-/** Winner (or null) inferred from a missing king — snapshot-safe. */
-function deriveResult(board) {
+/** Winner (or draw) inferred from the board and legal moves — snapshot-safe. */
+function deriveResult(state) {
+  const { board } = state;
   if (!board.includes('K')) return { winner: 'black', reason: 'King captured' };
   if (!board.includes('k')) return { winner: 'white', reason: 'King captured' };
+
+  // Stalemate: side to move has no legal piece moves. Only checked during the piece phase;
+  // during the duck phase there is always a legal placement (any empty square except its own).
+  if (state.phase === 'piece' && generatePieceMoves(state).length === 0) {
+    return { winner: 'draw', reason: 'Stalemate' };
+  }
   return null;
 }
 
@@ -65,7 +72,7 @@ export function createDuckGame(serialized) {
   const turns = [];
 
   const turnColor = () => COLOR_NAME[state.turn];
-  const result = () => deriveResult(state.board);
+  const result = () => deriveResult(state);
 
   function movePiece(input) {
     if (result() || state.phase !== 'piece') return { ok: false };
@@ -145,8 +152,12 @@ export function createDuckGame(serialized) {
     legalDuckTargets: () => legalDuckTargets(state),
     movePiece,
     placeDuck,
+    resign: (color) => {
+      state.result = { winner: color === 'white' ? 'black' : 'white', reason: 'Resigned' };
+    },
     result,
     history: () => turns.map((turn) => ({ ...turn })),
     captured: () => capturedFromBoard(state.board),
   };
 }
+

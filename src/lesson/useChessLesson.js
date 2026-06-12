@@ -8,6 +8,8 @@ import {
   playerOrdinalCount,
 } from './engine.js';
 
+import { useBoardInput } from '../components/useBoardInput.js';
+
 // React wrapper around the pure engine in engine.js. Holds the live chess.js game (in a ref, not
 // state) and the opponent-reply timer; the reducer holds only derived, renderable state.
 //
@@ -35,9 +37,6 @@ const initialState = {
   fen: START_FEN,
   playerPly: 0,
   feedback: null,
-  selectedSquare: null,
-  legalTargets: [],
-  pendingPromotion: null, // { from, to } while the tap-path promotion picker is open
   revealedHints: 0,
   chosenOptionId: null,
 };
@@ -51,36 +50,24 @@ function reducer(state, action) {
         fen: action.fen,
         playerPly: 0,
         feedback: null,
-        selectedSquare: null,
-        legalTargets: [],
-        pendingPromotion: null,
         revealedHints: 0,
         chosenOptionId: null,
       };
     case 'explore-moved':
-      return { ...state, fen: action.fen, selectedSquare: null, legalTargets: [], pendingPromotion: null };
+      return { ...state, fen: action.fen };
     case 'correct':
       return {
         ...state,
         status: action.status,
         fen: action.fen,
         feedback: { kind: 'correct', text: action.text },
-        selectedSquare: null,
-        legalTargets: [],
-        pendingPromotion: null,
       };
     case 'opponent-next':
       return { ...state, status: 'awaiting', fen: action.fen, playerPly: action.playerPly };
     case 'opponent-complete':
       return { ...state, status: 'complete', fen: action.fen };
     case 'wrong':
-      return { ...state, feedback: { kind: 'wrong', text: action.text }, selectedSquare: null, legalTargets: [], pendingPromotion: null };
-    case 'select':
-      return { ...state, selectedSquare: action.square, legalTargets: action.targets, pendingPromotion: null };
-    case 'deselect':
-      return { ...state, selectedSquare: null, legalTargets: [], pendingPromotion: null };
-    case 'prompt-promotion':
-      return { ...state, pendingPromotion: { from: action.from, to: action.to } };
+      return { ...state, feedback: { kind: 'wrong', text: action.text } };
     case 'reveal-hint':
       return { ...state, revealedHints: Math.min(action.max, state.revealedHints + 1) };
     case 'choose':
@@ -209,57 +196,22 @@ export function useChessLesson(envelope) {
     [descriptor, attemptExploreMove, attemptLineMove],
   );
 
-  const onPieceDrop = useCallback(
-    (from, to) => attemptMove({ from, to, promotion: 'q' }),
-    [attemptMove],
-  );
+  const arePiecesDraggable =
+    descriptor?.mode === 'explore' || (descriptor?.mode === 'line' && state.status === 'awaiting');
 
-  // react-chessboard calls this when a promotion is chosen via the dialog. Drag promotions arrive
-  // with from/to; the tap path's manual dialog doesn't, so fall back to the pending tap promotion.
-  // A dismissed dialog (no piece) just closes.
-  const onPromotionPieceSelect = useCallback(
-    (piece, from, to) => {
-      const source = from && to ? { from, to } : state.pendingPromotion;
-      if (state.pendingPromotion) dispatch({ type: 'deselect' });
-      if (!source || !piece) return false;
-      return attemptMove({ ...source, promotion: piece[1].toLowerCase() });
-    },
-    [state.pendingPromotion, attemptMove],
-  );
-
-  // Tap-to-move: first tap selects + highlights legal targets, second tap moves.
-  const onSquareClick = useCallback(
-    (square) => {
-      const d = descriptor;
-      const game = gameRef.current;
-      if (!d || (d.mode !== 'line' && d.mode !== 'explore')) return;
-      if (d.mode === 'line' && state.status !== 'awaiting') return;
-
-      if (state.selectedSquare) {
-        if (square === state.selectedSquare) {
-          dispatch({ type: 'deselect' });
-          return;
-        }
-        // A pawn reaching its last rank opens the promotion picker — never silently queen a tap.
-        if (state.legalTargets.includes(square) && isPromotion(state.fen, state.selectedSquare, square)) {
-          dispatch({ type: 'prompt-promotion', from: state.selectedSquare, to: square });
-          return;
-        }
-        const moved = attemptMove({ from: state.selectedSquare, to: square, promotion: 'q' });
-        if (!moved) {
-          // Re-select if they tapped another of their own pieces; otherwise just clear.
-          const targets = legalTargets(game, square);
-          if (targets.length) dispatch({ type: 'select', square, targets });
-          else dispatch({ type: 'deselect' });
-        }
-        return;
-      }
-
-      const targets = legalTargets(game, square);
-      if (targets.length) dispatch({ type: 'select', square, targets });
-    },
-    [descriptor, state.status, state.selectedSquare, state.legalTargets, state.fen, attemptMove],
-  );
+  const {
+    selectedSquare,
+    legalTargets: boardTargets,
+    promotionTarget,
+    onPieceDrop,
+    onPromotionPieceSelect,
+    onSquareClick,
+  } = useBoardInput({
+    fen: state.fen,
+    canMove: arePiecesDraggable,
+    attemptMove,
+    listTargets: (square) => legalTargets(gameRef.current, square),
+  });
 
   const chooseOption = useCallback(
     (id) => {
@@ -297,8 +249,6 @@ export function useChessLesson(envelope) {
     return { arrows: arr, highlights: descriptor?.annotations?.highlight ?? [] };
   }, [descriptor, state.revealedHints]);
 
-  const arePiecesDraggable =
-    descriptor?.mode === 'explore' || (descriptor?.mode === 'line' && state.status === 'awaiting');
   const canAdvance = state.status === 'complete' || state.status === 'explore';
 
   return {
@@ -310,9 +260,9 @@ export function useChessLesson(envelope) {
     fen: state.fen,
     orientation: descriptor?.orientation ?? 'white',
     arePiecesDraggable,
-    selectedSquare: state.selectedSquare,
-    legalTargets: state.legalTargets,
-    promotionTarget: state.pendingPromotion?.to ?? null,
+    selectedSquare,
+    legalTargets: boardTargets,
+    promotionTarget,
     arrows,
     highlights,
     status: state.status,

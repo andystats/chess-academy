@@ -22,7 +22,9 @@ import { isSquare } from '../engine/duck/board.js';
 import { createVariantGame, lastMoveOf } from './rules.js';
 import { useGameChannel } from './useGameChannel.js';
 import { useGameChat } from './useGameChat.js';
+import { isRealtimeConfigured, supabase } from '../lib/supabase.js';
 import { loadSnapshot, saveSnapshot } from './localSnapshot.js';
+import { useBoardInput } from '../components/useBoardInput.js';
 
 const RESYNC_INTERVAL_MS = 900; // joiner polls this fast until first synced (handshake)
 const IDLE_RESYNC_MS = 6000; // once synced, joiner pulls this slowly while waiting on the opponent
@@ -90,8 +92,6 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   }
 
   const [view, setView] = useState(() => snapshotView(gameRef.current));
-  const [selection, setSelection] = useState({ selectedSquare: null, legalTargets: [] });
-  const [pendingPromotion, setPendingPromotion] = useState(null); // { from, to } while the picker is open
   const [orientation, setOrientation] = useState(selfColor);
   // `synced` mirrors whether the lazy init above actually restored a snapshot — not just whether
   // one exists in storage — so a corrupt snapshot can't present a fresh board as synced.
@@ -104,8 +104,6 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
 
   const sync = useCallback(() => {
     setView(snapshotView(gameRef.current));
-    setSelection({ selectedSquare: null, legalTargets: [] });
-    setPendingPromotion(null); // a state change supersedes an open promotion picker
   }, []);
 
   const buildSnapshot = useCallback(
@@ -129,10 +127,30 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       if (bump) seqRef.current += 1;
       const snapshot = buildSnapshot();
       saveSnapshot(gameId, snapshot);
+      
+      // Realtime Broadcast (fast, for live players)
       channelRef.current?.broadcastSnapshot(snapshot);
+      
+      // Database Persistence (reliable, for reloads/lobby)
+      if (isHost && isRealtimeConfigured && supabase) {
+        supabase
+          .from('games')
+          .update({
+            state: snapshot.state,
+            seq: snapshot.seq,
+            epoch: snapshot.epoch,
+            players: snapshot.players,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', gameId)
+          .then(({ error }) => {
+            if (error) console.error('Persistence error:', error);
+          });
+      }
+      
       sync();
     },
-    [buildSnapshot, gameId, sync],
+    [buildSnapshot, gameId, sync, isHost],
   );
 
   // Host: apply a remote move-intent to the authoritative game, then broadcast the new snapshot.
@@ -178,10 +196,36 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       }
       game.movePiece(intent.pieceMove);
       if (game.phase() === 'duck' && !game.result()) game.placeDuck(intent.duckSquare);
-      return broadcastAuthoritative(true);
+      broadcastAuthoritative(true);
     },
     [isHost, variant, selfId, broadcastAuthoritative],
   );
+
+  // Host: apply a remote resignation.
+  const applyResign = useCallback(
+    (intent) => {
+      if (!isHost || !intent?.by) return;
+      const game = gameRef.current;
+      if (game.result()) return; // already over
+      // Map the sender's id to their color. If unknown, they can't resign.
+      const color = Object.keys(playersRef.current).find((c) => playersRef.current[c] === intent.by);
+      if (!color) return;
+      game.resign(color);
+      broadcastAuthoritative(true);
+    },
+    [isHost, broadcastAuthoritative],
+  );
+
+  const resign = useCallback(() => {
+    const game = gameRef.current;
+    if (game.result()) return;
+    if (isHost) {
+      game.resign(selfColor);
+      broadcastAuthoritative(true);
+    } else {
+      channelRef.current?.sendResignIntent({ by: selfId });
+    }
+  }, [isHost, selfColor, selfId, broadcastAuthoritative]);
 
   // Host: answer a resync request. A requester strictly ahead of our (epoch, seq) — or one that
   // flagged itself `stuck` (its move-intents are going nowhere, so its optimistic board has likely
@@ -267,6 +311,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       ...(isHost
         ? {
             onMoveIntent: applyIntent,
+            onResignIntent: applyResign,
             onRequestSnapshot: answerSnapshotRequest,
             onPeerJoin: () => broadcastAuthoritative(false),
           }
@@ -359,22 +404,19 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     [canMovePiece, sync, commitTurn],
   );
 
-  const onPieceDrop = useCallback(
-    (from, to) => playPieceMove({ from, to, promotion: 'q' }),
-    [playPieceMove],
-  );
-
-  // Drag promotions arrive with from/to; the tap path's manual dialog doesn't, so fall back to
-  // the pending tap promotion. A dismissed dialog (no piece) just closes.
-  const onPromotionPieceSelect = useCallback(
-    (piece, from, to) => {
-      const source = from && to ? { from, to } : pendingPromotion;
-      setPendingPromotion(null);
-      if (!source || !piece) return false;
-      return playPieceMove({ ...source, promotion: piece[1].toLowerCase() });
-    },
-    [pendingPromotion, playPieceMove],
-  );
+  const {
+    selectedSquare,
+    legalTargets,
+    promotionTarget,
+    onPieceDrop,
+    onPromotionPieceSelect,
+    onSquareClick: onBaseSquareClick,
+  } = useBoardInput({
+    fen: view.fen,
+    canMove: canMovePiece,
+    attemptMove: playPieceMove,
+    listTargets: (square) => gameRef.current.legalPieceTargets(square),
+  });
 
   const onSquareClick = useCallback(
     (square) => {
@@ -384,28 +426,10 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
         if (game.legalDuckTargets().includes(square) && game.placeDuck(square).ok) commitTurn(square);
         return;
       }
-      if (!canMovePiece) return;
-      // Piece phase: tap-to-move selection (select a piece, then tap a destination).
-      if (selection.selectedSquare) {
-        if (square === selection.selectedSquare) {
-          setSelection({ selectedSquare: null, legalTargets: [] });
-          return;
-        }
-        // A pawn reaching its last rank opens the promotion picker — never silently queen a tap.
-        if (selection.legalTargets.includes(square) && isPromotion(view.fen, selection.selectedSquare, square)) {
-          setPendingPromotion({ from: selection.selectedSquare, to: square });
-          setSelection({ selectedSquare: null, legalTargets: [] });
-          return;
-        }
-        if (playPieceMove({ from: selection.selectedSquare, to: square, promotion: 'q' })) return;
-        const targets = game.legalPieceTargets(square);
-        setSelection(targets.length ? { selectedSquare: square, legalTargets: targets } : { selectedSquare: null, legalTargets: [] });
-        return;
-      }
-      const targets = game.legalPieceTargets(square);
-      if (targets.length) setSelection({ selectedSquare: square, legalTargets: targets });
+      // Piece phase: handled by the shared hook.
+      onBaseSquareClick(square);
     },
-    [view.phase, view.result, view.fen, isMyTurn, canMovePiece, selection.selectedSquare, selection.legalTargets, playPieceMove, commitTurn],
+    [view.phase, view.result, isMyTurn, commitTurn, onBaseSquareClick],
   );
 
   const newGame = useCallback(() => {
@@ -443,14 +467,15 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     history: view.history,
     lastMove: view.lastMove,
     captured: view.captured,
-    selectedSquare: selection.selectedSquare,
-    legalTargets: selection.legalTargets,
-    promotionTarget: pendingPromotion?.to ?? null,
+    selectedSquare,
+    legalTargets,
+    promotionTarget,
     arePiecesDraggable: canMovePiece,
     onPieceDrop,
     onPromotionPieceSelect,
     onSquareClick,
     newGame,
+    resign,
     takeBack: () => {}, // disabled online (cross-peer undo needs agreement) — see plan scope cuts
     flipBoard,
     // Online extras consumed by BoardPanel (duck overlay) and OnlineGamePanel.

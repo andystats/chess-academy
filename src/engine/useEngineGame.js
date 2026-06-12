@@ -5,6 +5,8 @@ import { capturedPieces, gameResult } from './gameState.js';
 import { useStockfish } from './useStockfish.js';
 import { levelConfig } from './levels.js';
 
+import { useBoardInput } from '../components/useBoardInput.js';
+
 const DEFAULT_WRONG = 'Not quite — look for the move the lesson points to and try again.';
 
 // React wrapper for free play / scenario play against Stockfish. Mirrors useChessLesson: the live
@@ -24,9 +26,6 @@ const initialState = {
   lastMove: null,
   captured: { white: [], black: [] },
   evaluation: null,
-  selectedSquare: null,
-  legalTargets: [],
-  pendingPromotion: null, // { from, to } while the tap-path promotion picker is open
   // Scenarios start in a 'guided' phase where the player's key move is checked against the
   // authored solution; once it's right (solved), play continues freely against the engine.
   phase: 'free', // 'guided' | 'free'
@@ -49,9 +48,6 @@ function reducer(state, action) {
         phase: action.phase,
         solved: false,
         feedback: null,
-        selectedSquare: null,
-        legalTargets: [],
-        pendingPromotion: null,
       };
     case 'sync': // a move was committed; feedback is preserved so the "why" stays on screen
       return {
@@ -63,9 +59,6 @@ function reducer(state, action) {
         evaluation: action.evaluation ?? state.evaluation,
         status: action.status,
         result: action.result ?? null,
-        selectedSquare: null,
-        legalTargets: [],
-        pendingPromotion: null,
       };
     case 'guided-correct':
       return {
@@ -80,20 +73,11 @@ function reducer(state, action) {
         phase: 'free',
         solved: true,
         feedback: { kind: 'correct', text: action.text },
-        selectedSquare: null,
-        legalTargets: [],
-        pendingPromotion: null,
       };
     case 'guided-wrong': // the live game is untouched; only the feedback changes
-      return { ...state, feedback: { kind: 'wrong', text: action.text }, selectedSquare: null, legalTargets: [], pendingPromotion: null };
+      return { ...state, feedback: { kind: 'wrong', text: action.text } };
     case 'thinking':
-      return { ...state, status: 'engine-thinking', selectedSquare: null, legalTargets: [], pendingPromotion: null };
-    case 'select':
-      return { ...state, selectedSquare: action.square, legalTargets: action.targets, pendingPromotion: null };
-    case 'deselect':
-      return { ...state, selectedSquare: null, legalTargets: [], pendingPromotion: null };
-    case 'prompt-promotion':
-      return { ...state, pendingPromotion: { from: action.from, to: action.to } };
+      return { ...state, status: 'engine-thinking' };
     default:
       return state;
   }
@@ -253,51 +237,21 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
     [state.status, state.phase, guided, attemptGuidedMove, scheduleEngineMove],
   );
 
-  const onPieceDrop = useCallback(
-    (from, to) => applyPlayerMove({ from, to, promotion: 'q' }),
-    [applyPlayerMove],
-  );
+  const arePiecesDraggable = state.status === 'player-turn';
 
-  // Drag promotions arrive with from/to; the tap path's manual dialog doesn't, so fall back to
-  // the pending tap promotion. A dismissed dialog (no piece) just closes.
-  const onPromotionPieceSelect = useCallback(
-    (piece, from, to) => {
-      const source = from && to ? { from, to } : state.pendingPromotion;
-      if (state.pendingPromotion) dispatch({ type: 'deselect' });
-      if (!source || !piece) return false;
-      return applyPlayerMove({ ...source, promotion: piece[1].toLowerCase() });
-    },
-    [state.pendingPromotion, applyPlayerMove],
-  );
-
-  // Tap-to-move: first tap selects + highlights legal targets, second tap moves.
-  const onSquareClick = useCallback(
-    (square) => {
-      if (state.status !== 'player-turn') return;
-      const game = gameRef.current;
-      if (state.selectedSquare) {
-        if (square === state.selectedSquare) {
-          dispatch({ type: 'deselect' });
-          return;
-        }
-        // A pawn reaching its last rank opens the promotion picker — never silently queen a tap.
-        if (state.legalTargets.includes(square) && isPromotion(state.fen, state.selectedSquare, square)) {
-          dispatch({ type: 'prompt-promotion', from: state.selectedSquare, to: square });
-          return;
-        }
-        const moved = applyPlayerMove({ from: state.selectedSquare, to: square, promotion: 'q' });
-        if (!moved) {
-          const targets = legalTargets(game, square);
-          if (targets.length) dispatch({ type: 'select', square, targets });
-          else dispatch({ type: 'deselect' });
-        }
-        return;
-      }
-      const targets = legalTargets(game, square);
-      if (targets.length) dispatch({ type: 'select', square, targets });
-    },
-    [state.status, state.selectedSquare, state.legalTargets, state.fen, applyPlayerMove],
-  );
+  const {
+    selectedSquare,
+    legalTargets,
+    promotionTarget,
+    onPieceDrop,
+    onPromotionPieceSelect,
+    onSquareClick,
+  } = useBoardInput({
+    fen: state.fen,
+    canMove: arePiecesDraggable,
+    attemptMove: applyPlayerMove,
+    listTargets: (square) => legalTargets(gameRef.current, square),
+  });
 
   const newGame = useCallback(() => {
     runIdRef.current += 1; // drop any in-flight reply before the reset effect runs
@@ -348,8 +302,6 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
     setStrength(skillLevel);
   }, [skillLevel, setStrength]);
 
-  const arePiecesDraggable = state.status === 'player-turn';
-
   return {
     fen: state.fen,
     orientation,
@@ -363,9 +315,9 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
     lastMove: state.lastMove,
     captured: state.captured,
     evaluation: state.evaluation,
-    selectedSquare: state.selectedSquare,
-    legalTargets: state.legalTargets,
-    promotionTarget: state.pendingPromotion?.to ?? null,
+    selectedSquare,
+    legalTargets,
+    promotionTarget,
     arePiecesDraggable,
     engineReady: ready,
     engineError: error,

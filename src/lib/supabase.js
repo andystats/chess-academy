@@ -1,7 +1,10 @@
-// Supabase client for the online arena. We use ONLY Realtime Broadcast + Presence on a public channel
-// (no database, no Auth, no RLS) — see docs/future-multiplayer-and-duck-chess.md. The anon key is
-// public by design (it ships in the client bundle); security for a two-friends game comes from the
-// game id in the invite link, not from hiding the key.
+// Supabase client for the online arena. We use:
+// 1. Realtime Broadcast + Presence for "live" game sync.
+// 2. Database (Postgres) for the game lobby and persistence.
+// 3. Auth for user profiles and seat locking.
+//
+// The anon key is public by design (it ships in the client bundle); security comes from
+// Row-Level Security (RLS) policies defined in supabase/schema.sql.
 //
 // Both env vars are optional: when they're absent (local dev without a project, CI, unit tests) the
 // client is null and `isRealtimeConfigured` is false, so the online UI degrades to a friendly notice
