@@ -15,9 +15,11 @@
 //     any snapshot with a higher seq. Because snapshots are full state, a missed message self-heals
 //     on the next one — there is no move-log replay and no per-message gap math.
 // A full turn is bundled as {pieceMove, duckSquare} so duck placement and the piece move sync together.
+// A resignation rides snapshots as an optional `result` field — engine state (a FEN superset) has no
+// home for it, so the controller stores it and re-imposes it on the rebuilt instance on both ends.
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { isPromotion, opposite } from '../lesson/moves.js';
+import { opposite } from '../lesson/moves.js';
 import { isSquare } from '../engine/duck/board.js';
 import { createVariantGame, lastMoveOf } from './rules.js';
 import { useGameChannel } from './useGameChannel.js';
@@ -35,6 +37,14 @@ const STUCK_INTENT_RETRIES = 3; // then assume same-seq divergence and ask for a
 // persisted state for the id). Timestamp-based so a host that lost its storage still mints an epoch
 // above whatever a joiner holds; the max() keeps repeated mints monotonic within one millisecond.
 const mintEpoch = (current) => Math.max(Date.now(), (current || 0) + 1);
+
+// Snapshot/storage `result` arrives off the public channel — accept only a sane shape, and never
+// let garbage END a game that the engine says is still running (drop it instead).
+function sanitizeResult(result) {
+  if (!result || typeof result !== 'object') return null;
+  if (!['white', 'black', 'draw'].includes(result.winner)) return null;
+  return { winner: result.winner, reason: typeof result.reason === 'string' ? result.reason.slice(0, 60) : 'Resigned' };
+}
 
 function snapshotView(game) {
   const phase = game.phase();
@@ -61,6 +71,8 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   // STUCK_INTENT_RETRIES silent retries it is dropped in favour of an epoch heal (see below).
   const pendingIntentRef = useRef(null);
   const intentRetriesRef = useRef(0);
+  // Resignation override — see the header. null while the game is live; {winner, reason} after.
+  const resignedRef = useRef(null);
 
   // Lazily build the starting rules instance: host resumes from its persisted snapshot on reload;
   // the joiner starts from any persisted snapshot and otherwise waits for the host's first snapshot.
@@ -76,6 +88,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
         // A host resuming a pre-epoch snapshot starts a fresh instance so joiners follow it.
         epochRef.current = persisted.epoch || (isHost ? mintEpoch(0) : 0);
         if (persisted.players) playersRef.current = persisted.players;
+        resignedRef.current = sanitizeResult(persisted.result);
         restoredRef.current = true;
       } catch {
         gameRef.current = null; // corrupt snapshot — fall through to the fresh-game path
@@ -91,7 +104,14 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     }
   }
 
-  const [view, setView] = useState(() => snapshotView(gameRef.current));
+  // The view's result is the engine-derived one unless a resignation override is present.
+  const composeView = useCallback(() => {
+    const next = snapshotView(gameRef.current);
+    if (!next.result && resignedRef.current) next.result = resignedRef.current;
+    return next;
+  }, []);
+
+  const [view, setView] = useState(composeView);
   const [orientation, setOrientation] = useState(selfColor);
   // `synced` mirrors whether the lazy init above actually restored a snapshot — not just whether
   // one exists in storage — so a corrupt snapshot can't present a fresh board as synced.
@@ -103,8 +123,8 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   const [seatTaken, setSeatTaken] = useState(false);
 
   const sync = useCallback(() => {
-    setView(snapshotView(gameRef.current));
-  }, []);
+    setView(composeView());
+  }, [composeView]);
 
   const buildSnapshot = useCallback(
     () => ({
@@ -114,6 +134,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       hostColor,
       players: { ...playersRef.current },
       state: gameRef.current.serialize(),
+      result: resignedRef.current, // resignation override only; board results re-derive from state
     }),
     [variant, hostColor],
   );
@@ -157,6 +178,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
   const applyIntent = useCallback(
     (intent) => {
       if (!isHost || !intent?.pieceMove) return;
+      if (resignedRef.current) return; // a resigned game accepts no further moves
       // Shape-check the payload before anything else: the channel is public, so a malformed intent
       // is ignored outright — it must never crash the host or reach the engine (threat model 3.3).
       const { from, to, promotion } = intent.pieceMove;
@@ -201,28 +223,28 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     [isHost, variant, selfId, broadcastAuthoritative],
   );
 
-  // Host: apply a remote resignation.
+  // Host: apply a remote resignation. The sender's id must hold a seat (same trust-by-seat rule as
+  // moves), and the host's own seat can only resign locally — a wire intent can never resign it.
   const applyResign = useCallback(
     (intent) => {
       if (!isHost || !intent?.by) return;
-      const game = gameRef.current;
-      if (game.result()) return; // already over
-      // Map the sender's id to their color. If unknown, they can't resign.
+      if (resignedRef.current || gameRef.current.result()) return; // already over
       const color = Object.keys(playersRef.current).find((c) => playersRef.current[c] === intent.by);
-      if (!color) return;
-      game.resign(color);
+      if (!color || playersRef.current[color] === selfId) return;
+      resignedRef.current = gameRef.current.resign(color);
       broadcastAuthoritative(true);
     },
-    [isHost, broadcastAuthoritative],
+    [isHost, selfId, broadcastAuthoritative],
   );
 
   const resign = useCallback(() => {
     const game = gameRef.current;
-    if (game.result()) return;
+    if (resignedRef.current || game.result()) return;
     if (isHost) {
-      game.resign(selfColor);
+      resignedRef.current = game.resign(selfColor);
       broadcastAuthoritative(true);
     } else {
+      // No optimistic end: the host's bumped snapshot (carrying `result`) confirms it for both sides.
       channelRef.current?.sendResignIntent({ by: selfId });
     }
   }, [isHost, selfColor, selfId, broadcastAuthoritative]);
@@ -278,6 +300,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       if (snapshot.players && typeof snapshot.players === 'object') {
         playersRef.current = { white: snapshot.players.white ?? null, black: snapshot.players.black ?? null };
       }
+      resignedRef.current = sanitizeResult(snapshot.result); // absent on a live game — clears any stale override
       gameRef.current = game;
       saveSnapshot(gameId, snapshot);
       setSynced(true);
@@ -436,6 +459,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     if (!isHost) return;
     gameRef.current = createVariantGame(variant);
     pendingPieceMoveRef.current = null;
+    resignedRef.current = null;
     // New instance: a fresh epoch outranks any seq the joiner reached, so the reset board is
     // adopted; seq restarts within the new epoch.
     epochRef.current = mintEpoch(epochRef.current);

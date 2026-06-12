@@ -152,9 +152,6 @@ export function createDuckGame(serialized) {
     legalDuckTargets: () => legalDuckTargets(state),
     movePiece,
     placeDuck,
-    resign: (color) => {
-      state.result = { winner: color === 'white' ? 'black' : 'white', reason: 'Resigned' };
-    },
     result,
     history: () => turns.map((turn) => ({ ...turn })),
     captured: () => capturedFromBoard(state.board),

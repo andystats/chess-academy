@@ -53,10 +53,9 @@ export function createDuckChessGame(serialized) {
   const game = createDuckGame(serialized);
   return {
     ...game,
-    resign: (color) => {
-      game.resign(color);
-      return game.result();
-    },
+    // Like the standard adapter: resign just computes the result. The engine can't store it (the
+    // wire format has no result field), so the online controller keeps it and ships it on snapshots.
+    resign: (color) => ({ winner: color === 'white' ? 'black' : 'white', reason: 'Resigned' }),
   };
 }
 

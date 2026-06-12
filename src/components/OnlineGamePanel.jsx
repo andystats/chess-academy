@@ -7,6 +7,30 @@ import { VARIANTS } from '../online/rules.js';
 
 // Control panel for an online game: a compact header + connection/turn status, captured pieces, a
 // move list, and the chat box.
+
+// Each online history entry is one player's completed turn — an OBJECT {pieceMove, san, duck}, not
+// a SAN string — so the move list always needs this formatter (rendering the raw entry crashes React).
+function moveLabel(entry) {
+  if (!entry) return '';
+  return entry.duck ? `${entry.san} 🦆${entry.duck}` : entry.san;
+}
+
+function statusText(game) {
+  const { connection, result, currentTurn, selfColor, phase, isHost } = game;
+  if (result) return resultText(result);
+  if (connection.status === 'unconfigured') return 'Online play is not configured';
+  if (connection.status === 'connecting') return 'Connecting…';
+  if (connection.status === 'reconnecting') return 'Reconnecting…';
+  if (connection.status === 'error') return 'Connection lost — try Resync';
+  if (isHost && connection.hostPresent) return 'Game already open in another tab';
+  if (connection.seatTaken) return 'Seat taken — watching as spectator';
+  if (!connection.synced || !connection.liveSynced) return 'Waiting for host…';
+  if (!connection.peerPresent) return 'Waiting for opponent…';
+  const myTurn = currentTurn === selfColor;
+  if (phase === 'duck' && myTurn) return 'Place the duck 🦆';
+  return myTurn ? 'Your move' : "Opponent's move";
+}
+
 export default function OnlineGamePanel({ game }) {
   const [showCopySuccess, setShowCopySuccess] = useState(false);
 
@@ -17,7 +41,7 @@ export default function OnlineGamePanel({ game }) {
   };
 
   const status = game.connection.status;
-  const pairs = pairMoves(game.history);
+  const pairs = pairMoves(game.history, moveLabel);
 
   return (
     <div className="flex h-full flex-col gap-6 p-4 lg:p-0">
@@ -53,7 +77,7 @@ export default function OnlineGamePanel({ game }) {
           Turn status
         </p>
         <p className="font-display text-2xl font-bold uppercase tracking-tight">
-          {game.result ? resultText(game.result) : `${game.currentTurn} to move`}
+          {statusText(game)}
         </p>
         {game.connection.seatTaken && (
           <p className="mt-1 text-xs font-bold text-red-500 underline decoration-red-500/30 underline-offset-2">
@@ -63,6 +87,12 @@ export default function OnlineGamePanel({ game }) {
       </div>
 
       <div className="flex-1 space-y-6 overflow-y-auto pr-1">
+        {!game.result && status === 'connected' && game.connection.synced && !game.connection.peerPresent && (
+          <p className="text-xs leading-5 text-gray-500">
+            Your opponent isn&rsquo;t connected right now. Keep this tab open — the game resumes the
+            moment they return — or re-send them the invite link above.
+          </p>
+        )}
         <CapturedPieces captured={game.captured} />
         <ChatBox messages={game.messages} onSend={game.sendChat} selfColor={game.selfColor} />
       </div>

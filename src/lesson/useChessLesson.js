@@ -1,6 +1,6 @@
 import { useReducer, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Chess } from 'chess.js';
-import { acceptableLans, moveToLan, applyMove, legalTargets, isPromotion, START_FEN } from './moves.js';
+import { acceptableLans, moveToLan, applyMove, legalTargets, START_FEN } from './moves.js';
 import {
   normalizeStep,
   expectedSansAt,

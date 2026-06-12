@@ -6,6 +6,7 @@ import RealtimeNotConfigured from '../components/RealtimeNotConfigured.jsx';
 import SegmentedControl from '../components/ui/SegmentedControl.jsx';
 import { isRealtimeConfigured, supabase } from '../lib/supabase.js';
 import { useProfile } from '../profile/ProfileContext.jsx';
+import { ensureSessionAndProfile } from '../online/lobbyApi.js';
 import { VARIANTS } from '../online/rules.js';
 
 const VARIANT_OPTIONS = Object.entries(VARIANTS).map(([value, { pickerLabel, sublabel }]) => ({
@@ -28,36 +29,26 @@ export default function OnlineLobbyPage() {
   const [loading, setLoading] = useState(isRealtimeConfigured);
   const [creating, setCreating] = useState(false);
   const [user, setUser] = useState(null);
+  const [error, setError] = useState(null); // { context, message, hint } — shown above the lobby grid
 
-  // 1. Authenticate and Sync Profile
+  // 1. Authenticate and sync profile. The profiles row is mandatory, not cosmetic: games.host_id
+  // is a foreign key into profiles, so without it Create Match is rejected outright.
   useEffect(() => {
     if (!isRealtimeConfigured) return;
 
     async function initLobby() {
-      const { data: { session } } = await supabase.auth.getSession();
-      let currentUser = session?.user;
-
-      if (!currentUser) {
-        const { data, error } = await supabase.auth.signInAnonymously();
-        if (error) {
-          console.error('Auth error:', error);
+      const { user: sessionUser, error: sessionError } = await ensureSessionAndProfile({
+        username: activeProfile?.name,
+        avatar: activeProfile?.avatar,
+      });
+      setUser(sessionUser);
+      if (sessionError) {
+        console.error('Lobby sign-in error:', sessionError);
+        setError({ context: 'Lobby sign-in failed', ...sessionError });
+        if (!sessionUser) {
           setLoading(false);
           return;
         }
-        currentUser = data.user;
-      }
-      setUser(currentUser);
-
-      // Upsert profile based on local activeProfile
-      if (activeProfile && currentUser) {
-        await supabase
-          .from('profiles')
-          .upsert({
-            id: currentUser.id,
-            username: activeProfile.name || 'Anonymous',
-            avatar_url: activeProfile.avatar || null,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'id' });
       }
 
       fetchGames();
@@ -77,23 +68,29 @@ export default function OnlineLobbyPage() {
   }, [activeProfile]);
 
   async function fetchGames() {
-    const { data, error } = await supabase
+    const { data, error: listError } = await supabase
       .from('games')
       .select('*, host:host_id(username, avatar_url)')
       .eq('status', 'waiting')
       .order('created_at', { ascending: false });
 
-    if (!error) setGames(data || []);
+    if (listError) {
+      console.error('Lobby list error:', listError);
+      setError({ context: 'Could not load open matches', message: listError.message, hint: listError.hint });
+    } else {
+      setGames(data || []);
+    }
     setLoading(false);
   }
 
   const createGame = async () => {
     if (!user) return;
     setCreating(true);
-    
+    setError(null);
+
     const initialState = VARIANTS[variant].create().serialize();
 
-    const { data, error } = await supabase
+    const { data, error: createError } = await supabase
       .from('games')
       .insert({
         variant,
@@ -106,7 +103,9 @@ export default function OnlineLobbyPage() {
       .select()
       .single();
 
-    if (error) {
+    if (createError) {
+      console.error('Create match error:', createError);
+      setError({ context: 'Create match failed', message: createError.message, hint: createError.hint });
       setCreating(false);
     } else {
       navigate(`/play/${data.id}?v=${variant}&host=${hostColor[0]}`);
@@ -115,17 +114,26 @@ export default function OnlineLobbyPage() {
 
   const joinGame = async (game) => {
     if (!user) return;
-    
-    const { error } = await supabase
+    setError(null);
+
+    // The status guard makes this a compare-and-swap: only one joiner can win the seat.
+    const { data, error: joinError } = await supabase
       .from('games')
       .update({
         joiner_id: user.id,
         status: 'active',
       })
       .eq('id', game.id)
-      .eq('status', 'waiting');
+      .eq('status', 'waiting')
+      .select();
 
-    if (!error) {
+    if (joinError) {
+      console.error('Join match error:', joinError);
+      setError({ context: 'Join match failed', message: joinError.message, hint: joinError.hint });
+    } else if (!data?.length) {
+      setError({ context: 'Join match failed', message: 'That seat was just taken. Pick another match.' });
+      fetchGames();
+    } else {
       navigate(`/play/${game.id}?v=${game.variant}&host=${game.host_color[0]}`);
     }
   };
@@ -161,6 +169,16 @@ export default function OnlineLobbyPage() {
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em]">Entering Lobby Room…</p>
           </div>
         ) : (
+          <>
+          {error && (
+            <div className="mt-10 rounded-2xl border-2 border-red-200 bg-red-50 p-5 text-left">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-red-600">
+                {error.context}
+              </p>
+              <p className="mt-2 text-sm font-bold text-red-700">{error.message}</p>
+              {error.hint && <p className="mt-1 text-sm text-red-600/80">{error.hint}</p>}
+            </div>
+          )}
           <div className="mt-16 grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-start">
             {/* Game List */}
             <div className="lg:col-span-8">
@@ -254,7 +272,7 @@ export default function OnlineLobbyPage() {
                     <button
                       type="button"
                       onClick={createGame}
-                      disabled={creating}
+                      disabled={creating || !user}
                       className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl bg-gray-900 px-6 py-4 font-display text-sm font-bold uppercase tracking-widest text-white transition-all hover:bg-brand-600 disabled:opacity-50"
                     >
                       {creating ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} className="transition-transform group-hover:rotate-90" />}
@@ -271,6 +289,7 @@ export default function OnlineLobbyPage() {
               </div>
             </div>
           </div>
+          </>
         )}
       </section>
     </div>

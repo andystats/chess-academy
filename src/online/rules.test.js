@@ -11,10 +11,22 @@ const INTERFACE = [
   'legalDuckTargets',
   'movePiece',
   'placeDuck',
+  'resign',
   'result',
   'history',
   'captured',
 ];
+
+describe('resign', () => {
+  it('computes the opponent as winner for both variants without mutating game state', () => {
+    for (const variant of ['standard', 'duck']) {
+      const game = createVariantGame(variant);
+      expect(game.resign('white')).toEqual({ winner: 'black', reason: 'Resigned' });
+      expect(game.resign('black')).toEqual({ winner: 'white', reason: 'Resigned' });
+      expect(game.result()).toBeNull(); // storage is the online controller's job, not the engine's
+    }
+  });
+});
 
 describe('rules adapter — shape parity', () => {
   it('exposes the same interface for both variants', () => {

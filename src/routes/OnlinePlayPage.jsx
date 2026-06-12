@@ -5,6 +5,7 @@ import EngineGameView from '../components/EngineGameView.jsx';
 import OnlineGamePanel from '../components/OnlineGamePanel.jsx';
 import { useOnlineGame } from '../online/useOnlineGame.js';
 import { loadHostConfig, selfId } from '../online/localSnapshot.js';
+import { ensureSessionAndProfile } from '../online/lobbyApi.js';
 import { isRealtimeConfigured, supabase } from '../lib/supabase.js';
 import { Loader2 } from 'lucide-react';
 
@@ -13,21 +14,15 @@ export default function OnlinePlayPage() {
   const [searchParams] = useSearchParams();
   const [dbConfig, setDbConfig] = useState(null);
   const [loading, setLoading] = useState(isRealtimeConfigured);
-  const [user, setUser] = useState(null);
 
-  // 1. Authenticate (for direct links) and Fetch DB Config
+  // 1. Authenticate (for direct links) and fetch the DB config. The profiles row matters here
+  // too: the auto-join below writes joiner_id, a foreign key into profiles.
   useEffect(() => {
     if (!isRealtimeConfigured) return;
 
     async function initPlay() {
-      const { data: { session } } = await supabase.auth.getSession();
-      let currentUser = session?.user;
-
-      if (!currentUser) {
-        const { data, error } = await supabase.auth.signInAnonymously();
-        if (!error) currentUser = data.user;
-      }
-      setUser(currentUser);
+      const { user, error: sessionError } = await ensureSessionAndProfile();
+      if (sessionError) console.error('Play session error:', sessionError);
 
       const { data, error } = await supabase
         .from('games')
@@ -36,23 +31,28 @@ export default function OnlinePlayPage() {
         .single();
 
       if (!error && data) {
-        const isHost = data.host_id === currentUser?.id;
+        const isHost = data.host_id === user?.id;
         setDbConfig({
           variant: data.variant,
           hostColor: data.host_color,
           isHost,
         });
 
-        // Auto-join if this is a waiting game and we are not the host
-        if (!isHost && data.status === 'waiting' && !data.joiner_id && currentUser) {
-          await supabase
+        // Auto-join if this is a waiting game and we are not the host. The realtime channel
+        // still carries the game either way; a failed claim only leaves the lobby row open.
+        if (!isHost && data.status === 'waiting' && !data.joiner_id && user) {
+          const { error: joinError } = await supabase
             .from('games')
             .update({
-              joiner_id: currentUser.id,
+              joiner_id: user.id,
               status: 'active',
             })
-            .eq('id', gameId);
+            .eq('id', gameId)
+            .eq('status', 'waiting');
+          if (joinError) console.error('Auto-join error:', joinError);
         }
+      } else if (error) {
+        console.error('Game lookup error:', error); // fall back to URL-param config below
       }
       setLoading(false);
     }

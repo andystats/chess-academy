@@ -1,6 +1,6 @@
 import { useReducer, useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import { Chess } from 'chess.js';
-import { applyMove, legalTargets, opposite, acceptableLans, compileToLan, moveToLan, isPromotion, SIDE_CHAR, START_FEN } from '../lesson/moves.js';
+import { applyMove, opposite, acceptableLans, compileToLan, moveToLan, SIDE_CHAR, START_FEN } from '../lesson/moves.js';
 import { capturedPieces, gameResult } from './gameState.js';
 import { useStockfish } from './useStockfish.js';
 import { levelConfig } from './levels.js';

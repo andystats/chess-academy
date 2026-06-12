@@ -14,6 +14,7 @@ const { transport } = vi.hoisted(() => ({
     hostPresent: false,
     broadcastSnapshot: vi.fn(),
     sendMoveIntent: vi.fn(),
+    sendResignIntent: vi.fn(),
     requestSnapshot: vi.fn(),
     sendChat: vi.fn(),
     reconnect: vi.fn(),
@@ -45,6 +46,7 @@ vi.mock('./useGameChannel.js', () => ({
       reconnect: transport.reconnect,
       broadcastSnapshot: transport.broadcastSnapshot,
       sendMoveIntent: transport.sendMoveIntent,
+      sendResignIntent: transport.sendResignIntent,
       requestSnapshot: transport.requestSnapshot,
       sendChat: transport.sendChat,
     };
@@ -68,6 +70,7 @@ beforeEach(() => {
   transport.hostPresent = false;
   transport.broadcastSnapshot.mockClear();
   transport.sendMoveIntent.mockClear();
+  transport.sendResignIntent.mockClear();
   transport.requestSnapshot.mockClear();
   transport.sendChat.mockClear();
   transport.reconnect.mockClear();
@@ -519,5 +522,70 @@ describe('chat', () => {
     });
     expect(result.current.messages).toHaveLength(200); // bounded against a flood
     expect(result.current.messages.at(-1).text).toBe('m249'); // newest kept
+  });
+});
+
+describe('resign', () => {
+  const hostProps = { gameId: 'rs1', variant: 'standard', selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
+  const joinerProps = { gameId: 'rs2', variant: 'standard', selfColor: 'black', isHost: false, hostColor: 'white', selfId: 'joiner' };
+
+  it('host resign ends the game locally and ships the result on the snapshot', () => {
+    const { result } = renderHook(() => useOnlineGame(hostProps));
+    act(() => result.current.resign());
+    expect(result.current.result).toEqual({ winner: 'black', reason: 'Resigned' });
+    expect(result.current.arePiecesDraggable).toBe(false);
+    expect(transport.broadcastSnapshot.mock.calls.at(-1)[0].result).toEqual({ winner: 'black', reason: 'Resigned' });
+
+    const broadcasts = transport.broadcastSnapshot.mock.calls.length;
+    act(() => result.current.resign());
+    expect(transport.broadcastSnapshot.mock.calls.length).toBe(broadcasts); // resigning twice is a no-op
+  });
+
+  it('joiner resign sends an intent (no optimistic end) and adopts the outcome from the snapshot', () => {
+    const { result } = renderHook(() => useOnlineGame(joinerProps));
+    act(() => result.current.resign());
+    expect(transport.sendResignIntent).toHaveBeenCalledWith({ by: 'joiner' });
+    expect(result.current.result).toBeNull(); // the host's snapshot is what ends it
+
+    act(() => transport.handlers.onSnapshot({ epoch: 1, seq: 2, variant: 'standard', hostColor: 'white', players: { white: 'host', black: 'joiner' }, state: fenAfter('standard'), result: { winner: 'white', reason: 'Resigned' } }));
+    expect(result.current.result).toEqual({ winner: 'white', reason: 'Resigned' });
+    expect(result.current.arePiecesDraggable).toBe(false);
+  });
+
+  it("host applies a seated joiner's resignation but never one for an unknown id or its own seat", () => {
+    const { result } = renderHook(() => useOnlineGame(hostProps));
+    act(() => result.current.onPieceDrop('e2', 'e4'));
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: { from: 'e7', to: 'e5', promotion: 'q' }, duckSquare: null })); // claims black
+
+    act(() => transport.handlers.onResignIntent({ by: 'stranger' })); // holds no seat
+    act(() => transport.handlers.onResignIntent({ by: 'host' })); // the host's seat resigns locally only
+    expect(result.current.result).toBeNull();
+
+    act(() => transport.handlers.onResignIntent({ by: 'joiner' }));
+    expect(result.current.result).toEqual({ winner: 'white', reason: 'Resigned' });
+
+    const fen = result.current.fen;
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: { from: 'g8', to: 'f6', promotion: null }, duckSquare: null }));
+    expect(result.current.fen).toBe(fen); // a resigned game accepts no further moves
+  });
+
+  it('drops garbage results from the wire instead of ending the game', () => {
+    const { result } = renderHook(() => useOnlineGame(joinerProps));
+    const players = { white: 'host', black: 'joiner' };
+    act(() => transport.handlers.onSnapshot({ epoch: 1, seq: 2, variant: 'standard', hostColor: 'white', players, state: fenAfter('standard'), result: { winner: 'purple', reason: 'hax' } }));
+    expect(result.current.result).toBeNull(); // unknown winner → stripped, play continues
+
+    act(() => transport.handlers.onSnapshot({ epoch: 1, seq: 3, variant: 'standard', hostColor: 'white', players, state: fenAfter('standard'), result: { winner: 'white', reason: { evil: true } } }));
+    expect(result.current.result).toEqual({ winner: 'white', reason: 'Resigned' }); // non-string reason defaulted
+  });
+
+  it('newGame clears a resignation', () => {
+    const { result } = renderHook(() => useOnlineGame(hostProps));
+    act(() => result.current.resign());
+    expect(result.current.result).not.toBeNull();
+
+    act(() => result.current.newGame());
+    expect(result.current.result).toBeNull();
+    expect(transport.broadcastSnapshot.mock.calls.at(-1)[0].result).toBeNull();
   });
 });
