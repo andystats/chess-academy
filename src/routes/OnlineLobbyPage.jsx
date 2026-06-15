@@ -7,6 +7,7 @@ import SegmentedControl from '../components/ui/SegmentedControl.jsx';
 import { isRealtimeConfigured, supabase } from '../lib/supabase.js';
 import { useProfile } from '../profile/ProfileContext.jsx';
 import { ensureSessionAndProfile, loadDisplayName, saveDisplayName } from '../online/lobbyApi.js';
+import { newGameId, saveHostConfig } from '../online/localSnapshot.js';
 import { VARIANTS } from '../online/rules.js';
 
 const VARIANT_OPTIONS = Object.entries(VARIANTS).map(([value, { pickerLabel, sublabel }]) => ({
@@ -24,6 +25,10 @@ const COLOR_OPTIONS = [
 // entries simply age out of the open list; hosts can also cancel their own match explicitly.
 const WAITING_SHELF_LIFE_MS = 60 * 60 * 1000; // open matches show for 1 hour
 const MY_GAMES_WINDOW_MS = 24 * 60 * 60 * 1000; // your own games stay rejoinable for a day
+
+function isMissingVariantEnum(error) {
+  return error?.code === '22P02' && error?.message?.includes('chess_variant');
+}
 
 export default function OnlineLobbyPage() {
   const navigate = useNavigate();
@@ -134,6 +139,11 @@ export default function OnlineLobbyPage() {
     }
 
     const initialState = VARIANTS[variant].create().serialize();
+    const openInviteOnlyGame = () => {
+      const id = newGameId();
+      saveHostConfig(id, { variant, hostColor });
+      navigate(`/play/${id}?v=${variant}&host=${hostColor[0]}`);
+    };
 
     const { data, error: createError } = await supabase
       .from('games')
@@ -149,6 +159,10 @@ export default function OnlineLobbyPage() {
       .single();
 
     if (createError) {
+      if (variant === 'duck-decay' && isMissingVariantEnum(createError)) {
+        openInviteOnlyGame();
+        return;
+      }
       console.error('Create match error:', createError);
       setError({ context: 'Create match failed', message: createError.message, hint: createError.hint });
       setCreating(false);
