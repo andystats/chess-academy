@@ -411,7 +411,13 @@ export default function OnlineLobbyPage() {
                       <label className="mb-3 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
                         Select Variant
                       </label>
-                      <SegmentedControl options={VARIANT_OPTIONS} value={variant} onChange={setVariant} buttonClassName="flex-1" />
+                      <SegmentedControl
+                        options={VARIANT_OPTIONS}
+                        value={variant}
+                        onChange={setVariant}
+                        className="grid grid-cols-1 gap-2"
+                        buttonClassName="w-full items-start px-4 py-3 text-left"
+                      />
                     </div>
                     
                     <div>

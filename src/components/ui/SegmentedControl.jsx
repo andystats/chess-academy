@@ -2,9 +2,9 @@ import clsx from 'clsx';
 
 // A row of mutually-exclusive options rendered as the tao "filled vs paper" toggle. Shared by the
 // engine strength dial and the free-play side picker. `options` is [{ value, label, sublabel? }].
-export default function SegmentedControl({ options, value, onChange, className, buttonClassName }) {
+export default function SegmentedControl({ options, value, onChange, className = 'flex gap-2', buttonClassName }) {
   return (
-    <div className={clsx('flex gap-2', className)}>
+    <div className={className}>
       {options.map((option) => (
         <button
           key={option.value}

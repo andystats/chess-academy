@@ -34,8 +34,12 @@ const DUCK_TARGET_STYLE = {
   background: 'radial-gradient(circle, rgba(234,179,8,0.55) 24%, transparent 26%)',
 };
 const DECAY_STYLE = {
-  backgroundColor: 'rgba(17, 24, 39, 0.22)',
-  backgroundImage: 'repeating-linear-gradient(135deg, rgba(17,24,39,0.34) 0 5px, rgba(17,24,39,0.1) 5px 10px)',
+  animation: 'duck-decay-pulse 1.4s ease-in-out infinite',
+  backgroundColor: 'rgba(17, 24, 39, 0.28)',
+  backgroundImage:
+    'radial-gradient(circle at 50% 50%, rgba(250,204,21,0.52) 0 18%, transparent 20%), repeating-linear-gradient(135deg, rgba(17,24,39,0.42) 0 5px, rgba(17,24,39,0.12) 5px 10px)',
+  backgroundSize: '100% 100%, auto',
+  boxShadow: 'inset 0 0 0 3px rgba(17,24,39,0.28), inset 0 0 24px rgba(234,179,8,0.38)',
 };
 
 const BOARD_THEMES = {
