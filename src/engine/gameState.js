@@ -35,8 +35,8 @@ const INITIAL_COUNTS = { p: 8, n: 2, b: 2, r: 2, q: 1 };
 /**
  * Captured pieces derived from a flat 64-cell board array, in the same shape as `capturedPieces`.
  * Snapshot-safe — a game rebuilt from a serialized state reports the same as one played move by
- * move, which the online sync relies on; any board-array variant (Duck Chess, the planned
- * duck-decay) can reuse it. Promotions can make it cosmetically off (a promoted pawn reads as
+ * move, which the online sync relies on; any board-array variant (Duck Chess or Duck Decay) can
+ * reuse it. Promotions can make it cosmetically off (a promoted pawn reads as
  * captured), which is acceptable for a casual game.
  */
 export function capturedFromBoard(board) {

@@ -57,6 +57,7 @@ function snapshotView(game) {
     captured: game.captured(),
     result: game.result(),
     lastMove: lastMoveOf(game),
+    decaySquares: game.decaySquares?.() ?? [],
   };
 }
 
@@ -508,6 +509,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     phase: view.phase,
     duckSquare: view.duckSquare,
     duckTargets,
+    decaySquares: view.decaySquares,
     selfColor,
     resync,
     messages,

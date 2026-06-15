@@ -3,7 +3,8 @@
 // may move into or stay on an attacked square, and the game ends only when a king is actually captured.
 // Capturing the enemy king is therefore a normal, generated move (we must NOT skip it the way ordinary
 // chess does). The duck (state.duck) is an impassable blocker: nothing may land on it or slide through
-// it, though knights still jump over it.
+// it, though knights still jump over it. Duck Chess Decay adds temporary terrain blockers in
+// state.decay; the generator treats them the same way as duck-blocked squares.
 
 import { FILES, colorOf, fileRankToIndex, fileRankToSquare, indexToSquare, pieceAt, squareToIndex } from './board.js';
 
@@ -12,14 +13,18 @@ const ROOK_DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const KING_DIRS = [...BISHOP_DIRS, ...ROOK_DIRS];
 const KNIGHT_HOPS = [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]];
 
-/** True when the duck sits on this file/rank (so the square is impassable). */
-function isDuck(duckIndex, file, rank) {
-  return duckIndex !== null && duckIndex === fileRankToIndex(file, rank);
+function decayedSquare(state, file, rank) {
+  return state.decay?.[fileRankToSquare(file, rank)] > 0;
 }
 
-/** Empty for movement purposes: no piece AND not the duck. */
-function isFree(board, duckIndex, file, rank) {
-  return pieceAt(board, file, rank) === null && !isDuck(duckIndex, file, rank);
+/** True when the duck or a decayed square makes this coordinate impassable. */
+function isBlocked(state, duckIndex, file, rank) {
+  return (duckIndex !== null && duckIndex === fileRankToIndex(file, rank)) || decayedSquare(state, file, rank);
+}
+
+/** Empty for movement purposes: no piece AND not blocked by variant terrain. */
+function isFree(state, duckIndex, file, rank) {
+  return pieceAt(state.board, file, rank) === null && !isBlocked(state, duckIndex, file, rank);
 }
 
 /** A move from one file/rank to another, with optional flags merged in. */
@@ -27,13 +32,14 @@ function mk(ff, fr, tf, tr, extra = {}) {
   return { from: fileRankToSquare(ff, fr), to: fileRankToSquare(tf, tr), ...extra };
 }
 
-function slideMoves(board, duckIndex, file, rank, dirs, turn, out) {
+function slideMoves(state, duckIndex, file, rank, dirs, turn, out) {
+  const { board } = state;
   for (const [df, dr] of dirs) {
     let f = file + df;
     let r = rank + dr;
     let target = pieceAt(board, f, r);
-    while (target !== undefined && !isDuck(duckIndex, f, r)) {
-      // off-board / the duck ends the ray (handled by the loop condition)
+    while (target !== undefined && !isBlocked(state, duckIndex, f, r)) {
+      // off-board / blocked terrain ends the ray (handled by the loop condition)
       if (target !== null) {
         if (colorOf(target) !== turn) out.push(mk(file, rank, f, r, { capture: true }));
         break; // any piece blocks the ray
@@ -46,18 +52,20 @@ function slideMoves(board, duckIndex, file, rank, dirs, turn, out) {
   }
 }
 
-function stepMoves(board, duckIndex, file, rank, dirs, turn, out) {
+function stepMoves(state, duckIndex, file, rank, dirs, turn, out) {
+  const { board } = state;
   for (const [df, dr] of dirs) {
     const f = file + df;
     const r = rank + dr;
     const target = pieceAt(board, f, r);
-    if (target === undefined || isDuck(duckIndex, f, r)) continue; // off board or onto the duck
+    if (target === undefined || isBlocked(state, duckIndex, f, r)) continue; // off board or blocked
     if (target === null) out.push(mk(file, rank, f, r));
     else if (colorOf(target) !== turn) out.push(mk(file, rank, f, r, { capture: true }));
   }
 }
 
-function pawnMoves(board, duckIndex, file, rank, turn, ep, out) {
+function pawnMoves(state, duckIndex, file, rank, turn, ep, out) {
+  const { board } = state;
   const dir = turn === 'w' ? 1 : -1;
   const startRank = turn === 'w' ? 2 : 7;
   const promoRank = turn === 'w' ? 8 : 1;
@@ -65,17 +73,17 @@ function pawnMoves(board, duckIndex, file, rank, turn, ep, out) {
 
   // Pushes.
   const one = rank + dir;
-  if (isFree(board, duckIndex, file, one)) {
+  if (isFree(state, duckIndex, file, one)) {
     addPawnMove(file, rank, file, one, one === promoRank, out);
     const two = rank + 2 * dir;
-    if (rank === startRank && isFree(board, duckIndex, file, two)) {
+    if (rank === startRank && isFree(state, duckIndex, file, two)) {
       out.push(mk(file, rank, file, two, { double: true }));
     }
   }
 
   // Captures (diagonal), including en passant.
   for (const cf of [file - 1, file + 1]) {
-    if (isDuck(duckIndex, cf, one)) continue; // can't capture onto the duck
+    if (isBlocked(state, duckIndex, cf, one)) continue; // can't capture onto blocked terrain
     const target = pieceAt(board, cf, one);
     if (target === undefined) continue;
     if (target && colorOf(target) !== turn) {
@@ -94,20 +102,20 @@ function addPawnMove(ff, fr, tf, tr, isPromotion, out, extra = {}) {
   }
 }
 
-function castlingMoves(board, duckIndex, turn, castling, out) {
+function castlingMoves(state, duckIndex, turn, castling, out) {
   const rank = turn === 'w' ? 1 : 8;
   const [kingFlag, queenFlag] = turn === 'w' ? ['K', 'Q'] : ['k', 'q'];
   const e = FILES.indexOf('e');
   // No check filtering: only the squares the king and rook travel must be empty and duck-free. The
   // king/rook home-square occupancy is implied by the castling rights still being present.
-  if (castling.includes(kingFlag) && isFree(board, duckIndex, 5, rank) && isFree(board, duckIndex, 6, rank)) {
+  if (castling.includes(kingFlag) && isFree(state, duckIndex, 5, rank) && isFree(state, duckIndex, 6, rank)) {
     out.push(mk(e, rank, 6, rank, { castleK: true }));
   }
   if (
     castling.includes(queenFlag) &&
-    isFree(board, duckIndex, 3, rank) &&
-    isFree(board, duckIndex, 2, rank) &&
-    isFree(board, duckIndex, 1, rank)
+    isFree(state, duckIndex, 3, rank) &&
+    isFree(state, duckIndex, 2, rank) &&
+    isFree(state, duckIndex, 1, rank)
   ) {
     out.push(mk(e, rank, 2, rank, { castleQ: true }));
   }
@@ -124,23 +132,23 @@ export function generatePieceMoves(state) {
       if (!piece || colorOf(piece) !== turn) continue;
       switch (piece.toUpperCase()) {
         case 'P':
-          pawnMoves(board, duckIndex, file, rank, turn, ep, out);
+          pawnMoves(state, duckIndex, file, rank, turn, ep, out);
           break;
         case 'N':
-          stepMoves(board, duckIndex, file, rank, KNIGHT_HOPS, turn, out);
+          stepMoves(state, duckIndex, file, rank, KNIGHT_HOPS, turn, out);
           break;
         case 'B':
-          slideMoves(board, duckIndex, file, rank, BISHOP_DIRS, turn, out);
+          slideMoves(state, duckIndex, file, rank, BISHOP_DIRS, turn, out);
           break;
         case 'R':
-          slideMoves(board, duckIndex, file, rank, ROOK_DIRS, turn, out);
+          slideMoves(state, duckIndex, file, rank, ROOK_DIRS, turn, out);
           break;
         case 'Q':
-          slideMoves(board, duckIndex, file, rank, KING_DIRS, turn, out);
+          slideMoves(state, duckIndex, file, rank, KING_DIRS, turn, out);
           break;
         case 'K':
-          stepMoves(board, duckIndex, file, rank, KING_DIRS, turn, out);
-          castlingMoves(board, duckIndex, turn, castling, out);
+          stepMoves(state, duckIndex, file, rank, KING_DIRS, turn, out);
+          castlingMoves(state, duckIndex, turn, castling, out);
           break;
         default:
           break;
@@ -165,6 +173,7 @@ export function legalDuckTargets(state) {
   for (let i = 0; i < 64; i += 1) {
     if (state.board[i] !== null) continue;
     const square = indexToSquare(i);
+    if (state.decay?.[square] > 0) continue;
     if (square !== state.duck) targets.push(square);
   }
   return targets;

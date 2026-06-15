@@ -9,6 +9,7 @@
 --      create the profiles row that games.host_id / games.joiner_id reference.
 --   3. username was UNIQUE, so the second anonymous "Player" would have been rejected.
 --   4. The host persists the live seat map to a players column that schema.sql never created.
+--   5. Newer builds include the duck-decay variant, so existing enum types need that value.
 
 -- 1. Table-level grants (RLS still applies on top of these).
 grant usage on schema public to anon, authenticated;
@@ -25,3 +26,6 @@ alter table public.profiles drop constraint if exists profiles_username_key;
 
 -- 4. Live seat map ({white, black} per-tab session ids) the host writes with each move.
 alter table public.games add column if not exists players jsonb;
+
+-- 5. Variant enum value for Duck Chess Decay.
+alter type public.chess_variant add value if not exists 'duck-decay';

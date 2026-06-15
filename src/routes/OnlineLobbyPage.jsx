@@ -271,13 +271,13 @@ export default function OnlineLobbyPage() {
                           className="flex items-center justify-between gap-4 rounded-2xl border-2 border-gray-200 bg-white px-5 py-4"
                         >
                           <div className="flex min-w-0 items-center gap-4">
-                            <span className="text-2xl">{g.variant === 'duck' ? '🦆' : '♔'}</span>
+                            <span className="text-2xl">{VARIANTS[g.variant]?.icon ?? '♔'}</span>
                             <div className="min-w-0">
                               <p className="truncate font-display text-sm font-bold uppercase tracking-tight text-foreground">
                                 {opponent ? `vs ${opponent}` : 'Waiting for a challenger'}
                               </p>
                               <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                                {g.variant} · {g.status}
+                                {VARIANTS[g.variant]?.pickerLabel ?? g.variant} · {g.status}
                               </p>
                             </div>
                           </div>
@@ -334,11 +334,11 @@ export default function OnlineLobbyPage() {
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 text-3xl transition-transform group-hover:scale-110">
-                          {game.variant === 'duck' ? '🦆' : '♔'}
+                          {VARIANTS[game.variant]?.icon ?? '♔'}
                         </div>
                         <div className="text-right">
                           <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                            {game.variant}
+                            {VARIANTS[game.variant]?.pickerLabel ?? game.variant}
                           </p>
                           <div className="mt-1 flex items-center justify-end gap-1.5">
                              <div className={`h-2 w-2 rounded-full ${game.host_color === 'white' ? 'bg-white border border-gray-300' : 'bg-gray-900'}`} />

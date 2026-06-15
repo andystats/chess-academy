@@ -7,6 +7,7 @@ const INTERFACE = [
   'turnColor',
   'phase',
   'duckSquare',
+  'decaySquares',
   'legalPieceTargets',
   'legalDuckTargets',
   'movePiece',
@@ -18,8 +19,8 @@ const INTERFACE = [
 ];
 
 describe('resign', () => {
-  it('computes the opponent as winner for both variants without mutating game state', () => {
-    for (const variant of ['standard', 'duck']) {
+  it('computes the opponent as winner for every variant without mutating game state', () => {
+    for (const variant of Object.keys(VARIANTS)) {
       const game = createVariantGame(variant);
       expect(game.resign('white')).toEqual({ winner: 'black', reason: 'Resigned' });
       expect(game.resign('black')).toEqual({ winner: 'white', reason: 'Resigned' });
@@ -29,8 +30,8 @@ describe('resign', () => {
 });
 
 describe('rules adapter — shape parity', () => {
-  it('exposes the same interface for both variants', () => {
-    for (const variant of ['standard', 'duck']) {
+  it('exposes the same interface for every variant', () => {
+    for (const variant of Object.keys(VARIANTS)) {
       const game = createVariantGame(variant);
       for (const method of INTERFACE) expect(typeof game[method]).toBe('function');
     }
@@ -87,6 +88,7 @@ describe('variant registry', () => {
       expect(entry.label, id).toBeTruthy();
       expect(entry.pickerLabel, id).toBeTruthy();
       expect(entry.sublabel, id).toBeTruthy();
+      expect(entry.icon, id).toBeTruthy();
       expect(typeof entry.create, id).toBe('function');
       expect(() => createVariantGame(id)).not.toThrow();
     }

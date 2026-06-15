@@ -10,8 +10,10 @@
 
 import { COLOR_NAME } from '../../lesson/moves.js';
 import { capturedFromBoard } from '../gameState.js';
-import { boardFen, colorOf, deserialize, initialState, serialize, squareToIndex } from './board.js';
+import { boardFen, colorOf, deserialize, initialState, isSquare, serialize, squareToIndex } from './board.js';
 import { generatePieceMoves, legalDuckTargets, legalPieceTargets } from './moves.js';
+
+const DEFAULT_DECAY_TURNS = 2;
 
 /** Winner (or draw) inferred from the board and legal moves — snapshot-safe. */
 function deriveResult(state) {
@@ -66,8 +68,55 @@ function updateCastling(castling, movingPiece, from, capturedSquare) {
   return next;
 }
 
-export function createDuckGame(serialized) {
+function sortedDecaySquares(decay = {}) {
+  return Object.keys(decay).filter((square) => decay[square] > 0).sort();
+}
+
+function encodeDecay(decay) {
+  return sortedDecaySquares(decay).map((square) => `${square}:${decay[square]}`).join(',');
+}
+
+function decodeDecay(value, state, maxTurns) {
+  const decay = {};
+  if (!value) return decay;
+  for (const token of value.split(',')) {
+    const match = /^([a-h][1-8]):([1-9]\d*)$/.exec(token);
+    if (!match) throw new Error(`Invalid decay token '${token}'`);
+    const [, square, rawTurns] = match;
+    const turns = Number(rawTurns);
+    if (!Number.isSafeInteger(turns) || turns < 1 || turns > maxTurns) {
+      throw new Error(`Invalid decay counter '${rawTurns}'`);
+    }
+    if (!isSquare(square) || state.board[squareToIndex(square)] !== null || square === state.duck) {
+      throw new Error(`Invalid decayed square '${square}'`);
+    }
+    decay[square] = turns;
+  }
+  return decay;
+}
+
+export function createDuckGame(serialized, options = {}) {
   const state = serialized ? deserialize(serialized) : initialState();
+  const decayEnabled = options.decay === true;
+  const decayTurns = options.decayTurns ?? DEFAULT_DECAY_TURNS;
+  if (decayEnabled) state.decay = decodeDecay(state.ext.decay, state, decayTurns);
+
+  function syncDecayExt() {
+    if (!decayEnabled) return;
+    const encoded = encodeDecay(state.decay);
+    if (encoded) state.ext.decay = encoded;
+    else delete state.ext.decay;
+  }
+
+  function ageDecay() {
+    if (!decayEnabled) return;
+    for (const square of Object.keys(state.decay)) {
+      if (state.decay[square] <= 1) delete state.decay[square];
+      else state.decay[square] -= 1;
+    }
+  }
+
+  syncDecayExt();
   // History is one entry per *turn*: the piece move plus the duck square placed after it.
   const turns = [];
 
@@ -130,7 +179,13 @@ export function createDuckGame(serialized) {
     // malformed input (off-board strings, aliased coordinates like "z9", non-strings) in one check.
     if (!legalDuckTargets(state).includes(square)) return { ok: false };
 
+    const previousDuck = state.duck;
     state.duck = square;
+    if (decayEnabled) {
+      ageDecay();
+      if (previousDuck) state.decay[previousDuck] = decayTurns;
+      syncDecayExt();
+    }
     // A game resumed from a mid-turn snapshot starts with an empty history (the wire format drops
     // it), so there may be no turn entry to annotate — the duck still places; only the log skips.
     if (turns.length) turns[turns.length - 1].duck = square;
@@ -142,12 +197,20 @@ export function createDuckGame(serialized) {
   }
 
   return {
-    getState: () => ({ ...state, board: state.board.slice(), ext: { ...state.ext } }),
-    serialize: () => serialize(state),
+    getState: () => {
+      const snapshot = { ...state, board: state.board.slice(), ext: { ...state.ext } };
+      if (state.decay) snapshot.decay = { ...state.decay };
+      return snapshot;
+    },
+    serialize: () => {
+      syncDecayExt();
+      return serialize(state);
+    },
     boardFen: () => boardFen(state),
     turnColor,
     phase: () => state.phase,
     duckSquare: () => state.duck,
+    decaySquares: () => sortedDecaySquares(state.decay),
     legalPieceTargets: (square) => legalPieceTargets(state, square),
     legalDuckTargets: () => legalDuckTargets(state),
     movePiece,
@@ -158,3 +221,6 @@ export function createDuckGame(serialized) {
   };
 }
 
+export function createDuckDecayGame(serialized) {
+  return createDuckGame(serialized, { decay: true, decayTurns: DEFAULT_DECAY_TURNS });
+}

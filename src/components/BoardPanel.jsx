@@ -33,6 +33,10 @@ const DUCK_STYLE = {
 const DUCK_TARGET_STYLE = {
   background: 'radial-gradient(circle, rgba(234,179,8,0.55) 24%, transparent 26%)',
 };
+const DECAY_STYLE = {
+  backgroundColor: 'rgba(17, 24, 39, 0.22)',
+  backgroundImage: 'repeating-linear-gradient(135deg, rgba(17,24,39,0.34) 0 5px, rgba(17,24,39,0.1) 5px 10px)',
+};
 
 const BOARD_THEMES = {
   academy: {
@@ -56,10 +60,11 @@ function buildArrows(arrows) {
   return arrows.map(([from, to, color]) => [from, to, ARROW_COLORS[color] ?? DEFAULT_ARROW]);
 }
 
-function buildSquareStyles({ highlights, selectedSquare, legalTargets, duckSquare, duckTargets }) {
+function buildSquareStyles({ highlights, selectedSquare, legalTargets, duckSquare, duckTargets, decaySquares }) {
   const styles = {};
   for (const sq of highlights) styles[sq] = { ...HIGHLIGHT_STYLE };
   for (const sq of legalTargets) styles[sq] = { ...(styles[sq] ?? {}), ...TARGET_STYLE };
+  for (const sq of decaySquares) styles[sq] = { ...(styles[sq] ?? {}), ...DECAY_STYLE };
   if (selectedSquare) styles[selectedSquare] = { ...(styles[selectedSquare] ?? {}), ...SELECTED_STYLE };
   for (const sq of duckTargets) styles[sq] = { ...(styles[sq] ?? {}), ...DUCK_TARGET_STYLE };
   if (duckSquare) styles[duckSquare] = { ...(styles[duckSquare] ?? {}), ...DUCK_STYLE }; // duck wins its square
@@ -80,6 +85,7 @@ export default function BoardPanel({
   legalTargets = [],
   duckSquare = null,
   duckTargets = [],
+  decaySquares = [],
   variant = 'academy',
   className = 'w-full max-w-[34rem]',
   animationDuration = variant === 'arena' ? 520 : 320,
@@ -101,7 +107,7 @@ export default function BoardPanel({
         showPromotionDialog={Boolean(promotionTarget)}
         promotionToSquare={promotionTarget}
         customArrows={buildArrows(arrows)}
-        customSquareStyles={buildSquareStyles({ highlights, selectedSquare, legalTargets, duckSquare, duckTargets })}
+        customSquareStyles={buildSquareStyles({ highlights, selectedSquare, legalTargets, duckSquare, duckTargets, decaySquares })}
         customBoardStyle={{ borderRadius: 0 }}
         customDarkSquareStyle={{ backgroundColor: theme.dark }}
         customLightSquareStyle={{ backgroundColor: theme.light }}

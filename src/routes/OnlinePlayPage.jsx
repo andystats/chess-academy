@@ -6,6 +6,7 @@ import OnlineGamePanel from '../components/OnlineGamePanel.jsx';
 import { useOnlineGame } from '../online/useOnlineGame.js';
 import { loadHostConfig, selfId } from '../online/localSnapshot.js';
 import { ensureSessionAndProfile } from '../online/lobbyApi.js';
+import { VARIANTS } from '../online/rules.js';
 import { isRealtimeConfigured, supabase } from '../lib/supabase.js';
 import { Loader2 } from 'lucide-react';
 
@@ -65,11 +66,12 @@ export default function OnlinePlayPage() {
     if (dbConfig) return dbConfig;
 
     const hostConfig = loadHostConfig(gameId);
-    if (hostConfig) return { ...hostConfig, isHost: true };
+    if (hostConfig && Object.hasOwn(VARIANTS, hostConfig.variant)) return { ...hostConfig, isHost: true };
 
     const variant = searchParams.get('v');
     const hostSideChar = searchParams.get('host');
     if (!variant || !hostSideChar) return null;
+    if (!Object.hasOwn(VARIANTS, variant)) return null;
 
     const hostColor = hostSideChar === 'w' ? 'white' : 'black';
     return { variant, hostColor, isHost: false };

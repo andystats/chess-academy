@@ -18,7 +18,7 @@ create policy "Users can update own profile" on public.profiles for update using
 
 -- 2. Games: The core game state and lifecycle
 create type game_status as enum ('waiting', 'active', 'completed');
-create type chess_variant as enum ('standard', 'duck');
+create type chess_variant as enum ('standard', 'duck', 'duck-decay');
 
 create table public.games (
   id uuid primary key default gen_random_uuid(),

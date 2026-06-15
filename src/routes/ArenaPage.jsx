@@ -51,7 +51,7 @@ export default function ArenaPage() {
           <div className="gradient-divider mt-5 w-24" />
           <p className="mt-5 max-w-3xl text-base leading-7 text-gray-700 md:text-lg md:leading-8">
             A convenient, playable chess space you can run in a browser: Stockfish free play, focused
-            practice positions, and invite-link games with standard chess or Duck Chess. The code is
+            practice positions, and invite-link games with standard chess or Duck variants. The code is
             public, small enough to fork, and built for quick experiments.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -87,7 +87,7 @@ export default function ArenaPage() {
           to="/arena/online"
           icon={<Globe className="shrink-0 text-brand-500" size={36} />}
           title="Play a Friend Online"
-          text="Real-time games over an invite link — standard chess or the Duck Chess variant, with chat."
+          text="Real-time games over an invite link — standard chess or Duck variants, with chat."
         />
       </section>
 
