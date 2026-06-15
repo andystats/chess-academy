@@ -6,9 +6,21 @@ import OnlineGamePanel from '../components/OnlineGamePanel.jsx';
 import { useOnlineGame } from '../online/useOnlineGame.js';
 import { loadHostConfig, selfId } from '../online/localSnapshot.js';
 import { ensureSessionAndProfile } from '../online/lobbyApi.js';
-import { VARIANTS } from '../online/rules.js';
+import { VARIANTS, variantOptionsFromSerialized } from '../online/rules.js';
 import { isRealtimeConfigured, supabase } from '../lib/supabase.js';
 import { Loader2 } from 'lucide-react';
+
+function readDuckDecayOptions(searchParams) {
+  const defaults = VARIANTS['duck-decay'].defaults;
+  const numberParam = (name, fallback) => {
+    const value = Number(searchParams.get(name));
+    return Number.isSafeInteger(value) && value >= 1 && value <= 9 ? value : fallback;
+  };
+  return {
+    decayTurns: numberParam('decay', defaults.decayTurns),
+    breakHits: numberParam('break', defaults.breakHits),
+  };
+}
 
 export default function OnlinePlayPage() {
   const { gameId } = useParams();
@@ -33,10 +45,17 @@ export default function OnlinePlayPage() {
 
       if (!error && data) {
         const isHost = data.host_id === user?.id;
+        let variantOptions = {};
+        try {
+          variantOptions = variantOptionsFromSerialized(data.variant, data.state);
+        } catch {
+          variantOptions = data.variant === 'duck-decay' ? readDuckDecayOptions(searchParams) : {};
+        }
         setDbConfig({
           variant: data.variant,
           hostColor: data.host_color,
           isHost,
+          variantOptions,
         });
 
         // Auto-join if this is a waiting game and we are not the host. The realtime channel
@@ -59,7 +78,7 @@ export default function OnlinePlayPage() {
     }
 
     initPlay();
-  }, [gameId]);
+  }, [gameId, searchParams]);
 
   // Orientation hints from the URL (legacy/instant) or local storage or the DB.
   const config = useMemo(() => {
@@ -74,7 +93,8 @@ export default function OnlinePlayPage() {
     if (!Object.hasOwn(VARIANTS, variant)) return null;
 
     const hostColor = hostSideChar === 'w' ? 'white' : 'black';
-    return { variant, hostColor, isHost: false };
+    const variantOptions = variant === 'duck-decay' ? readDuckDecayOptions(searchParams) : {};
+    return { variant, hostColor, isHost: false, variantOptions };
   }, [gameId, searchParams, dbConfig]);
 
   if (loading) {

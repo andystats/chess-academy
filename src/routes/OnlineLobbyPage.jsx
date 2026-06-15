@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, History, Plus, Users, Loader2 } from 'lucide-react';
+import { ArrowRight, Plus, Users, Loader2 } from 'lucide-react';
 import BackLink from '../components/ui/BackLink.jsx';
 import RealtimeNotConfigured from '../components/RealtimeNotConfigured.jsx';
 import SegmentedControl from '../components/ui/SegmentedControl.jsx';
@@ -8,7 +8,7 @@ import { isRealtimeConfigured, supabase } from '../lib/supabase.js';
 import { useProfile } from '../profile/ProfileContext.jsx';
 import { ensureSessionAndProfile, loadDisplayName, saveDisplayName } from '../online/lobbyApi.js';
 import { newGameId, saveHostConfig } from '../online/localSnapshot.js';
-import { VARIANTS } from '../online/rules.js';
+import { VARIANTS, createVariantGame } from '../online/rules.js';
 
 const VARIANT_OPTIONS = Object.entries(VARIANTS).map(([value, { pickerLabel, sublabel }]) => ({
   value,
@@ -24,25 +24,27 @@ const COLOR_OPTIONS = [
 // There is no reliable "host left" signal without server-side presence, so abandoned lobby
 // entries simply age out of the open list; hosts can also cancel their own match explicitly.
 const WAITING_SHELF_LIFE_MS = 60 * 60 * 1000; // open matches show for 1 hour
-const MY_GAMES_WINDOW_MS = 24 * 60 * 60 * 1000; // your own games stay rejoinable for a day
-
 function isMissingVariantEnum(error) {
   return error?.code === '22P02' && error?.message?.includes('chess_variant');
+}
+
+function clampDecaySetting(value) {
+  const number = Number(value);
+  if (!Number.isSafeInteger(number)) return 1;
+  return Math.min(9, Math.max(1, number));
 }
 
 export default function OnlineLobbyPage() {
   const navigate = useNavigate();
   const { activeProfile } = useProfile();
   const [variant, setVariant] = useState('standard');
+  const [decaySettings, setDecaySettings] = useState(VARIANTS['duck-decay'].defaults);
   const [hostColor, setHostColor] = useState('white');
   const [displayName, setDisplayName] = useState(loadDisplayName);
   const [games, setGames] = useState([]);
-  const [myGames, setMyGames] = useState([]); // your waiting/active games — the rejoin list
   const [loading, setLoading] = useState(isRealtimeConfigured);
   const [creating, setCreating] = useState(false);
   const [user, setUser] = useState(null);
-  // The postgres_changes subscription outlives renders, so fetchGames reads the uid from a ref.
-  const userRef = useRef(null);
   const [error, setError] = useState(null); // { context, message, hint } — shown above the lobby grid
 
   // 1. Authenticate and sync profile. The profiles row is mandatory, not cosmetic: games.host_id
@@ -55,7 +57,6 @@ export default function OnlineLobbyPage() {
         username: loadDisplayName() || activeProfile?.name,
         avatar: activeProfile?.avatar,
       });
-      userRef.current = sessionUser;
       setUser(sessionUser);
       setDisplayName((current) => current || activeProfile?.name || '');
       if (sessionError) {
@@ -97,21 +98,6 @@ export default function OnlineLobbyPage() {
     } else {
       setGames(data || []);
     }
-
-    // Your own recent games (active ones leave the open list by design — this is how you get back in).
-    const uid = userRef.current?.id;
-    if (uid) {
-      const { data: mine, error: mineError } = await supabase
-        .from('games')
-        .select('*, host:host_id(username), joiner:joiner_id(username)')
-        .or(`host_id.eq.${uid},joiner_id.eq.${uid}`)
-        .in('status', ['waiting', 'active'])
-        .gte('updated_at', new Date(Date.now() - MY_GAMES_WINDOW_MS).toISOString())
-        .order('updated_at', { ascending: false })
-        .limit(5);
-      if (mineError) console.error('My-games list error:', mineError);
-      else setMyGames(mine || []);
-    }
     setLoading(false);
   }
 
@@ -138,11 +124,20 @@ export default function OnlineLobbyPage() {
       return;
     }
 
-    const initialState = VARIANTS[variant].create().serialize();
+    const variantOptions = variant === 'duck-decay' ? decaySettings : {};
+    const initialState = createVariantGame(variant, undefined, variantOptions).serialize();
+    const inviteParams = () => {
+      const params = new URLSearchParams({ v: variant, host: hostColor[0] });
+      if (variant === 'duck-decay') {
+        params.set('decay', String(decaySettings.decayTurns));
+        params.set('break', String(decaySettings.breakHits));
+      }
+      return params.toString();
+    };
     const openInviteOnlyGame = () => {
       const id = newGameId();
-      saveHostConfig(id, { variant, hostColor });
-      navigate(`/play/${id}?v=${variant}&host=${hostColor[0]}`);
+      saveHostConfig(id, { variant, hostColor, variantOptions });
+      navigate(`/play/${id}?${inviteParams()}`);
     };
 
     const { data, error: createError } = await supabase
@@ -167,7 +162,8 @@ export default function OnlineLobbyPage() {
       setError({ context: 'Create match failed', message: createError.message, hint: createError.hint });
       setCreating(false);
     } else {
-      navigate(`/play/${data.id}?v=${variant}&host=${hostColor[0]}`);
+      saveHostConfig(data.id, { variant, hostColor, variantOptions });
+      navigate(`/play/${data.id}?${inviteParams()}`);
     }
   };
 
@@ -267,59 +263,6 @@ export default function OnlineLobbyPage() {
           <div className="mt-16 grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-start">
             {/* Game List */}
             <div className="lg:col-span-8">
-              {myGames.length > 0 && (
-                <div className="mb-12">
-                  <div className="flex items-center justify-between border-b-2 border-gray-200 pb-4 mb-6">
-                    <h2 className="font-display text-2xl font-bold uppercase tracking-tight flex items-center gap-3">
-                      <History className="text-brand-600" size={24} />
-                      Your Games
-                    </h2>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3">
-                    {myGames.map((g) => {
-                      const youAreHost = g.host_id === user?.id;
-                      const opponent = youAreHost ? g.joiner?.username : g.host?.username;
-                      return (
-                        <div
-                          key={g.id}
-                          className="flex items-center justify-between gap-4 rounded-2xl border-2 border-gray-200 bg-white px-5 py-4"
-                        >
-                          <div className="flex min-w-0 items-center gap-4">
-                            <span className="text-2xl">{VARIANTS[g.variant]?.icon ?? '♔'}</span>
-                            <div className="min-w-0">
-                              <p className="truncate font-display text-sm font-bold uppercase tracking-tight text-foreground">
-                                {opponent ? `vs ${opponent}` : 'Waiting for a challenger'}
-                              </p>
-                              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                                {VARIANTS[g.variant]?.pickerLabel ?? g.variant} · {g.status}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            {youAreHost && g.status === 'waiting' && (
-                              <button
-                                type="button"
-                                onClick={() => cancelGame(g)}
-                                className="rounded-lg border-2 border-red-200 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-red-600 transition-colors hover:bg-red-50"
-                              >
-                                Cancel
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => navigate(`/play/${g.id}?v=${g.variant}&host=${g.host_color[0]}`)}
-                              className="tao-btn-primary px-4 py-1.5 text-xs"
-                            >
-                              Rejoin
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
               <div className="flex items-center justify-between border-b-2 border-gray-200 pb-4 mb-8">
                 <h2 className="font-display text-2xl font-bold uppercase tracking-tight flex items-center gap-3">
                   <Users className="text-brand-600" size={24} /> 
@@ -433,6 +376,39 @@ export default function OnlineLobbyPage() {
                         buttonClassName="w-full items-start px-4 py-3 text-left"
                       />
                     </div>
+
+                    {variant === 'duck-decay' && (
+                      <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="block">
+                            <span className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-amber-700">
+                              Decay Lasts
+                            </span>
+                            <input
+                              type="number"
+                              min="1"
+                              max="9"
+                              value={decaySettings.decayTurns}
+                              onChange={(event) => setDecaySettings((current) => ({ ...current, decayTurns: clampDecaySetting(event.target.value) }))}
+                              className="w-full rounded-lg border-2 border-amber-300 bg-white px-3 py-2 font-display text-lg font-bold text-gray-900 focus:border-amber-500 focus:outline-none"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-amber-700">
+                              Breaks At
+                            </span>
+                            <input
+                              type="number"
+                              min="1"
+                              max="9"
+                              value={decaySettings.breakHits}
+                              onChange={(event) => setDecaySettings((current) => ({ ...current, breakHits: clampDecaySetting(event.target.value) }))}
+                              className="w-full rounded-lg border-2 border-amber-300 bg-white px-3 py-2 font-display text-lg font-bold text-gray-900 focus:border-amber-500 focus:outline-none"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    )}
                     
                     <div>
                       <label className="mb-3 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">

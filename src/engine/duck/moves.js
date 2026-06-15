@@ -14,7 +14,8 @@ const KING_DIRS = [...BISHOP_DIRS, ...ROOK_DIRS];
 const KNIGHT_HOPS = [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]];
 
 function decayedSquare(state, file, rank) {
-  return state.decay?.[fileRankToSquare(file, rank)] > 0;
+  const square = fileRankToSquare(file, rank);
+  return state.decay?.[square] > 0 || state.broken?.[square] === true;
 }
 
 /** True when the duck or a decayed square makes this coordinate impassable. */
@@ -173,7 +174,7 @@ export function legalDuckTargets(state) {
   for (let i = 0; i < 64; i += 1) {
     if (state.board[i] !== null) continue;
     const square = indexToSquare(i);
-    if (state.decay?.[square] > 0) continue;
+    if (state.decay?.[square] > 0 || state.broken?.[square] === true) continue;
     if (square !== state.duck) targets.push(square);
   }
   return targets;

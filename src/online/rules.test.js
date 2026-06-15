@@ -8,6 +8,7 @@ const INTERFACE = [
   'phase',
   'duckSquare',
   'decaySquares',
+  'brokenSquares',
   'legalPieceTargets',
   'legalDuckTargets',
   'movePiece',

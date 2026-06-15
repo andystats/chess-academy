@@ -13,7 +13,9 @@ import { capturedFromBoard } from '../gameState.js';
 import { boardFen, colorOf, deserialize, initialState, isSquare, serialize, squareToIndex } from './board.js';
 import { generatePieceMoves, legalDuckTargets, legalPieceTargets } from './moves.js';
 
-const DEFAULT_DECAY_TURNS = 2;
+export const DUCK_DECAY_DEFAULTS = { decayTurns: 2, breakHits: 3 };
+const MIN_DECAY_SETTING = 1;
+const MAX_DECAY_SETTING = 9;
 
 /** Winner (or draw) inferred from the board and legal moves — snapshot-safe. */
 function deriveResult(state) {
@@ -76,6 +78,22 @@ function encodeDecay(decay) {
   return sortedDecaySquares(decay).map((square) => `${square}:${decay[square]}`).join(',');
 }
 
+function encodeHits(hits = {}) {
+  return Object.keys(hits).filter((square) => hits[square] > 0).sort().map((square) => `${square}:${hits[square]}`).join(',');
+}
+
+function encodeSquareSet(squares = {}) {
+  return Object.keys(squares).filter((square) => squares[square]).sort().join(',');
+}
+
+function readDecaySetting(value, fallback) {
+  const parsed = value == null ? fallback : Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < MIN_DECAY_SETTING || parsed > MAX_DECAY_SETTING) {
+    throw new Error(`Invalid Duck Decay setting '${value}'`);
+  }
+  return parsed;
+}
+
 function decodeDecay(value, state, maxTurns) {
   const decay = {};
   if (!value) return decay;
@@ -87,7 +105,7 @@ function decodeDecay(value, state, maxTurns) {
     if (!Number.isSafeInteger(turns) || turns < 1 || turns > maxTurns) {
       throw new Error(`Invalid decay counter '${rawTurns}'`);
     }
-    if (!isSquare(square) || state.board[squareToIndex(square)] !== null || square === state.duck) {
+    if (!isSquare(square) || state.board[squareToIndex(square)] !== null || square === state.duck || state.broken?.[square]) {
       throw new Error(`Invalid decayed square '${square}'`);
     }
     decay[square] = turns;
@@ -95,17 +113,60 @@ function decodeDecay(value, state, maxTurns) {
   return decay;
 }
 
+function decodeHits(value, maxHits) {
+  const hits = {};
+  if (!value) return hits;
+  for (const token of value.split(',')) {
+    const match = /^([a-h][1-8]):([1-9]\d*)$/.exec(token);
+    if (!match) throw new Error(`Invalid hit token '${token}'`);
+    const [, square, rawHits] = match;
+    const count = Number(rawHits);
+    if (!Number.isSafeInteger(count) || count < 1 || count >= maxHits) {
+      throw new Error(`Invalid hit count '${rawHits}'`);
+    }
+    hits[square] = count;
+  }
+  return hits;
+}
+
+function decodeSquareSet(value, state) {
+  const squares = {};
+  if (!value) return squares;
+  for (const square of value.split(',')) {
+    if (!isSquare(square) || state.board[squareToIndex(square)] !== null || square === state.duck) {
+      throw new Error(`Invalid broken square '${square}'`);
+    }
+    squares[square] = true;
+  }
+  return squares;
+}
+
 export function createDuckGame(serialized, options = {}) {
   const state = serialized ? deserialize(serialized) : initialState();
   const decayEnabled = options.decay === true;
-  const decayTurns = options.decayTurns ?? DEFAULT_DECAY_TURNS;
-  if (decayEnabled) state.decay = decodeDecay(state.ext.decay, state, decayTurns);
+  const decayTurns = readDecaySetting(state.ext['decay-turns'], options.decayTurns ?? DUCK_DECAY_DEFAULTS.decayTurns);
+  const breakHits = readDecaySetting(state.ext['break-hits'], options.breakHits ?? DUCK_DECAY_DEFAULTS.breakHits);
+  if (decayEnabled) {
+    state.decayTurns = decayTurns;
+    state.breakHits = breakHits;
+    state.broken = decodeSquareSet(state.ext.broken, state);
+    state.decay = decodeDecay(state.ext.decay, state, decayTurns);
+    state.decayHits = decodeHits(state.ext.hits, breakHits);
+  }
 
   function syncDecayExt() {
     if (!decayEnabled) return;
+    state.ext['decay-turns'] = String(decayTurns);
+    state.ext['break-hits'] = String(breakHits);
     const encoded = encodeDecay(state.decay);
     if (encoded) state.ext.decay = encoded;
     else delete state.ext.decay;
+    const hits = encodeHits(state.decayHits);
+    if (hits) state.ext.hits = hits;
+    else delete state.ext.hits;
+    const broken = encodeSquareSet(state.broken);
+    if (broken) state.ext.broken = broken;
+    else delete state.ext.broken;
   }
 
   function ageDecay() {
@@ -113,6 +174,19 @@ export function createDuckGame(serialized, options = {}) {
     for (const square of Object.keys(state.decay)) {
       if (state.decay[square] <= 1) delete state.decay[square];
       else state.decay[square] -= 1;
+    }
+  }
+
+  function hitSquare(square) {
+    if (!decayEnabled || !square) return;
+    const hits = (state.decayHits[square] ?? 0) + 1;
+    if (hits >= breakHits) {
+      delete state.decay[square];
+      delete state.decayHits[square];
+      state.broken[square] = true;
+    } else {
+      state.decayHits[square] = hits;
+      state.decay[square] = decayTurns;
     }
   }
 
@@ -183,7 +257,7 @@ export function createDuckGame(serialized, options = {}) {
     state.duck = square;
     if (decayEnabled) {
       ageDecay();
-      if (previousDuck) state.decay[previousDuck] = decayTurns;
+      hitSquare(previousDuck);
       syncDecayExt();
     }
     // A game resumed from a mid-turn snapshot starts with an empty history (the wire format drops
@@ -200,6 +274,8 @@ export function createDuckGame(serialized, options = {}) {
     getState: () => {
       const snapshot = { ...state, board: state.board.slice(), ext: { ...state.ext } };
       if (state.decay) snapshot.decay = { ...state.decay };
+      if (state.decayHits) snapshot.decayHits = { ...state.decayHits };
+      if (state.broken) snapshot.broken = { ...state.broken };
       return snapshot;
     },
     serialize: () => {
@@ -211,6 +287,7 @@ export function createDuckGame(serialized, options = {}) {
     phase: () => state.phase,
     duckSquare: () => state.duck,
     decaySquares: () => sortedDecaySquares(state.decay),
+    brokenSquares: () => Object.keys(state.broken ?? {}).filter((square) => state.broken[square]).sort(),
     legalPieceTargets: (square) => legalPieceTargets(state, square),
     legalDuckTargets: () => legalDuckTargets(state),
     movePiece,
@@ -221,6 +298,6 @@ export function createDuckGame(serialized, options = {}) {
   };
 }
 
-export function createDuckDecayGame(serialized) {
-  return createDuckGame(serialized, { decay: true, decayTurns: DEFAULT_DECAY_TURNS });
+export function createDuckDecayGame(serialized, options = {}) {
+  return createDuckGame(serialized, { decay: true, ...options });
 }

@@ -39,11 +39,10 @@ export function MoveList({ pairs, className = 'max-h-48', columnClassName = 'w-1
 
 function CapturedRow({ label, color, pieces }) {
   return (
-    <div className="min-w-0">
-      <p className="font-mono text-[0.65rem] font-bold uppercase tracking-wide text-gray-500">{label}</p>
+    <div className="min-w-0" aria-label={`${label}: ${pieces.join(', ') || 'none'}`}>
       <div
-        className="mt-2 flex min-h-16 flex-wrap content-start items-start gap-x-1 gap-y-2 text-2xl leading-none text-foreground"
-        aria-label={`${label}: ${pieces.join(', ') || 'none'}`}
+        className="flex min-h-12 flex-wrap content-start items-start gap-x-1 gap-y-2 text-2xl leading-none text-foreground"
+        aria-hidden="true"
       >
         {pieces.length ? (
           pieces.map((piece, index) => (

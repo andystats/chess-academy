@@ -41,6 +41,12 @@ const DECAY_STYLE = {
   backgroundSize: '100% 100%, auto',
   boxShadow: 'inset 0 0 0 3px rgba(17,24,39,0.28), inset 0 0 24px rgba(234,179,8,0.38)',
 };
+const BROKEN_STYLE = {
+  backgroundColor: 'rgba(17, 24, 39, 0.62)',
+  backgroundImage:
+    'linear-gradient(115deg, transparent 0 42%, rgba(250,204,21,0.78) 43% 47%, transparent 48% 100%), linear-gradient(25deg, transparent 0 52%, rgba(255,255,255,0.28) 53% 56%, transparent 57% 100%)',
+  boxShadow: 'inset 0 0 0 3px rgba(17,24,39,0.62), inset 0 0 18px rgba(0,0,0,0.42)',
+};
 
 const BOARD_THEMES = {
   academy: {
@@ -64,11 +70,12 @@ function buildArrows(arrows) {
   return arrows.map(([from, to, color]) => [from, to, ARROW_COLORS[color] ?? DEFAULT_ARROW]);
 }
 
-function buildSquareStyles({ highlights, selectedSquare, legalTargets, duckSquare, duckTargets, decaySquares }) {
+function buildSquareStyles({ highlights, selectedSquare, legalTargets, duckSquare, duckTargets, decaySquares, brokenSquares }) {
   const styles = {};
   for (const sq of highlights) styles[sq] = { ...HIGHLIGHT_STYLE };
   for (const sq of legalTargets) styles[sq] = { ...(styles[sq] ?? {}), ...TARGET_STYLE };
   for (const sq of decaySquares) styles[sq] = { ...(styles[sq] ?? {}), ...DECAY_STYLE };
+  for (const sq of brokenSquares) styles[sq] = { ...(styles[sq] ?? {}), ...BROKEN_STYLE };
   if (selectedSquare) styles[selectedSquare] = { ...(styles[selectedSquare] ?? {}), ...SELECTED_STYLE };
   for (const sq of duckTargets) styles[sq] = { ...(styles[sq] ?? {}), ...DUCK_TARGET_STYLE };
   if (duckSquare) styles[duckSquare] = { ...(styles[duckSquare] ?? {}), ...DUCK_STYLE }; // duck wins its square
@@ -90,6 +97,7 @@ export default function BoardPanel({
   duckSquare = null,
   duckTargets = [],
   decaySquares = [],
+  brokenSquares = [],
   variant = 'academy',
   className = 'w-full max-w-[34rem]',
   animationDuration = variant === 'arena' ? 520 : 320,
@@ -111,7 +119,7 @@ export default function BoardPanel({
         showPromotionDialog={Boolean(promotionTarget)}
         promotionToSquare={promotionTarget}
         customArrows={buildArrows(arrows)}
-        customSquareStyles={buildSquareStyles({ highlights, selectedSquare, legalTargets, duckSquare, duckTargets, decaySquares })}
+        customSquareStyles={buildSquareStyles({ highlights, selectedSquare, legalTargets, duckSquare, duckTargets, decaySquares, brokenSquares })}
         customBoardStyle={{ borderRadius: 0 }}
         customDarkSquareStyle={{ backgroundColor: theme.dark }}
         customLightSquareStyle={{ backgroundColor: theme.light }}

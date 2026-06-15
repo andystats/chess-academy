@@ -58,10 +58,11 @@ function snapshotView(game) {
     result: game.result(),
     lastMove: lastMoveOf(game),
     decaySquares: game.decaySquares?.() ?? [],
+    brokenSquares: game.brokenSquares?.() ?? [],
   };
 }
 
-export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, selfId }) {
+export function useOnlineGame({ gameId, variant, variantOptions = {}, selfColor, isHost, hostColor, selfId }) {
   const gameRef = useRef(null);
   const seqRef = useRef(0);
   const epochRef = useRef(0); // joiner stays at 0 until its first adopted snapshot
@@ -96,7 +97,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
       }
     }
     if (gameRef.current === null) {
-      gameRef.current = createVariantGame(variant);
+      gameRef.current = createVariantGame(variant, undefined, variantOptions);
       if (isHost) {
         seqRef.current = 1;
         epochRef.current = mintEpoch(0);
@@ -458,7 +459,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
 
   const newGame = useCallback(() => {
     if (!isHost) return;
-    gameRef.current = createVariantGame(variant);
+    gameRef.current = createVariantGame(variant, undefined, variantOptions);
     pendingPieceMoveRef.current = null;
     resignedRef.current = null;
     // New instance: a fresh epoch outranks any seq the joiner reached, so the reset board is
@@ -467,7 +468,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     seqRef.current = 0;
     setOrientation(selfColor);
     broadcastAuthoritative(true);
-  }, [isHost, variant, selfColor, broadcastAuthoritative]);
+  }, [isHost, variant, variantOptions, selfColor, broadcastAuthoritative]);
 
   const flipBoard = useCallback(() => setOrientation(opposite), []);
 
@@ -510,6 +511,7 @@ export function useOnlineGame({ gameId, variant, selfColor, isHost, hostColor, s
     duckSquare: view.duckSquare,
     duckTargets,
     decaySquares: view.decaySquares,
+    brokenSquares: view.brokenSquares,
     selfColor,
     resync,
     messages,
