@@ -13,7 +13,8 @@ import { capturedFromBoard } from '../gameState.js';
 import { boardFen, colorOf, deserialize, initialState, isSquare, serialize, squareToIndex } from './board.js';
 import { generatePieceMoves, legalDuckTargets, legalPieceTargets } from './moves.js';
 
-export const DUCK_DECAY_DEFAULTS = { decayTurns: 2, breakHits: 3 };
+export const DUCK_DECAY_DEFAULTS = { decayTurns: 2, breakHits: 5 };
+export const DUCK_PRIME_DEFAULTS = { charges: 3 };
 const MIN_DECAY_SETTING = 1;
 const MAX_DECAY_SETTING = 9;
 
@@ -86,10 +87,26 @@ function encodeSquareSet(squares = {}) {
   return Object.keys(squares).filter((square) => squares[square]).sort().join(',');
 }
 
-function readDecaySetting(value, fallback) {
+function readDecaySetting(value, fallback, label = 'Duck Decay setting') {
   const parsed = value == null ? fallback : Number(value);
   if (!Number.isSafeInteger(parsed) || parsed < MIN_DECAY_SETTING || parsed > MAX_DECAY_SETTING) {
-    throw new Error(`Invalid Duck Decay setting '${value}'`);
+    throw new Error(`Invalid ${label} '${value}'`);
+  }
+  return parsed;
+}
+
+// Duck Prime extensions. The flag is the single switch (only '1' is truthy); the charge allotment
+// reuses the [1,9] decay-setting bounds; remaining charges may also be 0 (a spent pool).
+function readPrimeFlag(value) {
+  if (value == null) return false;
+  if (value === '1') return true;
+  throw new Error(`Invalid Duck Prime flag '${value}'`);
+}
+
+function readChargeRemaining(value, allotment, fallback) {
+  const parsed = value == null ? fallback : Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 0 || parsed > allotment) {
+    throw new Error(`Invalid Duck Prime charge count '${value}'`);
   }
   return parsed;
 }
@@ -146,12 +163,24 @@ export function createDuckGame(serialized, options = {}) {
   const decayEnabled = options.decay === true;
   const decayTurns = readDecaySetting(state.ext['decay-turns'], options.decayTurns ?? DUCK_DECAY_DEFAULTS.decayTurns);
   const breakHits = readDecaySetting(state.ext['break-hits'], options.breakHits ?? DUCK_DECAY_DEFAULTS.breakHits);
+  // Prime rides on top of decay (it acts on the decay/broken maps), so it is gated behind decayEnabled.
+  // primeEnabled/chargeAllotment are closure-scoped, not on `state`; getState() re-adds them explicitly.
+  const primeEnabled = decayEnabled && (options.prime === true || readPrimeFlag(state.ext.prime));
+  const chargeAllotment = primeEnabled
+    ? readDecaySetting(state.ext.charges, options.charges ?? DUCK_PRIME_DEFAULTS.charges, 'Duck Prime charges')
+    : null;
   if (decayEnabled) {
     state.decayTurns = decayTurns;
     state.breakHits = breakHits;
     state.broken = decodeSquareSet(state.ext.broken, state);
     state.decay = decodeDecay(state.ext.decay, state, decayTurns);
     state.decayHits = decodeHits(state.ext.hits, breakHits);
+  }
+  if (primeEnabled) {
+    state.charges = {
+      w: readChargeRemaining(state.ext['charges-w'], chargeAllotment, chargeAllotment),
+      b: readChargeRemaining(state.ext['charges-b'], chargeAllotment, chargeAllotment),
+    };
   }
 
   function syncDecayExt() {
@@ -167,6 +196,14 @@ export function createDuckGame(serialized, options = {}) {
     const broken = encodeSquareSet(state.broken);
     if (broken) state.ext.broken = broken;
     else delete state.ext.broken;
+  }
+
+  function syncPrimeExt() {
+    if (!primeEnabled) return;
+    state.ext.prime = '1';
+    state.ext.charges = String(chargeAllotment);
+    state.ext['charges-w'] = String(state.charges.w);
+    state.ext['charges-b'] = String(state.charges.b);
   }
 
   function ageDecay() {
@@ -190,7 +227,16 @@ export function createDuckGame(serialized, options = {}) {
     }
   }
 
+  // Hand the turn to the opponent: a full move completes after Black, then flip side and reset to the
+  // piece phase. Shared by placeDuck, liftDuck, and repairSquare.
+  function endTurn() {
+    if (state.turn === 'b') state.fullmove += 1;
+    state.turn = state.turn === 'w' ? 'b' : 'w';
+    state.phase = 'piece';
+  }
+
   syncDecayExt();
+  syncPrimeExt();
   // History is one entry per *turn*: the piece move plus the duck square placed after it.
   const turns = [];
 
@@ -259,13 +305,54 @@ export function createDuckGame(serialized, options = {}) {
       ageDecay();
       hitSquare(previousDuck);
       syncDecayExt();
+      syncPrimeExt();
     }
     // A game resumed from a mid-turn snapshot starts with an empty history (the wire format drops
     // it), so there may be no turn entry to annotate — the duck still places; only the log skips.
     if (turns.length) turns[turns.length - 1].duck = square;
-    if (state.turn === 'b') state.fullmove += 1; // a full move completes after Black's turn
-    state.turn = state.turn === 'w' ? 'b' : 'w';
-    state.phase = 'piece';
+    endTurn();
+
+    return { ok: true, result: result() };
+  }
+
+  // Duck Prime: lift the duck off the board instead of placing it, for one charge. The duck is gone
+  // for the opponent's turn; the vacated square leaves NO new scar (unlike placeDuck, which hits the
+  // square the duck left). Only legal mid-turn with a duck on the board and a charge in hand.
+  function liftDuck() {
+    if (result() || state.phase !== 'duck' || !primeEnabled) return { ok: false };
+    if (state.duck == null || state.charges[state.turn] <= 0) return { ok: false };
+
+    state.charges[state.turn] -= 1;
+    state.duck = null;
+    ageDecay(); // a turn passed; existing decay still ages toward repair (but nothing new is hit)
+    syncDecayExt();
+    syncPrimeExt();
+    if (turns.length) {
+      turns[turns.length - 1].duck = null;
+      turns[turns.length - 1].lift = true;
+    }
+    endTurn();
+
+    return { ok: true, result: result() };
+  }
+
+  // Duck Prime: spend a charge to instantly restore one decayed OR shattered square — this is your
+  // whole turn (no piece move; the duck stays put). Clearing decayHits too "defuses" a square near
+  // its break threshold and is the only way to undo a permanent shatter.
+  function repairSquare(square) {
+    if (result() || state.phase !== 'piece' || !primeEnabled) return { ok: false };
+    if (state.charges[state.turn] <= 0 || !isSquare(square)) return { ok: false };
+    const repairable = state.decay[square] > 0 || state.broken[square] === true;
+    if (!repairable) return { ok: false };
+
+    state.charges[state.turn] -= 1;
+    delete state.decay[square];
+    delete state.decayHits[square];
+    delete state.broken[square];
+    syncDecayExt();
+    syncPrimeExt();
+    turns.push({ pieceMove: null, san: `⚒${square}`, duck: state.duck, repair: square });
+    endTurn();
 
     return { ok: true, result: result() };
   }
@@ -276,10 +363,18 @@ export function createDuckGame(serialized, options = {}) {
       if (state.decay) snapshot.decay = { ...state.decay };
       if (state.decayHits) snapshot.decayHits = { ...state.decayHits };
       if (state.broken) snapshot.broken = { ...state.broken };
+      // primeEnabled/chargeAllotment are closure-scoped (the `...state` spread misses them), so re-add
+      // them explicitly; clone state.charges so the snapshot doesn't alias the live counters.
+      if (primeEnabled) {
+        snapshot.primeEnabled = true;
+        snapshot.chargeAllotment = chargeAllotment;
+        snapshot.charges = { ...state.charges };
+      }
       return snapshot;
     },
     serialize: () => {
       syncDecayExt();
+      syncPrimeExt();
       return serialize(state);
     },
     boardFen: () => boardFen(state),
@@ -287,11 +382,26 @@ export function createDuckGame(serialized, options = {}) {
     phase: () => state.phase,
     duckSquare: () => state.duck,
     decaySquares: () => sortedDecaySquares(state.decay),
+    // Per-square crack counts (incl. regrown "scars" where decay==0 but hits>0) so the board can
+    // show how close a square is to shattering. Null-guards the map for plain (non-decay) duck.
+    decayLevels: () => {
+      const levels = {};
+      for (const square of Object.keys(state.decayHits ?? {})) {
+        if (state.decayHits[square] > 0) levels[square] = state.decayHits[square];
+      }
+      return levels;
+    },
+    breakHitsValue: () => (decayEnabled ? breakHits : null),
     brokenSquares: () => Object.keys(state.broken ?? {}).filter((square) => state.broken[square]).sort(),
+    primeEnabled: () => primeEnabled,
+    chargeAllotment: () => chargeAllotment,
+    chargesLeft: () => (primeEnabled ? { white: state.charges.w, black: state.charges.b } : null),
     legalPieceTargets: (square) => legalPieceTargets(state, square),
     legalDuckTargets: () => legalDuckTargets(state),
     movePiece,
     placeDuck,
+    liftDuck,
+    repairSquare,
     result,
     history: () => turns.map((turn) => ({ ...turn })),
     captured: () => capturedFromBoard(state.board),

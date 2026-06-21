@@ -19,6 +19,8 @@ function readDuckDecayOptions(searchParams) {
   return {
     decayTurns: numberParam('decay', defaults.decayTurns),
     breakHits: numberParam('break', defaults.breakHits),
+    prime: searchParams.get('prime') === '1',
+    charges: numberParam('charges', defaults.charges),
   };
 }
 

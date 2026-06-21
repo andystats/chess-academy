@@ -18,7 +18,7 @@
 // A resignation rides snapshots as an optional `result` field — engine state (a FEN superset) has no
 // home for it, so the controller stores it and re-imposes it on the rebuilt instance on both ends.
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { opposite } from '../lesson/moves.js';
 import { isSquare } from '../engine/duck/board.js';
 import { createVariantGame, lastMoveOf } from './rules.js';
@@ -58,7 +58,12 @@ function snapshotView(game) {
     result: game.result(),
     lastMove: lastMoveOf(game),
     decaySquares: game.decaySquares?.() ?? [],
+    decayLevels: game.decayLevels?.() ?? {},
+    breakHits: game.breakHitsValue?.() ?? null,
     brokenSquares: game.brokenSquares?.() ?? [],
+    primeEnabled: game.primeEnabled?.() ?? false,
+    charges: game.chargesLeft?.() ?? null,
+    chargeAllotment: game.chargeAllotment?.() ?? null,
   };
 }
 
@@ -123,6 +128,8 @@ export function useOnlineGame({ gameId, variant, variantOptions = {}, selfColor,
   const [liveSynced, setLiveSynced] = useState(isHost);
   // The joiner's color is claimed by a different id in the authoritative seat map → spectator mode.
   const [seatTaken, setSeatTaken] = useState(false);
+  // Duck Prime: while on, the next click on a decayed/broken square spends a charge to repair it.
+  const [repairMode, setRepairMode] = useState(false);
 
   const sync = useCallback(() => {
     setView(composeView());
@@ -179,14 +186,27 @@ export function useOnlineGame({ gameId, variant, variantOptions = {}, selfColor,
   // Host: apply a remote move-intent to the authoritative game, then broadcast the new snapshot.
   const applyIntent = useCallback(
     (intent) => {
-      if (!isHost || !intent?.pieceMove) return;
+      if (!isHost) return;
       if (resignedRef.current) return; // a resigned game accepts no further moves
       // Shape-check the payload before anything else: the channel is public, so a malformed intent
       // is ignored outright — it must never crash the host or reach the engine (threat model 3.3).
-      const { from, to, promotion } = intent.pieceMove;
-      if (!isSquare(from) || !isSquare(to)) return;
-      if (promotion != null && !['q', 'r', 'b', 'n'].includes(promotion)) return;
+      const prime = intent?.prime ?? null;
+      const isRepair = prime?.action === 'repair';
+      if (!isRepair && !intent?.pieceMove) return; // every intent but a Duck Prime repair carries a piece move
+      if (intent.pieceMove != null) {
+        const { from, to, promotion } = intent.pieceMove;
+        if (!isSquare(from) || !isSquare(to)) return;
+        if (promotion != null && !['q', 'r', 'b', 'n'].includes(promotion)) return;
+      }
       if (intent.duckSquare != null && !isSquare(intent.duckSquare)) return;
+      if (prime != null) {
+        if (typeof prime !== 'object') return;
+        if (prime.action === 'repair') {
+          if (!isSquare(prime.square)) return;
+        } else if (prime.action !== 'lift') {
+          return; // unknown prime action — ignore outright
+        }
+      }
       const game = gameRef.current;
       const color = game.turnColor();
       // Seats follow presence. An unclaimed color goes to the first id that moves on it — with a
@@ -214,7 +234,21 @@ export function useOnlineGame({ gameId, variant, variantOptions = {}, selfColor,
       // duck placement then fails — that would strand every client in a half-turn that no follow-up
       // intent can complete. Once the probe passes, the same ops cannot fail on the real instance.
       const probe = createVariantGame(variant, game.serialize());
+      // Duck Prime repair is a whole turn by itself (no piece move): probe + apply the heal alone.
+      if (isRepair) {
+        if (!probe.repairSquare(prime.square).ok) return broadcastAuthoritative(true);
+        game.repairSquare(prime.square);
+        return broadcastAuthoritative(true);
+      }
       if (!probe.movePiece(intent.pieceMove).ok) return broadcastAuthoritative(true); // illegal → resync
+      // Duck Prime lift: after the piece move, lift the duck off instead of placing it. Skipped when
+      // the move captured the king (the clone stays in the piece phase) — the game simply ends.
+      if (prime?.action === 'lift') {
+        if (probe.phase() === 'duck' && !probe.result() && !probe.liftDuck().ok) return broadcastAuthoritative(true);
+        game.movePiece(intent.pieceMove);
+        if (game.phase() === 'duck' && !game.result()) game.liftDuck();
+        return broadcastAuthoritative(true);
+      }
       if (probe.phase() === 'duck' && !probe.result()) {
         if (!intent.duckSquare || !probe.placeDuck(intent.duckSquare).ok) return broadcastAuthoritative(true);
       }
@@ -299,6 +333,7 @@ export function useOnlineGame({ gameId, variant, variantOptions = {}, selfColor,
       pendingIntentRef.current = null; // a newer authoritative state means our move was applied or rolled back
       intentRetriesRef.current = 0;
       pendingPieceMoveRef.current = null; // and any half-entered local turn is superseded with it
+      setRepairMode(false); // a pending repair selection is void once the authoritative board moves on
       if (snapshot.players && typeof snapshot.players === 'object') {
         playersRef.current = { white: snapshot.players.white ?? null, black: snapshot.players.black ?? null };
       }
@@ -392,6 +427,18 @@ export function useOnlineGame({ gameId, variant, variantOptions = {}, selfColor,
     channel.status === 'connected' && synced && liveSynced && !seatTaken &&
     isMyTurn && view.phase === 'piece' && !view.result;
 
+  // Duck Prime action availability — both spend one of the acting side's shared charges.
+  const canLiftDuck =
+    view.phase === 'duck' && isMyTurn && !view.result &&
+    view.primeEnabled && view.charges?.[selfColor] > 0 && Boolean(view.duckSquare);
+  const repairTargets = useMemo(
+    () =>
+      view.primeEnabled && isMyTurn && view.phase === 'piece' && !view.result && view.charges?.[selfColor] > 0
+        ? [...view.decaySquares, ...view.brokenSquares]
+        : [],
+    [view.primeEnabled, isMyTurn, view.phase, view.result, view.charges, view.decaySquares, view.brokenSquares, selfColor],
+  );
+
   // Commit a completed turn: the host broadcasts authoritatively; the joiner sends an intent.
   const commitTurn = useCallback(
     (duckSquare) => {
@@ -429,6 +476,45 @@ export function useOnlineGame({ gameId, variant, variantOptions = {}, selfColor,
     [canMovePiece, sync, commitTurn],
   );
 
+  // Duck Prime: lift the duck (spend a charge) instead of placing it, completing the turn. The piece
+  // move was already applied optimistically by playPieceMove; here we only lift + commit (host
+  // broadcasts, joiner sends the intent) — mirroring commitTurn's split.
+  const liftDuck = useCallback(() => {
+    if (!canLiftDuck || !gameRef.current.liftDuck().ok) return;
+    const pieceMove = pendingPieceMoveRef.current;
+    pendingPieceMoveRef.current = null;
+    if (isHost) {
+      broadcastAuthoritative(true);
+    } else {
+      const intent = { by: selfId, pieceMove, duckSquare: null, prime: { action: 'lift' } };
+      pendingIntentRef.current = intent; // retransmit until a newer snapshot confirms/rolls back
+      intentRetriesRef.current = 0;
+      channelRef.current?.sendMoveIntent(intent);
+      sync();
+    }
+  }, [canLiftDuck, isHost, broadcastAuthoritative, selfId, sync]);
+
+  // Duck Prime: spend a charge to repair a decayed/broken square — the whole turn (no piece move).
+  const repairSquare = useCallback(
+    (square) => {
+      if (!repairTargets.includes(square) || !gameRef.current.repairSquare(square).ok) return;
+      pendingPieceMoveRef.current = null;
+      setRepairMode(false);
+      if (isHost) {
+        broadcastAuthoritative(true);
+      } else {
+        const intent = { by: selfId, pieceMove: null, duckSquare: null, prime: { action: 'repair', square } };
+        pendingIntentRef.current = intent;
+        intentRetriesRef.current = 0;
+        channelRef.current?.sendMoveIntent(intent);
+        sync();
+      }
+    },
+    [repairTargets, isHost, broadcastAuthoritative, selfId, sync],
+  );
+
+  const toggleRepairMode = useCallback(() => setRepairMode((on) => !on), []);
+
   const {
     selectedSquare,
     legalTargets,
@@ -446,6 +532,11 @@ export function useOnlineGame({ gameId, variant, variantOptions = {}, selfColor,
   const onSquareClick = useCallback(
     (square) => {
       const game = gameRef.current;
+      // Duck Prime repair mode: a click on a decayed/broken target heals it and ends the turn.
+      if (repairMode && repairTargets.includes(square)) {
+        repairSquare(square);
+        return;
+      }
       // Duck phase: a click on a legal empty square places the duck and completes the turn.
       if (view.phase === 'duck' && isMyTurn && !view.result) {
         if (game.legalDuckTargets().includes(square) && game.placeDuck(square).ok) commitTurn(square);
@@ -454,7 +545,7 @@ export function useOnlineGame({ gameId, variant, variantOptions = {}, selfColor,
       // Piece phase: handled by the shared hook.
       onBaseSquareClick(square);
     },
-    [view.phase, view.result, isMyTurn, commitTurn, onBaseSquareClick],
+    [repairMode, repairTargets, repairSquare, view.phase, view.result, isMyTurn, commitTurn, onBaseSquareClick],
   );
 
   const newGame = useCallback(() => {
@@ -511,7 +602,19 @@ export function useOnlineGame({ gameId, variant, variantOptions = {}, selfColor,
     duckSquare: view.duckSquare,
     duckTargets,
     decaySquares: view.decaySquares,
+    decayLevels: view.decayLevels,
+    breakHits: view.breakHits,
     brokenSquares: view.brokenSquares,
+    // Duck Prime: per-player charges + the lift/repair controls (all no-ops unless primeEnabled).
+    primeEnabled: view.primeEnabled,
+    charges: view.charges,
+    chargeAllotment: view.chargeAllotment,
+    canLiftDuck,
+    liftDuck,
+    repairTargets,
+    repairMode,
+    repairSquare,
+    toggleRepairMode,
     selfColor,
     resync,
     messages,

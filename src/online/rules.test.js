@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createVariantGame, lastMoveOf, VARIANTS } from './rules.js';
+import { createVariantGame, lastMoveOf, variantOptionsFromSerialized, VARIANTS } from './rules.js';
 
 const INTERFACE = [
   'serialize',
@@ -8,7 +8,12 @@ const INTERFACE = [
   'phase',
   'duckSquare',
   'decaySquares',
+  'decayLevels',
+  'breakHitsValue',
   'brokenSquares',
+  'primeEnabled',
+  'chargeAllotment',
+  'chargesLeft',
   'legalPieceTargets',
   'legalDuckTargets',
   'movePiece',
@@ -93,5 +98,32 @@ describe('variant registry', () => {
       expect(typeof entry.create, id).toBe('function');
       expect(() => createVariantGame(id)).not.toThrow();
     }
+  });
+});
+
+describe('duck-decay prime options', () => {
+  it('round-trips the prime toggle and charge allotment through the serialized state', () => {
+    const prime = createVariantGame('duck-decay', undefined, { prime: true, charges: 4 });
+    expect(variantOptionsFromSerialized('duck-decay', prime.serialize())).toMatchObject({ prime: true, charges: 4 });
+
+    const plain = createVariantGame('duck-decay');
+    expect(variantOptionsFromSerialized('duck-decay', plain.serialize())).toMatchObject({ prime: false });
+  });
+
+  it('exposes inert decay/prime accessors for the non-decay variants', () => {
+    for (const variant of ['standard', 'duck']) {
+      const game = createVariantGame(variant);
+      expect(game.breakHitsValue(), variant).toBeNull();
+      expect(game.decayLevels(), variant).toEqual({});
+      expect(game.primeEnabled(), variant).toBe(false);
+      expect(game.chargesLeft(), variant).toBeNull();
+    }
+  });
+});
+
+describe('lastMoveOf', () => {
+  it('returns null for a repair turn (a null piece move has nothing to highlight)', () => {
+    expect(lastMoveOf({ history: () => [{ pieceMove: null, san: '⚒e4', repair: 'e4' }] })).toBeNull();
+    expect(lastMoveOf({ history: () => [] })).toBeNull();
   });
 });
