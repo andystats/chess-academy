@@ -1,7 +1,29 @@
 /// <reference types="vitest" />
 import { createHash } from 'node:crypto'
+import { execSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+
+// A short commit id for the in-app build stamp (a static package version can't tell you whether a
+// deploy actually shipped). Prefer a CI-provided SHA — the build checkout may be shallow or lack git
+// — then fall back to local git, then to 'dev'.
+function gitShortSha() {
+  const fromEnv =
+    process.env.VITE_GIT_SHA ||
+    process.env.GITHUB_SHA ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.CF_PAGES_COMMIT_SHA ||
+    process.env.COMMIT_REF
+  if (fromEnv) return fromEnv.slice(0, 7)
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+  } catch {
+    return 'dev'
+  }
+}
 
 // Build-only Content-Security-Policy, injected as a <meta> tag (GitHub Pages can't set response
 // headers; the same built HTML also covers Vercel). Dev is excluded on purpose — the dev server
@@ -63,6 +85,9 @@ export default defineConfig(({ mode }) => {
     define: {
       'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL ?? ''),
       'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY ?? ''),
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),
+      'import.meta.env.VITE_GIT_SHA': JSON.stringify(gitShortSha()),
+      'import.meta.env.VITE_BUILD_TIME': JSON.stringify(new Date().toISOString()),
     },
     plugins: [react(), cspPlugin()],
     test: {

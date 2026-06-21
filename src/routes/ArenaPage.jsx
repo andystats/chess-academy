@@ -5,6 +5,7 @@ import { useProfile } from '../profile/ProfileContext.jsx';
 import Badge from '../components/ui/Badge.jsx';
 import ArenaRoadmapFlipCard from '../components/ArenaRoadmapFlipCard.jsx';
 import StylizedKingScene from '../components/StylizedKingScene.jsx';
+import VersionStamp from '../components/VersionStamp.jsx';
 
 // Strip the "scenarios/" id prefix to build the route, mirroring how lesson ids map to /lesson/*.
 const scenarioSlug = (scenario) => scenario.id.replace(/^scenarios\//, '');
@@ -106,6 +107,7 @@ export default function ArenaPage() {
       </section>
 
       <ArenaRoadmapFlipCard />
+      <VersionStamp />
     </div>
   );
 }
