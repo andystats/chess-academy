@@ -24,7 +24,11 @@ export default function EngineGameView({ game, panel }) {
           duckSquare={game.duckSquare}
           duckTargets={game.duckTargets}
           decaySquares={game.decaySquares}
+          decayLevels={game.decayLevels}
+          breakHits={game.breakHits}
           brokenSquares={game.brokenSquares}
+          repairTargets={game.repairTargets}
+          repairMode={game.repairMode}
         />
       }
       panel={panel}

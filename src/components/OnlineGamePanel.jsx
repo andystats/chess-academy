@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import clsx from 'clsx';
-import { Link2, RefreshCw, RotateCcw, Flag } from 'lucide-react';
+import { Link2, RefreshCw, RotateCcw, Flag, ArrowUp, Wrench } from 'lucide-react';
 import { CapturedPieces, MoveList, pairMoves, resultText } from './gamePanelParts.jsx';
 import ChatBox from './ChatBox.jsx';
 import { VARIANTS } from '../online/rules.js';
@@ -12,11 +12,13 @@ import { VARIANTS } from '../online/rules.js';
 // a SAN string — so the move list always needs this formatter (rendering the raw entry crashes React).
 function moveLabel(entry) {
   if (!entry) return '';
+  if (entry.repair) return `⚒${entry.repair}`; // a Duck Prime repair turn (no piece move)
+  if (entry.lift) return `${entry.san} 🦆⤴`; // duck lifted off the board instead of placed
   return entry.duck ? `${entry.san} 🦆${entry.duck}` : entry.san;
 }
 
 function statusText(game) {
-  const { connection, result, currentTurn, selfColor, phase, isHost } = game;
+  const { connection, result, currentTurn, selfColor, phase, isHost, repairMode, canLiftDuck } = game;
   if (result) return resultText(result);
   if (connection.status === 'unconfigured') return 'Online play is not configured';
   if (connection.status === 'connecting') return 'Connecting…';
@@ -27,7 +29,8 @@ function statusText(game) {
   if (!connection.synced || !connection.liveSynced) return 'Waiting for host…';
   if (!connection.peerPresent) return 'Waiting for opponent…';
   const myTurn = currentTurn === selfColor;
-  if (phase === 'duck' && myTurn) return 'Place the duck 🦆';
+  if (repairMode && myTurn) return 'Pick a square to repair ⚒';
+  if (phase === 'duck' && myTurn) return canLiftDuck ? 'Place the duck 🦆 or Lift it' : 'Place the duck 🦆';
   return myTurn ? 'Your move' : "Opponent's move";
 }
 
@@ -86,6 +89,24 @@ export default function OnlineGamePanel({ game }) {
         )}
       </div>
 
+      {game.primeEnabled && game.charges && (
+        <div className="flex flex-col gap-2 border-b-3 border-foreground pb-4">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            Prime charges (lift / repair)
+          </p>
+          <div className="flex items-center gap-5 font-display text-xl font-bold uppercase tracking-tight">
+            <span className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full border border-gray-300 bg-white" />
+              {game.charges.white}
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full bg-gray-900" />
+              {game.charges.black}
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 space-y-6 overflow-y-auto pr-1">
         {!game.result && status === 'connected' && game.connection.synced && !game.connection.peerPresent && (
           <p className="text-xs leading-5 text-gray-500">
@@ -114,6 +135,25 @@ export default function OnlineGamePanel({ game }) {
         <button type="button" onClick={game.flipBoard} className="tao-btn-ghost text-sm">
           <RotateCcw size={16} /> Flip
         </button>
+        {game.canLiftDuck && (
+          <button type="button" onClick={game.liftDuck} className="tao-btn-ghost text-sm">
+            <ArrowUp size={16} /> Lift duck
+          </button>
+        )}
+        {game.primeEnabled && !game.result && game.currentTurn === game.selfColor && game.phase === 'piece' && (
+          <button
+            type="button"
+            onClick={game.toggleRepairMode}
+            disabled={!game.repairMode && game.repairTargets.length === 0}
+            className={clsx(
+              'tao-btn-ghost text-sm',
+              game.repairMode && 'bg-brand-50 text-brand-700',
+              !game.repairMode && game.repairTargets.length === 0 && 'opacity-40',
+            )}
+          >
+            <Wrench size={16} /> {game.repairMode ? 'Cancel repair' : 'Repair square'}
+          </button>
+        )}
         {!game.result && (
           <button type="button" onClick={game.resign} className="tao-btn-ghost text-sm">
             <Flag size={16} /> Resign

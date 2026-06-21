@@ -1,7 +1,10 @@
+import { useEffect, useRef, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
+import { buildSquareStyles } from './boardSquareStyles.js';
 
-// Wraps react-chessboard and translates the lesson engine's overlays (teaching highlights,
-// hint/annotation arrows, tap-to-move selection) into the board's customSquareStyles/customArrows.
+// Wraps react-chessboard and translates the lesson/arena engines' overlays (teaching highlights,
+// hint/annotation arrows, tap-to-move selection, and the Duck variants' duck/decay terrain) into the
+// board's customSquareStyles/customArrows. The pure square-style mapping lives in boardSquareStyles.js.
 
 const ARROW_COLORS = {
   good: 'rgb(34, 197, 94)',
@@ -9,44 +12,6 @@ const ARROW_COLORS = {
   idea: 'rgb(47, 111, 237)',
 };
 const DEFAULT_ARROW = 'rgb(47, 111, 237)';
-
-const HIGHLIGHT_STYLE = { backgroundColor: 'rgba(250, 204, 21, 0.45)' };
-const SELECTED_STYLE = { background: 'rgba(47, 111, 237, 0.45)' };
-const TARGET_STYLE = {
-  background: 'radial-gradient(circle, rgba(47,111,237,0.5) 22%, transparent 24%)',
-};
-
-// Duck Chess overlay. react-chessboard's `Piece`/`CustomPieces` types are a closed union of standard
-// piece codes, so the duck can't be a real piece — it's drawn as a square background instead. The
-// amber fill marks the square even if the emoji glyph fails to render; the glyph rides on top via a
-// data-URI SVG. Duck-target squares (where the duck may move this turn) get a softer amber dot.
-const DUCK_GLYPH = `data:image/svg+xml,${encodeURIComponent(
-  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50' y='54' font-size='66' text-anchor='middle' dominant-baseline='central'>🦆</text></svg>",
-)}`;
-const DUCK_STYLE = {
-  backgroundColor: 'rgba(250, 204, 21, 0.85)',
-  backgroundImage: `url("${DUCK_GLYPH}")`,
-  backgroundSize: '80%',
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'center',
-};
-const DUCK_TARGET_STYLE = {
-  background: 'radial-gradient(circle, rgba(234,179,8,0.55) 24%, transparent 26%)',
-};
-const DECAY_STYLE = {
-  animation: 'duck-decay-pulse 1.4s ease-in-out infinite',
-  backgroundColor: 'rgba(17, 24, 39, 0.28)',
-  backgroundImage:
-    'radial-gradient(circle at 50% 50%, rgba(250,204,21,0.52) 0 18%, transparent 20%), repeating-linear-gradient(135deg, rgba(17,24,39,0.42) 0 5px, rgba(17,24,39,0.12) 5px 10px)',
-  backgroundSize: '100% 100%, auto',
-  boxShadow: 'inset 0 0 0 3px rgba(17,24,39,0.28), inset 0 0 24px rgba(234,179,8,0.38)',
-};
-const BROKEN_STYLE = {
-  backgroundColor: 'rgba(17, 24, 39, 0.62)',
-  backgroundImage:
-    'linear-gradient(115deg, transparent 0 42%, rgba(250,204,21,0.78) 43% 47%, transparent 48% 100%), linear-gradient(25deg, transparent 0 52%, rgba(255,255,255,0.28) 53% 56%, transparent 57% 100%)',
-  boxShadow: 'inset 0 0 0 3px rgba(17,24,39,0.62), inset 0 0 18px rgba(0,0,0,0.42)',
-};
 
 const BOARD_THEMES = {
   academy: {
@@ -66,20 +31,14 @@ const BOARD_THEMES = {
   },
 };
 
-function buildArrows(arrows) {
-  return arrows.map(([from, to, color]) => [from, to, ARROW_COLORS[color] ?? DEFAULT_ARROW]);
+function prefersReducedMotion() {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false;
 }
 
-function buildSquareStyles({ highlights, selectedSquare, legalTargets, duckSquare, duckTargets, decaySquares, brokenSquares }) {
-  const styles = {};
-  for (const sq of highlights) styles[sq] = { ...HIGHLIGHT_STYLE };
-  for (const sq of legalTargets) styles[sq] = { ...(styles[sq] ?? {}), ...TARGET_STYLE };
-  for (const sq of decaySquares) styles[sq] = { ...(styles[sq] ?? {}), ...DECAY_STYLE };
-  for (const sq of brokenSquares) styles[sq] = { ...(styles[sq] ?? {}), ...BROKEN_STYLE };
-  if (selectedSquare) styles[selectedSquare] = { ...(styles[selectedSquare] ?? {}), ...SELECTED_STYLE };
-  for (const sq of duckTargets) styles[sq] = { ...(styles[sq] ?? {}), ...DUCK_TARGET_STYLE };
-  if (duckSquare) styles[duckSquare] = { ...(styles[duckSquare] ?? {}), ...DUCK_STYLE }; // duck wins its square
-  return styles;
+function buildArrows(arrows) {
+  return arrows.map(([from, to, color]) => [from, to, ARROW_COLORS[color] ?? DEFAULT_ARROW]);
 }
 
 export default function BoardPanel({
@@ -97,12 +56,66 @@ export default function BoardPanel({
   duckSquare = null,
   duckTargets = [],
   decaySquares = [],
+  decayLevels = {},
+  breakHits = null,
   brokenSquares = [],
+  repairTargets = [],
+  repairMode = false,
   variant = 'academy',
   className = 'w-full max-w-[34rem]',
   animationDuration = variant === 'arena' ? 520 : 320,
 }) {
   const theme = BOARD_THEMES[variant] ?? BOARD_THEMES.academy;
+  const reduceMotion = prefersReducedMotion();
+
+  // One-shot glass animations: diff square-set membership across renders and fire `glass-shatter` on a
+  // newly broken square and `glass-repair` on one that left every cracked tier (decayed/scar/broken).
+  // snapshotView rebuilds the arrays each sync, so we compare by square string, not array identity.
+  const [pulses, setPulses] = useState({});
+  const prevSetsRef = useRef({ decay: new Set(), scar: new Set(), broken: new Set() });
+  const pulseCounterRef = useRef(0);
+  const timersRef = useRef({});
+
+  useEffect(() => {
+    const blocking = new Set([...decaySquares, ...brokenSquares]);
+    const decay = new Set(decaySquares);
+    const broken = new Set(brokenSquares);
+    const scar = new Set(Object.keys(decayLevels).filter((sq) => !blocking.has(sq)));
+    const prev = prevSetsRef.current;
+    const gone = (sq, ...sets) => sets.every((s) => !s.has(sq));
+    const triggered = [];
+    for (const sq of broken) if (!prev.broken.has(sq)) triggered.push([sq, 'shatter']);
+    for (const sq of prev.decay) if (gone(sq, decay, broken, scar)) triggered.push([sq, 'repair']);
+    for (const sq of prev.scar) if (gone(sq, decay, broken, scar)) triggered.push([sq, 'repair']);
+    for (const sq of prev.broken) if (gone(sq, decay, broken, scar)) triggered.push([sq, 'repair']);
+    prevSetsRef.current = { decay, scar, broken };
+
+    if (!triggered.length || reduceMotion) return;
+    setPulses((current) => {
+      const next = { ...current };
+      for (const [sq, type] of triggered) {
+        pulseCounterRef.current += 1;
+        next[sq] = { type, n: pulseCounterRef.current };
+        clearTimeout(timersRef.current[sq]);
+        timersRef.current[sq] = setTimeout(() => {
+          delete timersRef.current[sq];
+          setPulses((p) => {
+            const m = { ...p };
+            delete m[sq];
+            return m;
+          });
+        }, 640);
+      }
+      return next;
+    });
+  }, [decaySquares, brokenSquares, decayLevels, reduceMotion]);
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      for (const id of Object.values(timers)) clearTimeout(id);
+    };
+  }, []);
 
   return (
     // No overflow-hidden: it would clip react-chessboard's promotion picker. Square corners also
@@ -119,7 +132,10 @@ export default function BoardPanel({
         showPromotionDialog={Boolean(promotionTarget)}
         promotionToSquare={promotionTarget}
         customArrows={buildArrows(arrows)}
-        customSquareStyles={buildSquareStyles({ highlights, selectedSquare, legalTargets, duckSquare, duckTargets, decaySquares, brokenSquares })}
+        customSquareStyles={buildSquareStyles({
+          highlights, selectedSquare, legalTargets, duckSquare, duckTargets,
+          decaySquares, decayLevels, breakHits, brokenSquares, repairTargets, repairMode, pulses, reduceMotion,
+        })}
         customBoardStyle={{ borderRadius: 0 }}
         customDarkSquareStyle={{ backgroundColor: theme.dark }}
         customLightSquareStyle={{ backgroundColor: theme.light }}

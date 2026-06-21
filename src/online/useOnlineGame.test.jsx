@@ -589,3 +589,132 @@ describe('resign', () => {
     expect(transport.broadcastSnapshot.mock.calls.at(-1)[0].result).toBeNull();
   });
 });
+
+describe('duck-decay prime', () => {
+  const seatedHost = (gameId, state) => {
+    saveSnapshot(gameId, { epoch: 1, seq: 5, variant: 'duck-decay', hostColor: 'white', players: { white: 'host', black: 'joiner' }, state });
+    return { gameId, variant: 'duck-decay', selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
+  };
+  // A starting position with a duck already on e3 (white placed it) and black to move, prime on.
+  const DUCK_ON_E3 = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b piece e3 KQkq - 0 1 break-hits=5 charges=2 charges-b=2 charges-w=2 prime=1';
+
+  it('host applies a valid lift intent: duck removed, charge spent, turn passes', () => {
+    const { result } = renderHook(() => useOnlineGame(seatedHost('p1', DUCK_ON_E3)));
+    expect(result.current.charges).toEqual({ white: 2, black: 2 });
+    transport.broadcastSnapshot.mockClear();
+
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: { from: 'e7', to: 'e5', promotion: 'q' }, duckSquare: null, prime: { action: 'lift' } }));
+    expect(transport.broadcastSnapshot).toHaveBeenCalledTimes(1);
+    expect(result.current.duckSquare).toBeNull();
+    expect(result.current.currentTurn).toBe('white');
+    expect(result.current.charges).toEqual({ white: 2, black: 1 });
+  });
+
+  it('host applies a valid repair intent: square healed, charge spent, turn passes', () => {
+    const { result } = renderHook(() => useOnlineGame(seatedHost('p2', '4k3/8/8/8/8/8/8/4K3 b piece - - - 0 1 break-hits=5 broken=e4 charges=2 charges-b=2 charges-w=2 prime=1')));
+    expect(result.current.brokenSquares).toEqual(['e4']);
+    transport.broadcastSnapshot.mockClear();
+
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: null, duckSquare: null, prime: { action: 'repair', square: 'e4' } }));
+    expect(transport.broadcastSnapshot).toHaveBeenCalledTimes(1);
+    expect(result.current.brokenSquares).toEqual([]);
+    expect(result.current.currentTurn).toBe('white');
+    expect(result.current.charges).toEqual({ white: 2, black: 1 });
+  });
+
+  it('host rejects a lift with no charges, leaving the board untouched (corrective resync)', () => {
+    const { result } = renderHook(() => useOnlineGame(seatedHost('p3', 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b piece e3 KQkq - 0 1 break-hits=5 charges=2 charges-b=0 charges-w=2 prime=1')));
+    const fenBefore = result.current.fen;
+    transport.broadcastSnapshot.mockClear();
+
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: { from: 'e7', to: 'e5', promotion: 'q' }, duckSquare: null, prime: { action: 'lift' } }));
+    expect(result.current.fen).toBe(fenBefore); // piece move not committed
+    expect(result.current.currentTurn).toBe('black'); // still the joiner's turn
+    expect(result.current.duckSquare).toBe('e3'); // duck not lifted
+    expect(transport.broadcastSnapshot).toHaveBeenCalledTimes(1); // corrective resync
+  });
+
+  it('host rejects a no-target repair and drops hostile prime shapes', () => {
+    const { result } = renderHook(() => useOnlineGame(seatedHost('p4', '4k3/8/8/8/8/8/8/4K3 b piece - - - 0 1 break-hits=5 charges=2 charges-b=2 charges-w=2 prime=1')));
+    const fenBefore = result.current.fen;
+    transport.broadcastSnapshot.mockClear();
+
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: null, duckSquare: null, prime: { action: 'repair', square: 'e4' } }));
+    expect(transport.broadcastSnapshot).toHaveBeenCalledTimes(1); // no decayed/broken target → resync
+    expect(result.current.currentTurn).toBe('black');
+    expect(result.current.charges).toEqual({ white: 2, black: 2 });
+    transport.broadcastSnapshot.mockClear();
+
+    for (const prime of [42, { action: 'nuke' }, { action: 'repair', square: 'z9' }]) {
+      act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: null, duckSquare: null, prime }));
+    }
+    expect(result.current.fen).toBe(fenBefore);
+    expect(transport.broadcastSnapshot).not.toHaveBeenCalled(); // hostile shapes dropped silently
+  });
+
+  it('a lift intent whose piece move captures the king ends the game with no strand', () => {
+    const { result } = renderHook(() => useOnlineGame(seatedHost('p5', '4k3/8/8/8/8/8/4q3/4K3 b piece a3 - - 0 1 break-hits=5 charges=2 charges-b=2 charges-w=2 prime=1')));
+    act(() => transport.handlers.onMoveIntent({ by: 'joiner', pieceMove: { from: 'e2', to: 'e1', promotion: 'q' }, duckSquare: null, prime: { action: 'lift' } }));
+    expect(result.current.result).toEqual({ winner: 'black', reason: 'King captured' });
+    expect(result.current.status).toBe('over');
+  });
+
+  it('joiner optimistically lifts the duck and sends the right intent shape', () => {
+    const props = { gameId: 'p6', variant: 'duck-decay', selfColor: 'black', isHost: false, hostColor: 'white', selfId: 'joiner' };
+    const { result } = renderHook(() => useOnlineGame(props));
+    act(() => transport.handlers.onSnapshot({ epoch: 1, seq: 5, variant: 'duck-decay', hostColor: 'white', players: { white: 'host', black: 'joiner' }, state: DUCK_ON_E3 }));
+    expect(result.current.primeEnabled).toBe(true);
+
+    act(() => result.current.onPieceDrop('e7', 'e5')); // optimistic piece move → duck phase
+    expect(result.current.phase).toBe('duck');
+    expect(result.current.canLiftDuck).toBe(true);
+    act(() => result.current.liftDuck());
+    expect(transport.sendMoveIntent).toHaveBeenLastCalledWith({ by: 'joiner', pieceMove: { from: 'e7', to: 'e5', promotion: 'q' }, duckSquare: null, prime: { action: 'lift' } });
+    expect(result.current.duckSquare).toBeNull(); // optimistic
+    expect(result.current.charges).toEqual({ white: 2, black: 1 });
+  });
+
+  it('joiner repairs a square via repair mode and sends a repair intent', () => {
+    const props = { gameId: 'p7', variant: 'duck-decay', selfColor: 'black', isHost: false, hostColor: 'white', selfId: 'joiner' };
+    const { result } = renderHook(() => useOnlineGame(props));
+    act(() => transport.handlers.onSnapshot({ epoch: 1, seq: 5, variant: 'duck-decay', hostColor: 'white', players: { white: 'host', black: 'joiner' }, state: '4k3/8/8/8/8/8/8/4K3 b piece - - - 0 1 break-hits=5 broken=e4 charges=2 charges-b=2 charges-w=2 prime=1' }));
+    expect(result.current.repairTargets).toEqual(['e4']);
+
+    act(() => result.current.toggleRepairMode());
+    expect(result.current.repairMode).toBe(true);
+    act(() => result.current.onSquareClick('e4'));
+    expect(transport.sendMoveIntent).toHaveBeenLastCalledWith({ by: 'joiner', pieceMove: null, duckSquare: null, prime: { action: 'repair', square: 'e4' } });
+    expect(result.current.brokenSquares).toEqual([]); // optimistic heal
+    expect(result.current.repairMode).toBe(false); // mode exits after a repair
+  });
+
+  it('joiner resends an unconfirmed repair intent until a snapshot clears it', () => {
+    vi.useFakeTimers();
+    try {
+      const props = { gameId: 'p8', variant: 'duck-decay', selfColor: 'black', isHost: false, hostColor: 'white', selfId: 'joiner' };
+      const { result } = renderHook(() => useOnlineGame(props));
+      act(() => transport.handlers.onSnapshot({ epoch: 1, seq: 5, variant: 'duck-decay', hostColor: 'white', players: { white: 'host', black: 'joiner' }, state: '4k3/8/8/8/8/8/8/4K3 b piece - - - 0 1 break-hits=5 broken=e4 charges=2 charges-b=2 charges-w=2 prime=1' }));
+      act(() => result.current.toggleRepairMode());
+      act(() => result.current.onSquareClick('e4'));
+      expect(transport.sendMoveIntent).toHaveBeenCalledTimes(1);
+
+      act(() => vi.advanceTimersByTime(2600));
+      expect(transport.sendMoveIntent.mock.calls.length).toBeGreaterThan(1); // resent while unconfirmed
+      expect(transport.sendMoveIntent.mock.calls.at(-1)[0]).toMatchObject({ pieceMove: null, prime: { action: 'repair', square: 'e4' } });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('newGame resets charges to full and ships a prime snapshot', () => {
+    const props = { gameId: 'p9', variant: 'duck-decay', variantOptions: { prime: true, charges: 2 }, selfColor: 'white', isHost: true, hostColor: 'white', selfId: 'host' };
+    const { result } = renderHook(() => useOnlineGame(props));
+    expect(result.current.charges).toEqual({ white: 2, black: 2 });
+
+    act(() => result.current.newGame());
+    const snap = transport.broadcastSnapshot.mock.calls.at(-1)[0];
+    expect(snap.state).toContain('prime=1');
+    expect(snap.state).toContain('charges=2');
+    expect(result.current.charges).toEqual({ white: 2, black: 2 });
+  });
+});

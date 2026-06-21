@@ -131,6 +131,10 @@ export default function OnlineLobbyPage() {
       if (variant === 'duck-decay') {
         params.set('decay', String(decaySettings.decayTurns));
         params.set('break', String(decaySettings.breakHits));
+        if (decaySettings.prime) {
+          params.set('prime', '1');
+          params.set('charges', String(decaySettings.charges));
+        }
       }
       return params.toString();
     };
@@ -407,6 +411,33 @@ export default function OnlineLobbyPage() {
                             />
                           </label>
                         </div>
+
+                        <label className="mt-4 flex items-center justify-between gap-3 border-t-2 border-amber-200 pt-4">
+                          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-amber-700">
+                            Prime: lift / repair charges
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={decaySettings.prime}
+                            onChange={(event) => setDecaySettings((current) => ({ ...current, prime: event.target.checked }))}
+                            className="h-5 w-5 rounded border-2 border-amber-300 accent-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          />
+                        </label>
+                        {decaySettings.prime && (
+                          <label className="mt-3 block">
+                            <span className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-amber-700">
+                              Charges Each
+                            </span>
+                            <input
+                              type="number"
+                              min="1"
+                              max="9"
+                              value={decaySettings.charges}
+                              onChange={(event) => setDecaySettings((current) => ({ ...current, charges: clampDecaySetting(event.target.value) }))}
+                              className="w-full rounded-lg border-2 border-amber-300 bg-white px-3 py-2 font-display text-lg font-bold text-gray-900 focus:border-amber-500 focus:outline-none"
+                            />
+                          </label>
+                        )}
                       </div>
                     )}
                     

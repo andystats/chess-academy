@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 503" width="424" height="503" role="img" aria-labelledby="title desc">
+  <title id="title">Hand-drawn mallard duck</title>
+  <desc id="desc">A vector SVG recreation of a hand-drawn duck with green head, pale beak, mauve body, wing line, tail, and orange feet.</desc>
+  <defs>
+    <filter id="softBlur" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+    <filter id="bodyBlur" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="13"/>
+    </filter>
+    <radialGradient id="headGrad" cx="58%" cy="54%" r="62%">
+      <stop offset="0%" stop-color="#1fb65d" stop-opacity="0.96"/>
+      <stop offset="58%" stop-color="#69ca83" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#cde8d4" stop-opacity="0.18"/>
+    </radialGradient>
+    <radialGradient id="bodyGrad" cx="49%" cy="48%" r="72%">
+      <stop offset="0%" stop-color="#c5aab6" stop-opacity="0.76"/>
+      <stop offset="72%" stop-color="#dbc8cf" stop-opacity="0.53"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="beakGrad" cx="43%" cy="48%" r="72%">
+      <stop offset="0%" stop-color="#fbf6cc"/>
+      <stop offset="100%" stop-color="#fff9df"/>
+    </radialGradient>
+    <radialGradient id="tailGrad" cx="54%" cy="55%" r="72%">
+      <stop offset="0%" stop-color="#8c7c8f" stop-opacity="0.46"/>
+      <stop offset="100%" stop-color="#8c7c8f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- soft colored washes -->
+  <path d="M88 143 C113 119 158 126 199 159 C230 178 257 202 286 230 C315 259 352 278 386 293 C405 303 407 327 387 344 C361 368 312 376 259 368 C195 359 134 333 89 295 C52 264 35 228 39 187 C42 163 57 151 88 143 Z" fill="url(#bodyGrad)" filter="url(#bodyBlur)"/>
+  <path d="M100 44 C120 16 161 6 196 22 C215 31 219 39 221 58 C226 93 217 125 197 154 C181 177 144 161 118 130 C92 99 84 70 100 44 Z" fill="url(#headGrad)" filter="url(#softBlur)"/>
+  <path d="M22 82 C45 61 76 56 101 63 C95 76 86 90 92 101 C70 103 42 103 14 99 C5 98 8 91 22 82 Z" fill="url(#beakGrad)" opacity="0.96" filter="url(#softBlur)"/>
+  <path d="M337 304 C361 301 385 307 395 321 C380 345 354 358 324 359 C332 344 333 326 337 304 Z" fill="url(#tailGrad)" filter="url(#softBlur)"/>
+
+  <!-- filled beak -->
+  <path d="M7 91 C15 73 39 61 70 51 C86 47 102 51 111 61 C101 78 88 93 96 108 C69 111 37 110 10 105 C3 103 3 98 7 91 Z" fill="#fff6cf" opacity="0.72"/>
+
+  <!-- duck outline -->
+  <g fill="none" stroke="#684018" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.98">
+    <path d="M95 47 C111 19 150 7 183 15 C204 20 216 29 216 37 C225 73 222 103 210 130 C205 143 198 154 190 165"/>
+    <path d="M104 61 C91 51 78 46 61 51 C36 58 14 72 7 91 C3 103 4 109 13 110 C38 109 68 110 96 108"/>
+    <path d="M97 108 C103 121 114 127 130 128"/>
+    <path d="M190 165 C217 178 242 193 265 214 C303 251 343 276 388 292 C407 299 413 321 398 341 C375 370 330 380 279 374 C213 368 146 344 96 306 C56 274 36 236 39 193 C42 156 66 132 109 127"/>
+    <path d="M190 165 C179 187 176 210 185 231"/>
+  </g>
+
+  <!-- wing and tail sketch lines -->
+  <g fill="none" stroke="#65527c" stroke-width="4.1" stroke-linecap="round" stroke-linejoin="round" opacity="0.76">
+    <path d="M139 244 C149 267 160 290 178 297 C193 303 207 300 220 306 C222 317 235 323 251 329 C270 337 289 347 309 349 C328 350 342 356 360 363"/>
+    <path d="M337 329 C333 344 335 356 344 367"/>
+  </g>
+
+  <!-- head details -->
+  <ellipse cx="130" cy="48" rx="11" ry="7" transform="rotate(-34 130 48)" fill="#163a63"/>
+  <ellipse cx="129" cy="46" rx="4.5" ry="2.2" transform="rotate(-34 129 46)" fill="#d6f0fb" opacity="0.55"/>
+  <path d="M67 76 C72 73 77 73 80 75" fill="none" stroke="#66577b" stroke-width="4" stroke-linecap="round" opacity="0.65"/>
+
+  <!-- feet and legs -->
+  <g fill="none" stroke="#9a5a1e" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M157 354 C157 376 157 393 150 405 C134 411 115 423 108 437 C120 446 148 443 166 438 C176 430 178 416 178 395"/>
+    <path d="M235 365 C235 388 234 404 226 416 C208 421 191 432 184 447 C196 454 223 450 244 443 C254 435 256 419 256 398"/>
+  </g>
+</svg>
