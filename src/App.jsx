@@ -9,6 +9,7 @@ import OnlinePlayPage from './routes/OnlinePlayPage.jsx';
 import ComingSoonPage from './routes/ComingSoonPage.jsx';
 import NotFoundPage from './routes/NotFoundPage.jsx';
 import { useProfile } from './profile/ProfileContext.jsx';
+import VersionStamp from './components/VersionStamp.jsx';
 
 export default function App() {
   const { ready } = useProfile();
@@ -44,6 +45,7 @@ export default function App() {
             </Routes>
           </main>
         )}
+        <VersionStamp />
       </ErrorBoundary>
     </div>
   );
