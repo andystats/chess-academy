@@ -191,6 +191,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
           status: result ? 'over' : 'engine-thinking',
           result,
           text: guided.explain || 'Correct!',
+          evaluation: null,
         });
         if (!result) scheduleEngineMove();
         return true;
@@ -230,6 +231,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
         lastMove: { from: m.from, to: m.to },
         status: result ? 'over' : 'engine-thinking',
         result,
+        evaluation: null,
       });
       if (!result) scheduleEngineMove();
       return true;
@@ -269,6 +271,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
       captured: capturedPieces(game),
       status: 'over',
       result: { winner: opposite(playerSide), reason: 'You resigned' },
+      evaluation: null,
     });
   }, [playerSide, interrupt]);
 
@@ -289,6 +292,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
       lastMove: null,
       status: engineToMove ? 'engine-thinking' : 'player-turn',
       result: null,
+      evaluation: null,
     });
     if (engineToMove) scheduleEngineMove();
   }, [playerChar, scheduleEngineMove, interrupt]);

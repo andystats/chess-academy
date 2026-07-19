@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { RotateCcw, Undo2, Flag, RefreshCw, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { ENGINE_LEVEL_MARKS, ENGINE_MAX_LEVEL, ENGINE_MIN_LEVEL, levelConfig } from '../engine/levels.js';
-import { MoveList, pairMoves } from './gamePanelParts.jsx';
+import { MoveList, pairMoves, CapturedPieces } from './gamePanelParts.jsx';
 
 // The play column for the Practice Arena: status, move list, strength dial, and game controls.
 // Driven entirely by the controller returned from useEngineGame. The board lives in the sibling
@@ -193,6 +193,10 @@ export default function EnginePanel({ game, eyebrow, title, children, skillLevel
       <Feedback feedback={game.feedback} />
 
       <StatusLine game={game} />
+
+      {((game.captured?.white?.length ?? 0) > 0 || (game.captured?.black?.length ?? 0) > 0) && (
+        <CapturedPieces captured={game.captured} />
+      )}
 
       {onSkillLevelChange && (
         <StrengthSlider value={skillLevel} onChange={onSkillLevelChange} />
