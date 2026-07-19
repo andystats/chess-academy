@@ -71,6 +71,7 @@ export const DECAY_PULSE = 'duck-decay-pulse 1.4s ease-in-out infinite';
 export function buildSquareStyles({
   highlights, selectedSquare, legalTargets, duckSquare, duckTargets,
   decaySquares, decayLevels, breakHits, brokenSquares, repairTargets, repairMode, pulses, reduceMotion,
+  captureSquare = null,
 }) {
   const styles = {};
   // breakHits is always present for a decay variant (the only producer of decayLevels); the `|| 1`
@@ -101,5 +102,8 @@ export function buildSquareStyles({
   for (const sq of duckTargets) styles[sq] = { ...(styles[sq] ?? {}), ...DUCK_TARGET_STYLE };
   if (repairMode) for (const sq of repairTargets) styles[sq] = { ...(styles[sq] ?? {}), ...REPAIR_TARGET_STYLE };
   if (duckSquare) styles[duckSquare] = { ...(styles[duckSquare] ?? {}), ...DUCK_STYLE }; // duck wins its square
+  if (captureSquare && !reduceMotion) {
+    styles[captureSquare] = { ...(styles[captureSquare] ?? {}), animation: 'capture-flash 0.6s cubic-bezier(0.25, 1, 0.5, 1) both' };
+  }
   return styles;
 }

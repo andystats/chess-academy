@@ -6,10 +6,10 @@ export const ENGINE_MAX_LEVEL = 20;
 export const ENGINE_DEFAULT_LEVEL = 6;
 
 export const ENGINE_LEVEL_MARKS = [
-  { value: 0, label: 'Learner', rating: '~1200' },
-  { value: 4, label: 'Casual', rating: '~1350' },
-  { value: 8, label: 'Club', rating: '~1550' },
-  { value: 14, label: 'Expert', rating: '~1900' },
+  { value: 0, label: 'Learner', rating: '~600' },
+  { value: 4, label: 'Casual', rating: '~1000' },
+  { value: 8, label: 'Club', rating: '~1400' },
+  { value: 14, label: 'Expert', rating: '~1800' },
   { value: 20, label: 'Master', rating: '2200+' },
 ];
 
@@ -20,11 +20,25 @@ function clampLevel(value) {
 }
 
 function labelFor(level) {
-  if (level <= 2) return { label: 'Learner', rating: '~1200' };
-  if (level <= 6) return { label: 'Casual', rating: '~1350' };
-  if (level <= 11) return { label: 'Club', rating: '~1550' };
-  if (level <= 16) return { label: 'Expert', rating: '~1900' };
+  if (level <= 2) return { label: 'Learner', rating: '~600' };
+  if (level <= 6) return { label: 'Casual', rating: '~1000' };
+  if (level <= 11) return { label: 'Club', rating: '~1400' };
+  if (level <= 16) return { label: 'Expert', rating: '~1800' };
   return { label: 'Master', rating: '2200+' };
+}
+
+function getDepth(level) {
+  if (level <= 1) return 1;
+  if (level <= 3) return 2;
+  if (level <= 5) return 3;
+  if (level <= 7) return 4;
+  if (level <= 9) return 5;
+  if (level <= 11) return 6;
+  if (level <= 13) return 7;
+  if (level <= 15) return 8;
+  if (level <= 17) return 10;
+  if (level <= 19) return 12;
+  return undefined; // uncapped depth for master level
 }
 
 /** The level config for a slider value, falling back to a sensible default. */
@@ -36,7 +50,7 @@ export function levelConfig(value) {
     ...identity,
     skill: level,
     search: {
-      depth: level <= 2 ? 1 : level <= 5 ? 2 : level <= 8 ? 3 : undefined,
+      depth: getDepth(level),
       movetime: 180 + level * 55,
     },
   };

@@ -42,4 +42,9 @@ describe('buildSquareStyles — Duck Decay tiers', () => {
     const motion = buildSquareStyles({ ...base, decaySquares: ['e3'], decayLevels: { e3: 1 }, reduceMotion: false });
     expect(motion.e3.animation).toContain('duck-decay-pulse');
   });
+
+  it('applies the capture flash animation to a captured square', () => {
+    const styles = buildSquareStyles({ ...base, captureSquare: 'd5', reduceMotion: false });
+    expect(styles.d5.animation).toContain('capture-flash');
+  });
 });

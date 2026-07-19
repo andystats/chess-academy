@@ -64,6 +64,7 @@ export default function BoardPanel({
   variant = 'academy',
   className = 'w-full max-w-[34rem]',
   animationDuration = variant === 'arena' ? 520 : 320,
+  captureSquare = null,
 }) {
   const theme = BOARD_THEMES[variant] ?? BOARD_THEMES.academy;
   const reduceMotion = prefersReducedMotion();
@@ -135,6 +136,7 @@ export default function BoardPanel({
         customSquareStyles={buildSquareStyles({
           highlights, selectedSquare, legalTargets, duckSquare, duckTargets,
           decaySquares, decayLevels, breakHits, brokenSquares, repairTargets, repairMode, pulses, reduceMotion,
+          captureSquare,
         })}
         customBoardStyle={{ borderRadius: 0 }}
         customDarkSquareStyle={{ backgroundColor: theme.dark }}
