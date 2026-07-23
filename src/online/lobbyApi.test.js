@@ -4,20 +4,33 @@ import { ensureSessionAndProfile, loadDisplayName, saveDisplayName } from './lob
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   signInAnonymously: vi.fn(),
+  signOut: vi.fn(),
   upsert: vi.fn(),
 }));
 
 vi.mock('../lib/supabase.js', () => ({
   isRealtimeConfigured: true,
   supabase: {
-    auth: { getSession: mocks.getSession, signInAnonymously: mocks.signInAnonymously },
+    auth: {
+      getSession: mocks.getSession,
+      signInAnonymously: mocks.signInAnonymously,
+      signOut: mocks.signOut,
+    },
     from: vi.fn(() => ({ upsert: mocks.upsert })),
   },
 }));
 
+// Postgres foreign_key_violation, as PostgREST reports it — the signature of a session whose
+// auth user no longer exists (e.g. after a free-project pause/restore dropped anonymous users).
+const FK_VIOLATION = {
+  code: '23503',
+  message: 'insert or update on table "profiles" violates foreign key constraint "profiles_id_fkey"',
+};
+
 beforeEach(() => {
   mocks.getSession.mockReset().mockResolvedValue({ data: { session: null } });
   mocks.signInAnonymously.mockReset().mockResolvedValue({ data: { user: { id: 'anon-1' } }, error: null });
+  mocks.signOut.mockReset().mockResolvedValue({ error: null });
   mocks.upsert.mockReset().mockResolvedValue({ error: null });
 });
 
@@ -76,6 +89,48 @@ describe('ensureSessionAndProfile', () => {
     const { error } = await ensureSessionAndProfile();
 
     expect(error.hint).toMatch(/fix-lobby-grants\.sql/);
+  });
+
+  it('heals a stale restored session: signs out and retries once when the auth user is gone', async () => {
+    mocks.getSession.mockResolvedValue({ data: { session: { user: { id: 'stale-1' } } } });
+    mocks.upsert.mockResolvedValueOnce({ error: FK_VIOLATION });
+
+    const { user, error } = await ensureSessionAndProfile({ username: 'Andy' });
+
+    expect(error).toBeNull();
+    expect(user.id).toBe('anon-1');
+    expect(mocks.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(mocks.signInAnonymously).toHaveBeenCalledOnce();
+    expect(mocks.upsert).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: 'anon-1', username: 'Andy' }),
+      { onConflict: 'id' },
+    );
+  });
+
+  it('surfaces a FK failure from a fresh sign-in instead of retrying', async () => {
+    mocks.upsert.mockResolvedValue({ error: FK_VIOLATION });
+
+    const { user, error } = await ensureSessionAndProfile();
+
+    expect(user.id).toBe('anon-1');
+    expect(error.message).toMatch(/foreign key/);
+    expect(mocks.signOut).not.toHaveBeenCalled();
+    expect(mocks.signInAnonymously).toHaveBeenCalledOnce();
+  });
+
+  it('reports the sign-in hint when the healing retry cannot sign back in', async () => {
+    mocks.getSession.mockResolvedValue({ data: { session: { user: { id: 'stale-1' } } } });
+    mocks.upsert.mockResolvedValueOnce({ error: FK_VIOLATION });
+    mocks.signInAnonymously.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Anonymous sign-ins are disabled' },
+    });
+
+    const { user, error } = await ensureSessionAndProfile();
+
+    expect(user).toBeNull();
+    expect(error.hint).toMatch(/anonymous sign-ins/i);
+    expect(mocks.upsert).toHaveBeenCalledOnce(); // no second upsert without a fresh user
   });
 
   it('defaults blank usernames to Player and caps long ones', async () => {

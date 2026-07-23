@@ -29,6 +29,21 @@ export function saveDisplayName(name) {
   }
 }
 
+/** Anonymous sign-in with the result shaped for the UI: { user, error: { message, hint } }. */
+async function signInAnonymously() {
+  const { data, error } = await supabase.auth.signInAnonymously();
+  if (error) {
+    return {
+      user: null,
+      error: {
+        message: error.message,
+        hint: 'Enable anonymous sign-ins in the Supabase dashboard under Authentication.',
+      },
+    };
+  }
+  return { user: data.user, error: null };
+}
+
 /**
  * Ensure an authenticated (anonymous) session and a matching profiles row.
  * The profile name resolves explicit `username` → saved display name → 'Player', so a joiner
@@ -39,31 +54,39 @@ export function saveDisplayName(name) {
 export async function ensureSessionAndProfile({ username, avatar } = {}) {
   const { data } = await supabase.auth.getSession();
   let user = data?.session?.user ?? null;
+  const restored = user !== null;
 
   if (!user) {
-    const { data: signIn, error } = await supabase.auth.signInAnonymously();
-    if (error) {
-      return {
-        user: null,
-        error: {
-          message: error.message,
-          hint: 'Enable anonymous sign-ins in the Supabase dashboard under Authentication.',
-        },
-      };
-    }
+    const signIn = await signInAnonymously();
+    if (signIn.error) return signIn;
     user = signIn.user;
   }
 
   const requested = (username ?? '').trim() || loadDisplayName().trim();
-  const { error } = await supabase.from('profiles').upsert(
-    {
-      id: user.id,
-      username: requested.slice(0, USERNAME_MAX) || 'Player',
-      avatar_url: avatar || null,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'id' },
-  );
+  const profile = {
+    username: requested.slice(0, USERNAME_MAX) || 'Player',
+    avatar_url: avatar || null,
+    updated_at: new Date().toISOString(),
+  };
+  let { error } = await supabase
+    .from('profiles')
+    .upsert({ id: user.id, ...profile }, { onConflict: 'id' });
+
+  // A session restored from localStorage can outlive its auth user (pausing and restoring a free
+  // Supabase project drops anonymous users), and this foreign key firing on the upsert is the
+  // first symptom: profiles.id references auth.users. The stored session is provably dead, so
+  // discard it and retry once with a fresh sign-in. Fresh sign-ins never retry — a FK failure
+  // right after auth.users gained the row means something deeper is broken; surface it instead.
+  if (error?.code === '23503' && restored) {
+    await supabase.auth.signOut({ scope: 'local' });
+    const signIn = await signInAnonymously();
+    if (signIn.error) return signIn;
+    user = signIn.user;
+    ({ error } = await supabase
+      .from('profiles')
+      .upsert({ id: user.id, ...profile }, { onConflict: 'id' }));
+  }
+
   if (error) {
     return {
       user,
