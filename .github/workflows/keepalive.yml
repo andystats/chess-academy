@@ -1,0 +1,37 @@
+name: Keep Supabase awake
+
+# Supabase pauses free-tier projects after ~7 days without API activity, and a paused
+# project's DNS records disappear — the online arena then dies with "Failed to fetch"
+# until someone restores it from the dashboard. A twice-weekly ping (max gap: 4 days)
+# counts as activity and keeps the project up. Reuses the same public-by-design
+# secrets as the Pages build (see deploy.yml).
+#
+# Note: GitHub disables scheduled workflows in repos with no activity for 60 days;
+# if that happens, re-enable it from the Actions tab (or push any commit).
+
+on:
+  schedule:
+    - cron: '23 7 * * 1,4' # Mon + Thu 07:23 UTC (odd minute avoids top-of-hour congestion)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      # A REST query (rather than a bare health check) makes a real database round trip,
+      # which is what Supabase counts as activity. Absent secrets just skip the ping so
+      # the workflow degrades gracefully, matching the build's behavior.
+      - name: Query the games table
+        run: |
+          if [ -z "${{ secrets.VITE_SUPABASE_URL }}" ]; then
+            echo "::notice::VITE_SUPABASE_URL secret is unset — skipping ping."
+            exit 0
+          fi
+          curl -fsS \
+            -H "apikey: ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            "${{ secrets.VITE_SUPABASE_URL }}/rest/v1/games?select=id&limit=1" > /dev/null
+          echo "Supabase is awake."
