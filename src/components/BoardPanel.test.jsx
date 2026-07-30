@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildSquareStyles } from './boardSquareStyles.js';
+import { BOARD_THEMES } from './boardThemes.js';
 
 // Unit-test the pure tier-precedence logic that keeps the three Duck Decay crack states visually
 // distinct (passable scar vs blocking decay vs shattered) — the part where an off-by-one is invisible
@@ -10,6 +11,28 @@ const base = {
   decaySquares: [], decayLevels: {}, breakHits: 5, brokenSquares: [],
   repairTargets: [], repairMode: false, pulses: {}, reduceMotion: true,
 };
+
+function relativeLuminance(hex) {
+  const channels = hex.match(/[0-9a-f]{2}/gi).map((channel) => Number.parseInt(channel, 16) / 255);
+  const [red, green, blue] = channels.map((channel) => (
+    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+  ));
+  return (0.2126 * red) + (0.7152 * green) + (0.0722 * blue);
+}
+
+function contrastRatio(first, second) {
+  const bright = Math.max(relativeLuminance(first), relativeLuminance(second));
+  const dark = Math.min(relativeLuminance(first), relativeLuminance(second));
+  return (bright + 0.05) / (dark + 0.05);
+}
+
+describe('BoardPanel themes', () => {
+  it('keeps black book pieces distinct from dark squares', () => {
+    expect(contrastRatio(BOARD_THEMES.book.dark, '#000000')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(BOARD_THEMES.book.dark, '#ffffff')).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(BOARD_THEMES.book.dark, BOARD_THEMES.book.light)).toBeGreaterThanOrEqual(3);
+  });
+});
 
 describe('buildSquareStyles — Duck Decay tiers', () => {
   it('distinguishes a blocking decayed square from a passable regrown scar', () => {

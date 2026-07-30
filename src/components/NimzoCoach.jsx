@@ -108,9 +108,9 @@ export default function NimzoCoach({
   const activePrompts = exchange?.answer?.followUps?.length ? exchange.answer.followUps : prompts;
 
   return (
-    <section className="overflow-hidden border-3 border-foreground bg-[#fbfaf4] shadow-hard" aria-labelledby="nimzo-coach-title">
-      <div className="grid border-b-3 border-foreground sm:grid-cols-[9rem_minmax(0,1fr)]">
-        <div className="relative min-h-40 overflow-hidden border-b-3 border-foreground bg-brand-50 sm:min-h-full sm:border-b-0 sm:border-r-3">
+    <section className="overflow-hidden border-2 border-foreground bg-[#fbfaf4]" aria-labelledby="nimzo-coach-title">
+      <div className="grid border-b border-gray-300 sm:grid-cols-[9rem_minmax(0,1fr)]">
+        <div className="relative min-h-40 overflow-hidden border-b border-gray-300 bg-brand-50 sm:min-h-full sm:border-b-0 sm:border-r">
           <img
             src={portraitUrl}
             alt="An original ink illustration of the fictional Ghost of Nimzowitsch"
@@ -128,7 +128,7 @@ export default function NimzoCoach({
             principles, not a memorized repertoire.
           </p>
           {fen && (
-            <p className="mt-3 inline-flex items-center gap-1.5 border-2 border-brand-300 bg-white px-2 py-1 font-mono text-[0.65rem] font-bold uppercase tracking-wide text-brand-700">
+            <p className="mt-3 inline-flex items-center gap-1.5 border border-brand-300 bg-white px-2 py-1 font-mono text-[0.65rem] font-bold uppercase tracking-wide text-brand-700">
               <Sparkles size={13} /> Current board attached
             </p>
           )}
@@ -146,7 +146,7 @@ export default function NimzoCoach({
           </div>
         ) : (
           <div className="space-y-4" aria-live="polite">
-            <div className="ml-auto max-w-[90%] border-2 border-foreground bg-white px-3 py-2 text-sm leading-6 text-gray-700">
+            <div className="ml-auto max-w-[90%] border border-gray-400 bg-white px-3 py-2 text-sm leading-6 text-gray-700">
               {exchange.question}
             </div>
             <div className="border-l-4 border-brand-400 pl-4">
@@ -167,7 +167,7 @@ export default function NimzoCoach({
                 </ul>
               )}
               {exchange.answer.engine && (
-                <p className="mt-4 flex gap-2 border-2 border-gray-300 bg-white px-3 py-2 text-xs leading-5 text-gray-600">
+                <p className="mt-4 flex gap-2 border border-gray-300 bg-white px-3 py-2 text-xs leading-5 text-gray-600">
                   <Cpu className="mt-0.5 shrink-0 text-gray-500" size={15} />
                   <span>
                     <strong className="text-gray-800">Engine note:</strong> {exchange.answer.engine}
@@ -194,7 +194,7 @@ export default function NimzoCoach({
                 key={`${prompt.cardId}-${prompt.label}`}
                 type="button"
                 onClick={() => ask(prompt.label, prompt.cardId)}
-                className="min-h-10 border-2 border-foreground bg-white px-3 text-left text-xs font-semibold leading-4 text-gray-700 transition-colors hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-300"
+                className="min-h-10 border border-gray-300 bg-white px-3 text-left text-xs font-semibold leading-4 text-gray-700 transition-colors hover:border-brand-400 hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-300"
               >
                 {prompt.label}
               </button>
@@ -209,7 +209,7 @@ export default function NimzoCoach({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Ask about this position…"
-            className="min-h-touch min-w-0 flex-1 border-3 border-foreground bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+            className="min-h-touch min-w-0 flex-1 border-2 border-gray-500 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
           />
           <button type="submit" disabled={!query.trim()} className="tao-btn-primary px-4" aria-label="Ask the coach">
             <Send size={17} />

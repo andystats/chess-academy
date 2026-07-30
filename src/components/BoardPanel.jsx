@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { buildSquareStyles } from './boardSquareStyles.js';
+import { BOARD_THEMES } from './boardThemes.js';
 
 // Wraps react-chessboard and translates the lesson/arena engines' overlays (teaching highlights,
 // hint/annotation arrows, tap-to-move selection, and the Duck variants' duck/decay terrain) into the
@@ -12,24 +13,6 @@ const ARROW_COLORS = {
   idea: 'rgb(47, 111, 237)',
 };
 const DEFAULT_ARROW = 'rgb(47, 111, 237)';
-
-const BOARD_THEMES = {
-  academy: {
-    dark: '#7c9cc4',
-    light: '#eaf0f8',
-    shell: 'shadow-xl ring-1 ring-black/5',
-  },
-  book: {
-    dark: '#1f2933',
-    light: '#f7f3e8',
-    shell: 'border border-black/20 shadow-sm',
-  },
-  arena: {
-    dark: '#739552',
-    light: '#ebecd0',
-    shell: 'border-[3px] border-accent-ink shadow-[6px_6px_0_#1a1a1a]',
-  },
-};
 
 function prefersReducedMotion() {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function'

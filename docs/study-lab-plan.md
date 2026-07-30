@@ -259,6 +259,7 @@ known limitations are documented.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-07-30 | `7ba3379` baseline | 223 passed | Pass | 20 files / 50 terms | Pass with existing 500 kB chunk warning | Pending | Clean baseline before feature work |
 | 2026-07-30 | Feature worktree | 292 passed | Pass | 20 files / 50 terms | Pass; 1.27 MB JS / 352 kB gzip, existing 500 kB warning | Pass with follow-ups | Real Stockfish reached depth 11/MultiPV 3; 320 px overflow found and fixed; 320/768/1280/1440 widths clean; no private-source strings in `dist/` |
+| 2026-07-30 | Visual-polish worktree | 293 passed | Pass | Unchanged | Pass; existing 500 kB chunk warning | Pass | Muted study surfaces and texture checked at desktop and 390 px; book board now keeps black, white, and adjacent squares above the recorded contrast thresholds |
 
 ## Decision log
 
@@ -277,6 +278,12 @@ known limitations are documented.
   picker instead of having to operate the visual board.
 - **2026-07-30 — Keep the portrait original and the persona explicit.** The coach uses a newly
   generated editorial illustration and is always labeled as fictional.
+- **2026-07-30 — Reserve heavy borders for the learner's active task.** Supporting analysis,
+  reference notes, book navigation, and coach prompts use thin neutral rules so the board and
+  current exercise remain the dominant visual objects.
+- **2026-07-30 — Treat board contrast as a tested contract.** The book palette must keep black
+  pieces at 4.5:1 or better against dark squares and keep white pieces and neighboring light
+  squares at 3:1 or better.
 
 ## Session log
 
@@ -301,6 +308,22 @@ known limitations are documented.
 - Next action: complete R6.7, R6.9, and the remaining degraded-engine cases in R6.10 before calling
   the pilot release-ready.
 
+### 2026-07-30 — Visual hierarchy and board contrast pass
+
+- Replaced the nearly black book-theme squares with a muted slate palette used by My System,
+  lessons, and Engine X-Ray.
+- Added a contrast regression test covering black pieces, white pieces, and the light/dark square
+  boundary.
+- Reduced the Study Lab's visual competition by softening the paper texture, removing hard shadows
+  from static information, and using thin neutral borders for supporting panels.
+- Kept the active “Your Scan” exercise and primary actions visually strong, while preserving the
+  Arena's intentionally bolder poster style.
+- Rechecked Engine X-Ray, My System, the coach, and a playable lesson at desktop and 390 px.
+- Ran 293 tests, zero-warning lint, and a production build; only the existing large-chunk advisory
+  remains.
+- Next action: complete R6.7, R6.9, and the remaining degraded-engine cases in R6.10 before calling
+  the pilot release-ready.
+
 ## End-of-session handoff checklist
 
 - [x] Update “Status snapshot.”
@@ -311,5 +334,5 @@ known limitations are documented.
 - [x] Leave the worktree in a known state and list any unrelated pre-existing changes.
 - [x] Name the single best next action.
 
-Known worktree state: all current modifications belong to this Study Lab implementation; no
-unrelated pre-existing edits were identified. The implementation is scoped as one release commit.
+Known worktree state: all current modifications belong to the Study Lab visual-polish pass; no
+unrelated pre-existing edits were identified.

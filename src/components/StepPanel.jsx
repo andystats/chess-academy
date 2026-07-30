@@ -33,7 +33,7 @@ function ChooseOptions({ options, chosenOptionId, onChoose }) {
             type="button"
             onClick={() => onChoose(option.id)}
             className={clsx(
-              'min-h-touch w-full border-3 px-4 py-3 text-left transition-colors',
+              'min-h-touch w-full border-2 px-4 py-3 text-left transition-colors',
               chosen && option.correct && 'border-correct bg-green-50',
               chosen && !option.correct && 'border-retry bg-orange-50',
               !chosen && 'border-foreground hover:bg-brand-50',
@@ -54,7 +54,7 @@ function Feedback({ feedback }) {
   return (
     <div
       className={clsx(
-        'flex items-start gap-2 border-3 px-4 py-3 text-sm font-medium',
+        'flex items-start gap-2 border-2 px-4 py-3 text-sm font-medium',
         correct ? 'border-correct bg-green-50 text-green-800' : 'border-retry bg-orange-50 text-orange-800',
       )}
       role="status"
@@ -132,7 +132,7 @@ export default function StepPanel({ lesson, chapterTitle }) {
           <button
             type="button"
             onClick={requestHint}
-            className="inline-flex min-h-touch items-center justify-center gap-1.5 border-3 border-amber-400 bg-amber-50 px-4 font-semibold text-amber-700 transition-all hover:bg-amber-100"
+            className="inline-flex min-h-touch items-center justify-center gap-1.5 border-2 border-amber-400 bg-amber-50 px-4 font-semibold text-amber-700 transition-all hover:bg-amber-100"
           >
             <Lightbulb size={18} /> Hint
           </button>
