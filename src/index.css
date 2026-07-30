@@ -38,6 +38,17 @@
   .gradient-divider {
     @apply h-[3px] rounded-full bg-gradient-to-r from-brand-300 to-accent-teal;
   }
+  /* Study rooms use the same editorial language with a quieter hierarchy: thin supporting
+     surfaces, one stronger active exercise, and restrained metadata chips. */
+  .study-panel {
+    @apply border border-gray-300 bg-white;
+  }
+  .study-panel-strong {
+    @apply border-2 border-foreground bg-white;
+  }
+  .study-chip {
+    @apply inline-flex items-center gap-1 border border-gray-300 bg-gray-50 px-2 py-1 font-mono text-[0.68rem] font-bold uppercase tracking-wide;
+  }
 }
 
 @layer utilities {
@@ -94,9 +105,9 @@
 
   .paper-texture {
     background-image:
-      linear-gradient(rgba(26, 26, 26, 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(26, 26, 26, 0.025) 1px, transparent 1px);
-    background-size: 28px 28px, 28px 28px;
+      linear-gradient(rgba(26, 26, 26, 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26, 26, 26, 0.01) 1px, transparent 1px);
+    background-size: 40px 40px, 40px 40px;
   }
 
   .glass-panel {

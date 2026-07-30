@@ -127,7 +127,7 @@ function EvalMeter({ label, phase, value }) {
 
 function PositionXRay({ evaluation, learner }) {
   return (
-    <section className="tao-card p-5" aria-labelledby="position-xray-title">
+    <section className="study-panel p-5" aria-labelledby="position-xray-title">
       <div className="flex items-start gap-3">
         <ScanSearch className="mt-1 shrink-0 text-brand-500" size={22} />
         <div>
@@ -145,7 +145,7 @@ function PositionXRay({ evaluation, learner }) {
       </p>
 
       {!evaluation ? (
-        <div className="mt-5 border-2 border-dashed border-gray-300 px-4 py-5 text-sm text-gray-500">
+        <div className="mt-5 border border-dashed border-gray-300 px-4 py-5 text-sm text-gray-500">
           The classical evaluation will appear when the engine is ready.
         </div>
       ) : (
@@ -162,7 +162,7 @@ function PositionXRay({ evaluation, learner }) {
               </div>
             );
           })}
-          <div className="flex items-center justify-between border-t-3 border-foreground pt-3">
+          <div className="flex items-center justify-between border-t border-gray-300 pt-3">
             <span className="font-mono text-xs font-bold uppercase text-gray-600">Blended total</span>
             <span className="font-display text-2xl font-bold text-brand-600">
               {evaluation.total?.finalAdvantage == null
@@ -183,7 +183,7 @@ function SearchBonsai({ snapshot, previousSnapshot, selectedRank, onSelect }) {
     previousSnapshot.lines[0].uciMoves[0] !== snapshot.lines[0].uciMoves[0];
 
   return (
-    <section className="tao-card p-5" aria-labelledby="bonsai-title">
+    <section className="study-panel p-5" aria-labelledby="bonsai-title">
       <div className="flex items-start gap-3">
         <Trees className="mt-1 shrink-0 text-brand-500" size={22} />
         <div className="min-w-0">
@@ -201,28 +201,28 @@ function SearchBonsai({ snapshot, previousSnapshot, selectedRank, onSelect }) {
       </p>
 
       {leaderChanged && (
-        <p className="mt-4 inline-flex items-center gap-2 border-2 border-accent-orange bg-orange-50 px-3 py-2 font-mono text-[0.68rem] font-bold uppercase text-orange-800">
+        <p className="mt-4 inline-flex items-center gap-2 border border-accent-orange bg-orange-50 px-3 py-2 font-mono text-[0.68rem] font-bold uppercase text-orange-800">
           <GitBranch size={15} /> Leader changed since depth {previousSnapshot.depth}
         </p>
       )}
 
       {!snapshot?.lines?.length ? (
-        <div className="mt-5 border-2 border-dashed border-gray-300 px-4 py-5 text-sm text-gray-500">
+        <div className="mt-5 border border-dashed border-gray-300 px-4 py-5 text-sm text-gray-500">
           Candidate branches grow here as complete depths arrive.
         </div>
       ) : (
-        <div className="relative mt-5 space-y-3 border-l-3 border-foreground pl-6">
-          <span className="absolute -left-[0.42rem] top-0 h-3 w-3 border-2 border-foreground bg-accent-yellow" />
+        <div className="relative mt-5 space-y-3 border-l border-gray-400 pl-6">
+          <span className="absolute -left-[0.34rem] top-0 h-2.5 w-2.5 border border-gray-500 bg-accent-yellow" />
           {snapshot.lines.map((line) => (
             <button
               key={line.rank}
               type="button"
               onClick={() => onSelect(line.rank)}
               aria-pressed={selectedRank === line.rank}
-              className={`relative block w-full border-2 p-3 text-left transition-colors before:absolute before:-left-[1.65rem] before:top-6 before:h-0.5 before:w-[1.45rem] before:bg-foreground focus:outline-none focus:ring-2 focus:ring-brand-300 ${
+              className={`relative block w-full border p-3 text-left transition-colors before:absolute before:-left-[1.55rem] before:top-6 before:h-px before:w-[1.45rem] before:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-300 ${
                 selectedRank === line.rank
-                  ? 'border-foreground bg-brand-50 shadow-hard'
-                  : 'border-gray-300 bg-white hover:border-foreground'
+                  ? 'border-brand-500 bg-brand-50'
+                  : 'border-gray-300 bg-white hover:border-gray-500'
               }`}
             >
               <span className="flex items-center justify-between gap-3">
@@ -251,7 +251,7 @@ function TimeMachine({ snapshots, snapshot, onDepthChange }) {
   );
 
   return (
-    <section className="tao-card p-5" aria-labelledby="time-machine-title">
+    <section className="study-panel p-5" aria-labelledby="time-machine-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <Gauge className="mt-1 shrink-0 text-brand-500" size={22} />
@@ -264,7 +264,7 @@ function TimeMachine({ snapshots, snapshot, onDepthChange }) {
             </h2>
           </div>
         </div>
-        <span className="tao-badge bg-accent-yellow text-foreground">Depth {snapshot?.depth ?? '—'}</span>
+        <span className="study-chip border-yellow-400 bg-yellow-50 text-foreground">Depth {snapshot?.depth ?? '—'}</span>
       </div>
 
       <p className="mt-3 text-sm leading-6 text-gray-600">
@@ -302,7 +302,7 @@ function Metric({ label, value }) {
 function AnalysisStatus({ analysis, onCancel }) {
   if (analysis.status === 'error') {
     return (
-      <div className="mt-4 border-3 border-red-700 bg-red-50 p-4" role="alert">
+      <div className="mt-4 border-2 border-red-700 bg-red-50 p-4" role="alert">
         <p className="flex items-center gap-2 font-semibold text-red-800">
           <AlertCircle size={18} /> Stockfish could not finish this scan.
         </p>
@@ -317,7 +317,7 @@ function AnalysisStatus({ analysis, onCancel }) {
   if (analysis.status === 'loading' || analysis.status === 'searching') {
     const depth = analysis.depthSnapshots.at(-1)?.depth;
     return (
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-3 border-foreground bg-brand-50 p-4" role="status">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-2 border-foreground bg-brand-50 p-4" role="status">
         <p className="flex items-center gap-2 font-semibold text-gray-800">
           <Loader2 className="animate-spin motion-reduce:animate-none" size={18} />
           {analysis.status === 'loading'
@@ -333,7 +333,7 @@ function AnalysisStatus({ analysis, onCancel }) {
 
   if (analysis.status === 'complete') {
     return (
-      <p className="mt-4 flex items-center gap-2 border-2 border-correct bg-green-50 px-3 py-2 text-sm font-semibold text-green-800" role="status">
+      <p className="mt-4 flex items-center gap-2 border border-correct bg-green-50 px-3 py-2 text-sm font-semibold text-green-800" role="status">
         <Sparkles size={17} /> Scan complete{analysis.cached ? ' — restored from this session' : ''}.
       </p>
     );
@@ -470,7 +470,7 @@ export default function EngineXRayPage() {
 
   return (
     <div className="paper-texture min-h-screen border-t border-gray-200 bg-[#fbfaf4]">
-      <section className="border-b-3 border-foreground bg-white">
+      <section className="border-b border-gray-300 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-8 md:py-10">
           <Link to="/" className="inline-flex items-center gap-2 font-mono text-xs font-bold uppercase text-gray-600 hover:text-brand-600">
             <ArrowLeft size={15} /> Arena
@@ -488,9 +488,9 @@ export default function EngineXRayPage() {
                 lines, rewind its changing judgment, and inspect the classical factors it measured.
               </p>
             </div>
-            <ol className="grid grid-cols-4 border-3 border-foreground bg-[#fbfaf4] text-center font-mono text-[0.62rem] font-bold uppercase text-gray-600">
+            <ol className="grid grid-cols-4 divide-x divide-gray-300 border border-gray-300 bg-[#fbfaf4] text-center font-mono text-[0.62rem] font-bold uppercase text-gray-600">
               {['Scan', 'Reveal', 'Scrub', 'Ask'].map((step, index) => (
-                <li key={step} className={`px-2 py-3 ${index > 0 ? 'border-l-2 border-foreground' : ''}`}>
+                <li key={step} className="px-2 py-3">
                   <span className="block text-brand-600">0{index + 1}</span>
                   {step}
                 </li>
@@ -501,7 +501,7 @@ export default function EngineXRayPage() {
       </section>
 
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <section className="tao-card mb-8 grid min-w-0 gap-4 p-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-end" aria-labelledby="position-picker-title">
+        <section className="study-panel mb-8 grid min-w-0 gap-4 p-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-end" aria-labelledby="position-picker-title">
           <div className="min-w-0">
             <label id="position-picker-title" htmlFor="xray-position" className="font-mono text-xs font-bold uppercase tracking-wide text-gray-600">
               Training position
@@ -510,7 +510,7 @@ export default function EngineXRayPage() {
               id="xray-position"
               value={position.id}
               onChange={(event) => setSelectedId(event.target.value)}
-              className="mt-2 min-h-touch w-full border-3 border-foreground bg-white px-3 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-300"
+              className="mt-2 min-h-touch w-full border-2 border-gray-500 bg-white px-3 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-300"
             >
               {customPosition && <option value={customPosition.id}>{customPosition.eyebrow} — {customPosition.title}</option>}
               {ENGINE_XRAY_POSITIONS.map((entry) => (
@@ -518,7 +518,7 @@ export default function EngineXRayPage() {
               ))}
             </select>
           </div>
-          <span className="tao-badge w-fit bg-brand-50 text-brand-700">
+          <span className="study-chip w-fit border-brand-300 bg-brand-50 text-brand-700">
             {sideAtFen(position.fen)} to move
           </span>
         </section>
@@ -538,7 +538,7 @@ export default function EngineXRayPage() {
               className="min-w-0 w-full max-w-full"
             />
             {revealed && selectedLine && (
-              <div className="tao-card p-4">
+              <div className="study-panel p-4">
                 <div className="flex items-center justify-between gap-3">
                   <button
                     type="button"
@@ -568,7 +568,7 @@ export default function EngineXRayPage() {
                       key={`${index}-${san}`}
                       type="button"
                       onClick={() => setPvPly(index + 1)}
-                      className={`border-2 px-2 py-1 font-mono text-xs font-bold ${
+                      className={`border px-2 py-1 font-mono text-xs font-bold ${
                         pvPly === index + 1 ? 'border-foreground bg-foreground text-white' : 'border-gray-300 bg-white text-gray-700'
                       }`}
                     >
@@ -581,7 +581,7 @@ export default function EngineXRayPage() {
           </div>
 
           <div className="min-w-0 space-y-6">
-            <section className="tao-card p-5 shadow-hard" aria-labelledby="your-scan-title">
+            <section className="study-panel-strong p-5" aria-labelledby="your-scan-title">
               <div className="flex items-start gap-3">
                 <BrainCircuit className="mt-1 shrink-0 text-brand-500" size={23} />
                 <div>
@@ -608,7 +608,7 @@ export default function EngineXRayPage() {
                       value={pickedCandidate}
                       onChange={(event) => setPickedCandidate(event.target.value)}
                       disabled={candidates.length >= 3}
-                      className="min-h-touch w-full min-w-0 border-3 border-foreground bg-white px-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:bg-gray-100"
+                      className="min-h-touch w-full min-w-0 border-2 border-gray-500 bg-white px-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:bg-gray-100"
                     >
                       <option value="">Choose a legal move…</option>
                       {legalMoveOptions.map((move) => (
@@ -635,8 +635,8 @@ export default function EngineXRayPage() {
                 {candidates.length ? (
                   <div className="flex flex-wrap gap-2">
                     {candidates.map((candidate, index) => (
-                      <span key={candidate.uci} className="inline-flex items-center border-2 border-foreground bg-white">
-                        <span className="border-r-2 border-foreground bg-accent-yellow px-2 py-2 font-mono text-xs font-bold">
+                      <span key={candidate.uci} className="inline-flex items-center border border-gray-500 bg-white">
+                        <span className="border-r border-gray-500 bg-accent-yellow px-2 py-2 font-mono text-xs font-bold">
                           {index + 1}
                         </span>
                         <span className="px-3 py-2 font-book text-lg font-semibold">{candidate.san}</span>
@@ -644,7 +644,7 @@ export default function EngineXRayPage() {
                           <button
                             type="button"
                             onClick={() => setCandidates((current) => current.filter((entry) => entry.uci !== candidate.uci))}
-                            className="min-h-10 border-l-2 border-foreground px-2 hover:bg-red-50"
+                            className="min-h-10 border-l border-gray-500 px-2 hover:bg-red-50"
                             aria-label={`Remove ${candidate.san}`}
                           >
                             <X size={15} />
@@ -654,7 +654,7 @@ export default function EngineXRayPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="border-2 border-dashed border-gray-300 px-3 py-4 text-sm text-gray-500">
+                  <p className="border border-dashed border-gray-300 px-3 py-4 text-sm text-gray-500">
                     No candidates yet. Start with checks, captures, threats—or the position&apos;s
                     most urgent strategic feature.
                   </p>
@@ -670,7 +670,7 @@ export default function EngineXRayPage() {
                 onChange={(event) => setReplyPrediction(event.target.value)}
                 disabled={revealed}
                 placeholder="Write a move or describe the idea…"
-                className="mt-2 min-h-touch w-full border-3 border-foreground bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:bg-gray-100"
+                className="mt-2 min-h-touch w-full border-2 border-gray-500 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:bg-gray-100"
               />
 
               {!revealed ? (
@@ -708,7 +708,7 @@ export default function EngineXRayPage() {
                   onSelect={setSelectedRank}
                 />
 
-                <section className="tao-card p-5" aria-labelledby="radar-title">
+                <section className="study-panel p-5" aria-labelledby="radar-title">
                   <div className="flex items-start gap-3">
                     <Target className="mt-1 shrink-0 text-accent-orange" size={22} />
                     <div>
@@ -737,7 +737,7 @@ export default function EngineXRayPage() {
                   )}
                 </section>
 
-                <section className="tao-card p-5" aria-labelledby="debrief-title">
+                <section className="study-panel p-5" aria-labelledby="debrief-title">
                   <div className="flex items-start gap-3">
                     <Cpu className="mt-1 shrink-0 text-brand-500" size={22} />
                     <div>
@@ -796,7 +796,7 @@ export default function EngineXRayPage() {
           />
         </div>
 
-        <aside className="mt-8 grid gap-4 border-3 border-foreground bg-white p-5 md:grid-cols-3" aria-label="Engine X-Ray definitions">
+        <aside className="mt-10 grid gap-4 border-t border-gray-300 py-6 md:grid-cols-3" aria-label="Engine X-Ray definitions">
           <Definition icon={<Gauge size={19} />} term="Depth" text="How many plies the engine has completed in its iterative search." />
           <Definition icon={<GitBranch size={19} />} term="PV" text="A current best line under perfect replies, not a prediction of what a person will play." />
           <Definition icon={<BookOpen size={19} />} term="Static eval" text="A classical ingredient table before deeper tactical search reshapes the verdict." />
