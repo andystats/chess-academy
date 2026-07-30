@@ -15,11 +15,13 @@ on, and will bundle, components and data under their own licenses. They are list
 
 Fonts (Baloo 2, Nunito) are served from Google Fonts under the SIL Open Font License.
 
-## Stockfish (Practice Arena) — GPL-3.0
+## Stockfish (Practice Arena and Engine X-Ray) — GPL-3.0
 
 The [Practice Arena](src/routes/ArenaPage.jsx) plays against the [Stockfish](https://stockfishchess.org/)
-chess engine, compiled to WebAssembly via [niklasf/stockfish.js](https://github.com/niklasf/stockfish.js)
-(the `stockfish.js` npm package, v10 — classical eval, single-threaded).
+chess engine, while [Engine X-Ray](src/routes/EngineXRayPage.jsx) teaches from its MultiPV search
+and classical evaluation trace. The engine is compiled to WebAssembly via
+[niklasf/stockfish.js](https://github.com/niklasf/stockfish.js) (the `stockfish.js` npm package,
+v10 — classical eval, single-threaded).
 **Stockfish is licensed under the GNU General Public License v3.** To respect it:
 
 - The engine is loaded as a **separate, unmodified** WebAssembly Web Worker and communicated with
@@ -40,7 +42,7 @@ for that component (provide/point to its source).
 | Source | License | Use |
 |--------|---------|-----|
 | [Lichess puzzle database](https://database.lichess.org/#puzzles) | CC0-1.0 (public domain) | A curated subset feeds the puzzle trainer (Stage 2). Attributed though not legally required. |
-| *My System*, A. Nimzowitsch (1925) | Public domain (original) | Used only as a source of **ideas and positions**. **No book text is reproduced**; all lesson prose is original. |
+| *My System*, A. Nimzowitsch (Hereford edition, 1930) | Public domain in the United States | Used only for chapter structure, ideas, and independently verified positions. **No book text is reproduced**; all lesson and coach prose is original. |
 
 We do **not** ship the text or the puzzle compilation of any in-copyright book. Copyrighted PDFs
-kept locally for reference are gitignored and never committed.
+kept locally for reference are gitignored and never committed or indexed by the coach.

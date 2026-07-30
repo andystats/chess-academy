@@ -145,3 +145,11 @@ npm run validate-content   # confirms your moves are legal and your [[terms]] re
 - Run `npm run lint && npm test && npm run validate-content` before pushing.
 - Match the surrounding code style; keep components small and content-driven.
 - New behavior needs a test. The lesson engine lives in `src/lesson/`, content in `src/content/`.
+
+### Adding book-coach notes
+
+Coach cards in `src/content/coach/` are deliberately small, reviewed teaching notes—not excerpts or
+an OCR corpus. Write every summary, principle, and question in your own words; cite only the work,
+part, and chapter. Do not add quotations, page numbers, PDF paths, modern-edition commentary, or
+private source text. Keep the card length checks green so a review can assess every public claim at
+a glance.

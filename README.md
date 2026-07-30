@@ -17,6 +17,10 @@ account, no ads, works offline-first in the browser.
 - **Glossary** — plain-language definitions with little example boards, cross-linked from lessons.
 - **Practice arena** — play **[Stockfish](https://stockfishchess.org/)** at the strength you choose,
   run lesson scenarios, share a board for local two-player, or **play a friend online** (below).
+- **Engine X-Ray** — nominate candidate moves before revealing three Stockfish lines, scrub through
+  completed depths, replay principal variations, and inspect the classical evaluation table.
+- **Ghost of Nimzowitsch** — a clearly fictional, chapter-citing coach built from six short,
+  original concept cards and deterministic local retrieval—no LLM, account, or network call.
 - *(Coming)* a **puzzle trainer** powered by the CC0 [Lichess puzzle database](https://database.lichess.org/#puzzles).
 
 ## Play a friend online
@@ -50,9 +54,10 @@ Duck Chess is normal chess with one twist — a rubber duck 🦆 that blocks squ
 ## Status
 
 Early but real. The lesson engine, content schema + validator, local profiles, a book-study section,
-the first lessons, and the practice arena — Stockfish play, lesson scenarios, local two-player, and
-**online multiplayer with Duck Chess variants** — are built; the puzzle trainer comes next. See
-[`ROADMAP`](#roadmap) below.
+the first lessons, Engine X-Ray, the local book coach, and the practice arena — Stockfish play,
+lesson scenarios, local two-player, and **online multiplayer with Duck Chess variants** — are built.
+The durable implementation and pressure-test ledger lives in
+[`docs/study-lab-plan.md`](./docs/study-lab-plan.md).
 
 ## Quick start
 
@@ -77,7 +82,8 @@ lesson-authoring guide.
 
 React 18 · Vite · Tailwind · [chess.js](https://github.com/jhlywa/chess.js) (rules) ·
 [react-chessboard](https://github.com/Clariity/react-chessboard) (board) · Vitest. Deploys as a
-static site to GitHub Pages.
+static site to GitHub Pages. Stockfish analysis and book-card retrieval both run entirely in the
+browser.
 
 ## Roadmap
 
@@ -86,7 +92,7 @@ static site to GitHub Pages.
 | 0 | Foundation, tooling, CI, licensing |
 | 1 | Lesson engine, content schema + validator, profiles, first lessons + glossary |
 | 2 | Puzzle trainer + spaced repetition (Lichess CC0 set) |
-| 3 | Stockfish (WASM) for hints, "best reply", and free-play analysis |
+| 3 | Stockfish (WASM) for play plus the Engine X-Ray learning lab |
 | 4 | Reference sections, read-aloud, accessibility & study-UX polish |
 
 ## Licensing

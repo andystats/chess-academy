@@ -1,3 +1,5 @@
+import { indexGlossaryEntries } from './glossaryLinks.js';
+
 // The content registry: a single source of truth derived from the files under src/content/.
 // We eagerly import every content JSON via import.meta.glob (no separately generated manifest to
 // keep in sync, and it works identically in dev/build/test). At Stage-1 scale eager loading is
@@ -26,4 +28,12 @@ export function listByKind(kind) {
 /** All practice-arena scenarios, in registry order. */
 export function listScenarios() {
   return listByKind('scenario');
+}
+
+/**
+ * A lookup of glossary term/alias -> entry, merged across all glossary files. Lesson prose uses it
+ * to turn [[term]] references into small, local definition popovers.
+ */
+export function getGlossaryIndex() {
+  return indexGlossaryEntries(listByKind('glossary').flatMap((env) => env.body?.entries ?? []));
 }
