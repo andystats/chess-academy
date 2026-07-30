@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getContent, listByKind } from './registry.js';
+import { getContent, getGlossaryIndex, listByKind } from './registry.js';
 
 // Exercises the import.meta.glob-backed registry against the real shipped content.
 
@@ -17,4 +17,9 @@ describe('content registry', () => {
     expect(ids).toContain('habits/checks-captures-threats');
   });
 
+  it('indexes canonical glossary terms and their aliases for lesson popovers', () => {
+    const glossary = getGlossaryIndex();
+    expect(glossary.get('center')?.term).toBe('center');
+    expect(glossary.get('central squares')?.term).toBe('center');
+  });
 });

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ArrowRight, Swords, Cpu, Globe, Github } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Swords, Cpu, Globe, Github, BookOpen, ScanSearch } from 'lucide-react';
 import { listScenarios, getContent } from '../content/registry.js';
 import { useProfile } from '../profile/ProfileContext.jsx';
 import Badge from '../components/ui/Badge.jsx';
@@ -76,7 +76,7 @@ export default function ArenaPage() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-6xl gap-4 px-4 pb-12 lg:grid-cols-2">
+      <section className="mx-auto grid max-w-6xl gap-4 px-4 pb-12 sm:grid-cols-2 lg:grid-cols-4">
         <ArenaModeLink
           to="/arena/free"
           icon={<Cpu className="shrink-0 text-brand-500" size={36} />}
@@ -88,6 +88,18 @@ export default function ArenaPage() {
           icon={<Globe className="shrink-0 text-brand-500" size={36} />}
           title="Play a Friend Online"
           text="Real-time games over an invite link — standard chess or Duck variants, with chat."
+        />
+        <ArenaModeLink
+          to="/my-system"
+          icon={<BookOpen className="shrink-0 text-brand-500" size={36} />}
+          title="Study My System"
+          text="Follow Nimzowitsch’s strategic ideas through a chapter map and playable board lessons."
+        />
+        <ArenaModeLink
+          to="/study/engine-xray"
+          icon={<ScanSearch className="shrink-0 text-brand-500" size={36} />}
+          title="Engine X-Ray"
+          text="Predict candidates, reveal Stockfish’s changing lines, and inspect its classical evaluation."
         />
       </section>
 
