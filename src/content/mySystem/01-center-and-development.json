@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/01-center-and-development",
+  "track": "classics",
+  "chapterNumber": "I",
+  "part": "Part I: The Elements",
+  "title": "The Centre and Development",
+  "subtitle": "Mobilization, Democracy of Pieces, and the Center",
+  "summary": "The foundational rules of opening mobilization: why the center governs piece mobility, the democratic spirit of development, and the mortal danger of pawn hunting.",
+  "aphorism": "A pawn move must not be considered in itself to be a developing move, but rather a move which aids development.",
+  "estMinutes": 12,
+  "tags": ["opening", "center", "development", "tempo", "mobilization"],
+  "attribution": "100th Anniversary Centenary Edition. Newly authored prose and interactive studies inspired by Aron Nimzowitsch (1925).",
+  "body": {
+    "historicalContext": "Published in 1925, Nimzowitsch challenged classical dogma by treating development not as passive piece deployment, but as an active, urgent race toward the border of enemy territory.",
+    "sections": [
+      {
+        "id": "center-definitions",
+        "title": "The Four Central Squares",
+        "initialFen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["e4", "d4", "e5", "d5"],
+          "highlightStyle": "good"
+        },
+        "markdown": "By our **[[center]]**, we mean the most restricted, critical group of squares at the heart of the board: **e4, d4, e5, and d5**.\n\nEvery piece that occupies or commands these four central squares radiates influence across the entire board. When we speak of [[development]], we mean the strategic march of our troops toward the border — the mathematical dividing line between the 4th and 5th ranks. Both armies strive to reach this frontier at top speed to penetrate enemy territory.",
+        "engineLens": {
+          "eval": "+0.2",
+          "takeaway": "Stockfish confirms that initial central pushes (1.e4 or 1.d4) maximize piece mobility and claim immediate territorial initiative."
+        }
+      },
+      {
+        "id": "democracy-of-pieces",
+        "title": "The Spirit of Democracy in the Opening",
+        "initialFen": "r1bqkbnr/pppp1ppp/2n5/4p3/3PP3/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 3",
+        "orientation": "white",
+        "annotations": {
+          "arrows": [["g1", "f3", "good"], ["b1", "c3", "good"], ["c1", "e3", "good"]]
+        },
+        "markdown": "Nimzowitsch insisted that opening development must be marked by the **spirit of democracy**.\n\nThink how undemocratic it would be to allow one favored officer (your knight or queen) to embark on a leisurely walking tour around the board while your other pieces sit at home bored! Each piece should make one decisive developing move, take up its station, and allow its comrades to join the fray before any piece moves a second time.",
+        "moves": [
+          { "san": "exd4", "comment": "Black liquidates the central tension." },
+          { "san": "Nxd4", "comment": "White recaptures centrally, bringing the knight to an active post." },
+          { "san": "Nf6", "comment": "Black develops another unit, attacking e4." },
+          { "san": "Nc3", "comment": "White develops in turn, defending e4 with a fresh piece." }
+        ]
+      },
+      {
+        "id": "pawn-moves-vs-pieces",
+        "title": "Pawn Moves vs. Piece Moves",
+        "initialFen": "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/2N2N2/PPPP1PPP/R1BQK2R b KQkq - 5 4",
+        "orientation": "white",
+        "markdown": "A fundamental rule: **A pawn move is not itself a developing move, but a move that aids development.**\n\nIf it were possible to mobilize an entire army without touching a pawn, that would be ideal! But a pawnless army would be ruthlessly repelled by an expanding enemy pawn center. Therefore, we advance pawns only to clear routes for our officers and secure safe outposts for our pieces.",
+        "engineLens": {
+          "eval": "+0.4",
+          "takeaway": "Modern computer engines heavily penalize superfluous flank pawn moves (like a3 or h3) in the opening when central piece mobilization is incomplete."
+        }
+      },
+      {
+        "id": "pawn-hunting-danger",
+        "title": "The Danger of Pawn Hunting",
+        "initialFen": "rnb1kb1r/1pp2ppp/p3pn2/3q4/3N4/4B3/PPP1B1qP/RN1QK2R w KQkq - 0 10",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["g2"],
+          "highlightStyle": "bad",
+          "arrows": [["e2", "f3", "good"]]
+        },
+        "markdown": "One of the quickest ways to ruin a game is early **pawn hunting** (Diagram 7 in *My System*).\n\nIn Nimzowitsch vs. Alapin (1912), Black sent the queen to snatch the poisoned g2 pawn with **9...Qxg2?**. White responded with the crushing developing tempo **10.Bf3!**, simultaneously safeguarding the rook and booting Black's queen out of the kingside.",
+        "moves": [
+          { "san": "Bf3", "comment": "White develops the bishop with tempo, defending h1 and attacking Black's queen!" },
+          { "san": "Qg6", "comment": "Black's queen is forced to retreat, wasting yet another tempo." },
+          { "san": "Qd2", "comment": "White connects rooks, preparing queenside castling and total domination of the center." }
+        ]
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-claim-center",
+        "type": "single-move",
+        "title": "Seize the Center",
+        "orientation": "white",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "markdown": "Demonstrate the first principle of opening strategy: stake your claim in the central four squares.",
+        "solution": { "san": ["e4", "d4"] },
+        "hints": [
+          { "text": "Push a pawn directly to e4 or d4." }
+        ],
+        "feedback": {
+          "correct": "Excellent! A central stake immediately opens avenues for your pieces.",
+          "wrong": "Choose a primary central pawn push (e4 or d4)."
+        }
+      },
+      {
+        "id": "drill-democracy-develop",
+        "type": "line",
+        "title": "The Democratic Opening",
+        "orientation": "white",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "markdown": "Play out a healthy classical opening: claim the center, bring out your kingside knight, then develop your bishop to prepare castling.",
+        "mainline": ["e4", "e5", "Nf3", "Nc6", "Bc4"],
+        "hints": [
+          { "text": "Knights before bishops: develop your knight to f3 first." },
+          { "text": "Now bring the light-squared bishop to c4.", "arrows": [["f1", "c4", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Superb! Every move brought a new unit to an active post without moving the same piece twice.",
+          "wrong": "Remember the democratic rule: develop a new piece toward the center on each move."
+        }
+      },
+      {
+        "id": "drill-surrender-punish",
+        "type": "choose",
+        "title": "Recognizing the Rule",
+        "orientation": "white",
+        "fen": "r1bqkb1r/pppp1ppp/2n2n2/4p3/3PP3/5N2/PPP2PPP/RNBQKB1R w KQkq - 1 4",
+        "markdown": "Black played 3...exd4 in the center. What has Black given up, and what must White do?",
+        "options": [
+          {
+            "id": "a",
+            "label": "Black surrendered central space; White should recapture and dominate the center",
+            "correct": true,
+            "explain": "Exactly. Giving up the center (surrendering the e5 pawn) gives White free mobility in the middle."
+          },
+          {
+            "id": "b",
+            "label": "Black has won a winning pawn advantage",
+            "correct": false,
+            "explain": "No, White can immediately recapture with Nxd4 or c3 with powerful development."
+          },
+          {
+            "id": "c",
+            "label": "White should retreat the knight to g1",
+            "correct": false,
+            "explain": "Retreating a developed piece violates every development principle."
+          }
+        ]
+      }
+    ]
+  }
+}

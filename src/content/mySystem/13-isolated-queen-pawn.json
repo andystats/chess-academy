@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/13-isolated-queen-pawn",
+  "track": "classics",
+  "chapterNumber": "XII",
+  "part": "Part II: Positional Play",
+  "title": "The Isolated Queen's Pawn",
+  "subtitle": "The Isolani: Dynamic Attacking Power vs. Endgame Vulnerability",
+  "summary": "The dual nature of the Isolated Queen's Pawn (the Isolani): harnessing its dynamic central space for kingside attacks, blockading the hole on d5, and handling hanging pawns.",
+  "aphorism": "The Isolani is a two-edged sword: a roaring fire of attacking momentum in the middlegame, but a cold, dying ember in the endgame.",
+  "estMinutes": 15,
+  "tags": ["strategy", "iqp", "isolani", "blockade", "hanging-pawns"],
+  "attribution": "100th Anniversary Centenary Edition. Newly authored prose and interactive studies inspired by Aron Nimzowitsch (1925).",
+  "body": {
+    "historicalContext": "Nimzowitsch coined the term 'Isolani' for the isolated queen's pawn, providing the definitive guide for both the attacking side and the defending side.",
+    "sections": [
+      {
+        "id": "the-isolani-nature",
+        "title": "The Dynamic Life of the Isolani",
+        "initialFen": "r1bq1rk1/pp1nbppp/4pn2/8/3P4/2NB1N2/PP3PPP/R1BQR1K1 w - - 0 11",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["d4", "e5", "c5"],
+          "arrows": [["d4", "d5", "good"]]
+        },
+        "markdown": "An **Isolated Queen’s Pawn (IQP)**, or **Isolani**, is a d-pawn with no friendly pawns on the adjacent c- and e-files.\n\n- **The Attacker's Asset**: The side with the Isolani controls vital central outposts on **e5** and **c5** and possesses open c- and e-files for heavy piece mobilization. The attacker strives to keep pieces on the board and unleash the explosive central breakthrough **d4-d5**!",
+        "moves": [
+          { "san": "Bg5", "comment": "Developing with pins against Black's kingside." },
+          { "san": "Nb6", "comment": "Black targets the d5 blockade square." },
+          { "san": "Ne5", "comment": "White plants a ferocious knight on the e5 outpost!" }
+        ]
+      },
+      {
+        "id": "blockading-the-isolani",
+        "title": "Blockading the d5 Hole",
+        "initialFen": "r2q1rk1/pp1nbppp/4pn2/8/3P4/2N2N2/PP3PPP/R1BQ1RK1 b - - 0 11",
+        "orientation": "black",
+        "annotations": {
+          "highlight": ["d5", "d4"],
+          "arrows": [["d7", "b6", "good"], ["b6", "d5", "good"]]
+        },
+        "strategicOverlays": {
+          "blockades": [{ "square": "d5", "pawnSquare": "d4", "color": "blue" }],
+          "outposts": [{ "square": "d5", "piece": "N", "color": "emerald" }]
+        },
+        "markdown": "The defense against the Isolani relies entirely on **occupying the square in front of the pawn (d5)**.\n\nBy planting a knight on **d5**, Black prevents White from ever pushing d4-d5, blockades the center, and prepares to trade down into an endgame where the d4 pawn will become a target.",
+        "engineLens": {
+          "eval": "+0.1",
+          "takeaway": "Stockfish confirms that the Isolani position is dynamically balanced: White has dynamic initiative, while Black has superior static endgame prospects."
+        }
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-blockade-isolani",
+        "type": "single-move",
+        "title": "Occupy the d5 Hole",
+        "orientation": "black",
+        "fen": "r1bq1rk1/pp2bppp/2n1pn2/8/3P4/2NB1N2/PP3PPP/R1BQR1K1 b - - 0 11",
+        "markdown": "White has an isolated d4 pawn. Place your knight on the d5 blockade square to halt White's center.",
+        "solution": { "san": ["Nb4", "Nd5", "b6"] },
+        "hints": [
+          { "text": "Bring your knight toward d5." }
+        ],
+        "feedback": {
+          "correct": "Excellent! Planting a blockader on d5 neutralizes White's dynamic breakthrough.",
+          "wrong": "Control the square directly in front of the isolated pawn."
+        }
+      }
+    ]
+  }
+}

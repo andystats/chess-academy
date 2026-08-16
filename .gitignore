@@ -9,6 +9,7 @@ dist/
 .DS_Store
 .vscode/
 .idea/
+.claude/
 
 # Logs
 *.log

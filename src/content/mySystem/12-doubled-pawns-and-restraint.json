@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/12-doubled-pawns-and-restraint",
+  "track": "classics",
+  "chapterNumber": "XI",
+  "part": "Part II: Positional Play",
+  "title": "The Doubled Pawn and Restraint",
+  "subtitle": "Static vs. Dynamic Weaknesses, Complexes, and Restraining Majorities",
+  "summary": "Demystifying doubled pawns: why a doubled pawn is harmless unless immobilized, the art of blockading doubled pawn complexes, and restraining pawn majorities.",
+  "aphorism": "A doubled pawn is not an innate deformity; it is a static weakness only when it has been stripped of its mobility and blockaded.",
+  "estMinutes": 15,
+  "tags": ["strategy", "doubled-pawns", "restraint", "nimzo-indian", "blockade"],
+  "attribution": "100th Anniversary Centenary Edition. Newly authored prose and interactive studies inspired by Aron Nimzowitsch (1925).",
+  "body": {
+    "historicalContext": "Classical dogma claimed all doubled pawns were horrible. Nimzowitsch showed that doubled pawns offer dynamic advantages (extra open files, central pawn mass) and only become liabilities if properly blockaded and restrained.",
+    "sections": [
+      {
+        "id": "static-vs-dynamic",
+        "title": "Static vs. Dynamic Weakness",
+        "initialFen": "r1bqk2r/pppp1ppp/2n5/4p3/1b2P3/2NP1N2/PPP2PPP/R1BQKB1R w KQkq - 1 5",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["c2", "c3"]
+        },
+        "markdown": "A **doubled pawn** consists of two pawns of the same color residing on the same vertical file.\n\nNimzowitsch categorized weaknesses into two distinct types:\n- **Dynamic Strength**: Doubled pawns can control central squares and open adjacent files for friendly rooks.\n- **Static Weakness**: If the doubled pawns are halted, blockaded, and cannot advance, they become target practice for the enemy army.",
+        "moves": [
+          { "san": "a3", "comment": "White challenges the pinning bishop." },
+          { "san": "Bxc3+", "comment": "Black willingly gives up the bishop pair to inflict doubled c-pawns on White." },
+          { "san": "bxc3", "comment": "White's pawn structure is altered." }
+        ]
+      },
+      {
+        "id": "nimzo-indian-restraint",
+        "title": "The Blockade of the Doubled Complex",
+        "initialFen": "r1bq1rk1/pp1p1ppp/2n1pn2/2p5/2PPP3/P1P2N2/5PPP/R1BQKB1R w KQ - 0 8",
+        "orientation": "black",
+        "annotations": {
+          "highlight": ["c4", "c3"],
+          "arrows": [["c6", "a5", "good"], ["b7", "b6", "good"]]
+        },
+        "strategicOverlays": {
+          "blockades": [{ "square": "c4", "pawnSquare": "c3", "color": "blue" }]
+        },
+        "markdown": "In the famous **Nimzo-Indian Defense**, Black blockades White's doubled c-pawns by clamping down on **c4** with **...b6, ...Ba6, ...Na5, and ...c5**.\n\nWhite's front c-pawn cannot move, and all of Black's pieces coordinate around siege warfare against the crippled pawn.",
+        "moves": [
+          { "san": "d5", "comment": "White tries to gain space." },
+          { "san": "e5", "comment": "Black locks the center, fixing White's weaknesses forever!" },
+          { "san": "Be2", "comment": "White prepares kingside castling." },
+          { "san": "Ne7", "comment": "Black reroutes to clamp down on the c4 target." }
+        ]
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-clamp-doubled-pawns",
+        "type": "single-move",
+        "title": "Clamp the Complex",
+        "orientation": "black",
+        "fen": "r1bq1rk1/pppp1ppp/4pn2/8/2PPP3/P1P2N2/5PPP/R1BQKB1R b KQ - 0 7",
+        "markdown": "Lock down White's doubled pawn complex by advancing your c-pawn to c5.",
+        "solution": { "san": ["c5"] },
+        "hints": [
+          { "text": "Play ...c5 to blockade White's c4 pawn." }
+        ],
+        "feedback": {
+          "correct": "Superb! ...c5 puts the brakes on White's pawns and creates a fixed target.",
+          "wrong": "Push your c-pawn to c5 to fix White's doubled pawns."
+        }
+      }
+    ]
+  }
+}

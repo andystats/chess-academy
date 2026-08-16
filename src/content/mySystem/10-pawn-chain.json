@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/10-pawn-chain",
+  "track": "classics",
+  "chapterNumber": "IX",
+  "part": "Part I: The Elements",
+  "title": "The Pawn Chain",
+  "subtitle": "The Base, The Head, and the Direction of Attack",
+  "summary": "The structural backbone of the chessboard: identifying the head and the base of the pawn chain, the cardinal rule of attacking the base, and navigating the two theatres of war.",
+  "aphorism": "A pawn chain is a fortress whose strength lies in its links. Never attack the head where it is strongest; lay siege to the base, and the entire structure will collapse.",
+  "estMinutes": 16,
+  "tags": ["strategy", "pawn-chain", "base", "pawn-breaks", "structure"],
+  "attribution": "100th Anniversary Centenary Edition. Newly authored prose and interactive studies inspired by Aron Nimzowitsch (1925).",
+  "body": {
+    "historicalContext": "Nimzowitsch's theory of the pawn chain transformed how chess players evaluate closed positions (such as the French Defence and King's Indian). He provided a geometric roadmap for where and how to attack.",
+    "sections": [
+      {
+        "id": "chain-anatomy",
+        "title": "Anatomy: The Head and the Base",
+        "initialFen": "r1bqk1nr/pp1n1ppp/2p1p3/3pP3/1b1P4/2N2N2/PPP2PPP/R1BQKB1R w KQkq - 1 6",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["e5", "d4", "e6", "d5"],
+          "arrows": [["d4", "e5", "good"], ["e6", "d5", "good"]]
+        },
+        "strategicOverlays": {
+          "pawnChains": [
+            { "chain": ["d4", "e5"], "base": "d4", "color": "amber" },
+            { "chain": ["e6", "d5"], "base": "e6", "color": "amber" }
+          ]
+        },
+        "markdown": "A **[[pawn-chain|pawn chain]]** is a diagonal formation of connected pawns protecting each other.\n\n- **The Head**: The most advanced pawn (here, **e5** for White, **d5** for Black). The head points toward the flank where you hold space and should conduct your attack.\n- **The Base**: The rearmost pawn that is *not* defended by another pawn (here, **d4** or **c2** for White, **c6** for Black).",
+        "moves": [
+          { "san": "a3", "comment": "White asks Black's bishop for its intentions." },
+          { "san": "Bxc3+", "comment": "Black exchanges the bishop for the knight." },
+          { "san": "bxc3", "comment": "White recaptures, strengthening the c3-d4 chain." }
+        ]
+      },
+      {
+        "id": "attack-the-base",
+        "title": "The Golden Rule: Attack the Base!",
+        "initialFen": "r1bqk2r/pp2bppp/2n1p3/2ppP3/3P4/2PB1N2/P1P2PPP/R1BQK2R w KQkq - 0 9",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["d4", "c5"],
+          "arrows": [["c5", "d4", "good"]]
+        },
+        "strategicOverlays": {
+          "pawnChains": [
+            { "chain": ["d4", "e5"], "base": "d4", "color": "amber" }
+          ]
+        },
+        "markdown": "Why do we attack the **base** rather than the head?\n\nIf you attack the head (**e5**), you strike at the pawn that is already supported by the entire chain behind it. But if you undermine the base (**d4** with **...c5**), the foundational support is severed, and the advanced pawns become defenseless orphans.",
+        "moves": [
+          { "san": "O-O", "comment": "White completes kingside development." },
+          { "san": "c4", "comment": "Black closes the queenside and locks White's bishop out." },
+          { "san": "Be2", "comment": "White retreats the bishop to maintain kingside attacking lines." }
+        ]
+      },
+      {
+        "id": "the-two-theatres",
+        "title": "The Two Theatres of War",
+        "initialFen": "r1bqk2r/pp1n1ppp/4p3/2ppP3/3P4/2PB1N2/P1P2PPP/R1BQK2R w KQkq - 0 9",
+        "orientation": "white",
+        "annotations": {
+          "arrows": [["d3", "h7", "good"], ["c8", "a6", "good"]]
+        },
+        "markdown": "The direction of the pawn chain dictates the **two theatres of war**:\n\n- White's chain points toward the **kingside** (d4-e5), so White's natural attacking theater is the kingside.\n- Black's chain points toward the **queenside**, so Black must seek counterplay on the c- and b-files.",
+        "engineLens": {
+          "eval": "+0.7",
+          "takeaway": "Stockfish confirms that respecting the direction of your pawn chain yields high coordination, whereas attacking on the wrong wing leads to severe positional disadvantage."
+        }
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-strike-chain-base",
+        "type": "single-move",
+        "title": "Siege the Base",
+        "orientation": "black",
+        "fen": "r1bqk1nr/pppn1ppp/4p3/3pP3/1b1P4/2N2N2/PPP2PPP/R1BQKB1R b KQkq - 2 6",
+        "markdown": "White has erected a pawn chain on d4-e5. As Black, strike at the base of White's chain with your c-pawn.",
+        "solution": { "san": ["c5"] },
+        "hints": [
+          { "text": "Push your pawn from c7 to c5 to attack d4." }
+        ],
+        "feedback": {
+          "correct": "Right on the mark! 1...c5 directly assaults White's d4 foundation.",
+          "wrong": "Play ...c5 to challenge the base of White's pawn chain."
+        }
+      }
+    ]
+  }
+}

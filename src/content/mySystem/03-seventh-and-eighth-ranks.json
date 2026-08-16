@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/03-seventh-and-eighth-ranks",
+  "track": "classics",
+  "chapterNumber": "III",
+  "part": "Part I: The Elements",
+  "title": "The Seventh and Eighth Ranks",
+  "subtitle": "Converging Attacks, Blind Pigs, and Turning Movements",
+  "summary": "Mastering the ultimate fruits of open-file invasion: sweeping the enemy pawns, executing mating nets with doubled rooks, and turning movements.",
+  "aphorism": "A rook on the 7th rank is an absolute tyrant. Two rooks on the 7th are the infamous 'blind pigs' — devouring everything in sight.",
+  "estMinutes": 14,
+  "tags": ["strategy", "rooks", "seventh-rank", "mating-nets", "tactics"],
+  "attribution": "100th Anniversary Centenary Edition. Based directly on Aron Nimzowitsch's My System (1925), Part I, Chapter 3.",
+  "body": {
+    "historicalContext": "Nimzowitsch categorized every type of 7th-rank assault with scientific precision, demonstrating why even a heavy material deficit is easily overcome when you command doubled rooks on the 7th rank.",
+    "sections": [
+      {
+        "id": "converging-and-revolutionary-attack",
+        "title": "Converging & Revolutionary Attacks on the 7th",
+        "initialFen": "r4rk1/2R2ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["c7", "d7", "f7"],
+          "arrows": [["d1", "d7", "good"]]
+        },
+        "markdown": "Once a rook seizes the **[[seventh-rank|seventh rank]]**, you must select a specific target of attack (Diagram 67 in *My System*).\n\nWhite doubles rooks on the 7th rank with **1.Rdd7!**. The two rooks coordinate against the f7 and c7 targets. If Black's f7 pawn advances or falls, White's rooks sweep laterally across the rank like a scythe, devouring all enemy pawns from the flank.",
+        "moves": [
+          { "san": "Rdd7", "comment": "White invades with the second rook, doubling on the 7th rank!" },
+          { "san": "Rfe8", "comment": "Black tries to mobilize the king rook." },
+          { "san": "Rxf7", "comment": "The doubled rooks break through on the 7th rank." }
+        ]
+      },
+      {
+        "id": "blind-pigs-doubled-rooks",
+        "title": "The 'Blind Pigs' (Doubled Rooks on the 7th)",
+        "initialFen": "5rk1/4RR1p/8/8/8/8/7P/6K1 w - - 0 1",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["e7", "f7", "g8"],
+          "arrows": [["f7", "g7", "good"]]
+        },
+        "markdown": "When two rooks occupy the seventh rank together, chess lore calls them the **'blind pigs'** (Diagram 76 in *My System*).\n\nLike hungry beasts, they devour pawns and weave inescapable mating nets. Here White delivers the crushing blow with **1.Rg7+ Kh8 2.Rxh7+ Kg8 3.Reg7#**!",
+        "moves": [
+          { "san": "Rg7+", "comment": "First check: driving the king into the corner." },
+          { "san": "Kh8", "comment": "Black's king is forced to h8." },
+          { "san": "Rxh7+", "comment": "Devouring the h7 pawn with check!" },
+          { "san": "Kg8", "comment": "King steps back to g8." },
+          { "san": "Reg7#", "comment": "The doubled 7th-rank rooks deliver checkmate!" }
+        ]
+      },
+      {
+        "id": "absolute-seventh-passed-pawn",
+        "title": "The 'Absolute' 7th Rank & Passed Pawns",
+        "initialFen": "3r3k/4R3/1P6/8/8/8/8/7K w - - 0 1",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["e7", "h8", "b6"],
+          "arrows": [["b6", "b7", "good"]]
+        },
+        "markdown": "By the **'absolute' 7th rank**, Nimzowitsch meant a rook on the 7th that completely traps the enemy king on the 8th rank (Diagram 74).\n\nWhen combined with a far-advanced passed pawn, the absolute 7th rank wins by force. White plays **1.b7!**, and Black is completely powerless to prevent the winning manoeuvre **Re7–c7–c8+**!",
+        "moves": [
+          { "san": "b7", "comment": "The passed pawn advances to the 7th rank!" },
+          { "san": "Rb8", "comment": "Black puts the rook behind the pawn." },
+          { "san": "Rc7", "comment": "White transfers the rook to c7, preparing Rc8 to queen the pawn." },
+          { "san": "Kg8", "comment": "Black's king tries to flee the corner." },
+          { "san": "Rc8", "comment": "Decisive pin! The pawn will promote next move." }
+        ],
+        "engineLens": {
+          "eval": "+7.5",
+          "takeaway": "Stockfish confirms that the combination of the absolute 7th rank and a 7th-rank passed pawn is decisive in all variations."
+        }
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-7th-pawn-mow",
+        "type": "single-move",
+        "title": "Invade the Seventh",
+        "orientation": "white",
+        "fen": "r4rk1/2R2ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1",
+        "markdown": "White already has one rook on c7. Bring your second rook from d1 to d7 to double on the seventh rank.",
+        "solution": { "san": ["Rdd7"] },
+        "hints": [
+          { "text": "Move the d1 rook to d7 to double on the 7th rank." }
+        ],
+        "feedback": {
+          "correct": "Splendid! 1.Rdd7 establishes the dominant doubled rooks on the 7th rank.",
+          "wrong": "Play Rdd7 to double rooks on the 7th rank."
+        }
+      },
+      {
+        "id": "drill-blind-pigs-windmill",
+        "type": "single-move",
+        "title": "Trigger the Blind Pigs",
+        "orientation": "white",
+        "fen": "5rk1/4RR1p/8/8/8/8/7P/6K1 w - - 0 1",
+        "markdown": "White has doubled rooks on the 7th rank. Deliver the checking blow on g7 to dismantle Black's defense.",
+        "solution": { "san": ["Rg7+"] },
+        "hints": [
+          { "text": "Play 1.Rg7+ with check." }
+        ],
+        "feedback": {
+          "correct": "Brilliant! 1.Rg7+ drives the king into the mating net.",
+          "wrong": "Deliver check with Rg7+."
+        }
+      }
+    ]
+  }
+}

@@ -168,7 +168,7 @@ function validateScenario(file, env, idToFile) {
 }
 
 // --- Load schema + validator -------------------------------------------------
-const ajv = new Ajv({ allErrors: true });
+const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
 const validateSchema = ajv.compile(JSON.parse(readFileSync(SCHEMA_PATH, 'utf8')));
 
 // --- Pass 1: load, schema-validate, collect ids + glossary terms -------------
@@ -197,17 +197,62 @@ for (const file of files) {
   envelopes.push({ file, env });
 }
 
+function validateBookChapter(file, env, allStepIds) {
+  const sections = env.body?.sections ?? [];
+  sections.forEach((sec, idx) => {
+    const where = `section #${idx + 1} (${sec.id})`;
+    if (sec.initialFen) {
+      assertFen(file, where, sec.initialFen);
+    }
+    if (sec.moves && sec.moves.length > 0) {
+      const game = new Chess(sec.initialFen || undefined);
+      sec.moves.forEach((m, mIdx) => {
+        try {
+          applyMove(game, m.san);
+        } catch {
+          fail(file, `${where}: move #${mIdx + 1} "${m.san}" is illegal`);
+        }
+      });
+    }
+  });
+
+  if (env.body?.drills && env.body.drills.length > 0) {
+    validateLessonSteps(file, { id: env.id, body: { steps: env.body.drills } }, allStepIds);
+  }
+
+  if (env.body?.illustrativeGames) {
+    env.body.illustrativeGames.forEach((gameData, gIdx) => {
+      const gWhere = `game #${gIdx + 1} (${gameData.id || gameData.white + ' vs ' + gameData.black})`;
+      if (gameData.initialFen && !assertFen(file, gWhere, gameData.initialFen)) return;
+      const game = new Chess(gameData.initialFen || undefined);
+      (gameData.moves ?? []).forEach((m, mIdx) => {
+        try {
+          applyMove(game, m.san);
+        } catch {
+          fail(file, `${gWhere}: move #${mIdx + 1} (${m.san}) is illegal`);
+        }
+      });
+    });
+  }
+}
+
 // --- Pass 2: legality + glossary cross-links ---------------------------------
 const allStepIds = new Map();
 for (const { file, env } of envelopes) {
   if (env.kind === 'lesson') validateLessonSteps(file, env, allStepIds);
   if (env.kind === 'puzzleSet') validatePuzzles(file, env);
   if (env.kind === 'scenario') validateScenario(file, env, idToFile);
+  if (env.kind === 'bookChapter') validateBookChapter(file, env, allStepIds);
 
   // Every [[term]] in any prose must resolve to a known glossary term/alias.
   const proseBlocks = [];
   if (env.kind === 'lesson') for (const s of env.body.steps) proseBlocks.push(s.markdown);
   if (env.kind === 'glossary') for (const e of env.body.entries) proseBlocks.push(e.markdown ?? '', e.short);
+  if (env.kind === 'bookChapter') {
+    if (env.body.aphorism) proseBlocks.push(env.body.aphorism);
+    for (const s of env.body.sections ?? []) proseBlocks.push(s.markdown);
+    for (const d of env.body.drills ?? []) proseBlocks.push(d.markdown);
+  }
   for (const md of proseBlocks) {
     for (const { slug } of findTermLinks(md)) {
       if (!glossaryTerms.has(slug)) fail(file, `glossary link [[${slug}]] does not resolve to any glossary term`);

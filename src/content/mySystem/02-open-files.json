@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/02-open-files",
+  "track": "classics",
+  "chapterNumber": "II",
+  "part": "Part I: The Elements",
+  "title": "The Open File",
+  "subtitle": "The Highway to the Seventh and Eighth Ranks",
+  "summary": "How open files are forged, why penetration to the 7th and 8th ranks is their sole purpose, and how outposts act as forward springboards.",
+  "aphorism": "An open file is not a trophy to be admired from afar; it is a highway whose true destination is the 7th and 8th ranks.",
+  "estMinutes": 14,
+  "tags": ["strategy", "rooks", "open-file", "outpost", "invasion"],
+  "attribution": "100th Anniversary Centenary Edition. Based directly on Aron Nimzowitsch's My System (1925), Part I, Chapter 2.",
+  "body": {
+    "historicalContext": "Nimzowitsch formulated the modern theory of open files: establishing that seizing a file is merely a preparatory step toward the real goal — penetrating to the 7th or 8th rank.",
+    "sections": [
+      {
+        "id": "file-definition-and-origin",
+        "title": "How Open Files are Born",
+        "initialFen": "r1bqk2r/ppp2ppp/2np1n2/2b1p3/2B1P3/2PP1N2/PP3PPP/RNBQ1RK1 b kq - 0 6",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["f1", "f8"],
+          "arrows": [["c8", "e6", "good"], ["e6", "e3", "good"]]
+        },
+        "markdown": "A file is **[[open-file|open]]** when our own pawn is no longer on it.\n\nFiles are often born peacefully when an opponent is provoked into exchanging a central piece. In Diagram 41 from *My System*, White plays **Be3**, prompting Black to play **...Bxe3**, which White recaptures with **fxe3**, instantly opening the entire **f-file** for White's castled rook!",
+        "moves": [
+          { "san": "Be6", "comment": "Black develops the light-squared bishop." },
+          { "san": "Be3", "comment": "White offers the central bishop exchange." },
+          { "san": "Bxe3", "comment": "Black captures on e3." },
+          { "san": "fxe3", "comment": "White recaptures with the f-pawn, opening the f-file for the f1-rook!" }
+        ]
+      },
+      {
+        "id": "file-purpose-invasion",
+        "title": "The Purpose: Penetration to the 7th & 8th Ranks",
+        "initialFen": "1r4k1/6pp/8/8/8/5Q2/8/5R1K w - - 0 1",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["f7", "f8"],
+          "arrows": [["f3", "f7", "good"]]
+        },
+        "markdown": "The idea behind any operation down an open file is **penetration to the 7th or 8th rank**.\n\nFrom the back ranks, an invading rook or queen executes *marauding* attacks (sweeping undefended pawns from the rear) or weaves inescapable mating nets around the opposing king.",
+        "moves": [
+          { "san": "Qf7+", "comment": "White invades the 7th rank directly." },
+          { "san": "Kh8", "comment": "Black's king is forced into the corner." },
+          { "san": "Qf8+", "comment": "Sacrificing the queen to force back-rank mate!" },
+          { "san": "Rxf8", "comment": "Forced recapture." },
+          { "san": "Rxf8#", "comment": "Checkmate on the 8th rank!" }
+        ]
+      },
+      {
+        "id": "the-outpost",
+        "title": "The Outpost on an Open File",
+        "initialFen": "r2qr1k1/ppp2ppp/3p4/8/4P3/2N5/PPP2PPP/3R1RK1 w - - 0 1",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["d5", "d6"],
+          "arrows": [["c3", "d5", "good"]]
+        },
+        "strategicOverlays": {
+          "outposts": [{ "square": "d5", "piece": "N", "color": "emerald" }]
+        },
+        "markdown": "An **[[outpost]]** is a piece (typically a knight) planted on an open file in enemy territory and protected by a pawn (Diagram 59/60 in *My System*).\n\nWhite plays **1.Nd5!**. The knight on d5 acts like a thorn in Black's flesh. If Black plays **1...c6** to evict the knight, White retreats **2.Nc3**, leaving Black's **d6-pawn** chronically backward and weak on the open d-file. White then doubles rooks with **Rd2** and **Rfd1** to execute a decisive siege against d6!",
+        "moves": [
+          { "san": "Nd5", "comment": "Nimzowitsch's key move: occupying the d5 outpost on the open d-file." },
+          { "san": "c6", "comment": "Black is compelled to push c6 to drive the intruder away." },
+          { "san": "Nc3", "comment": "The knight retreats, leaving Black's d6-pawn fixed and backward on the open file." },
+          { "san": "Qc7", "comment": "Black tries to defend the vulnerable d6 pawn." },
+          { "san": "Rd2", "comment": "White prepares to double rooks on the open d-file." },
+          { "san": "Rad8", "comment": "Black brings a rook to defend d6." },
+          { "san": "Rfd1", "comment": "White doubles rooks on the d-file, placing irresistible pressure on d6." }
+        ],
+        "engineLens": {
+          "eval": "+1.9",
+          "takeaway": "Stockfish confirms Nimzo's analysis: Black's d6-pawn is fatally pinned on the open file and cannot survive the doubled rook pressure."
+        }
+      },
+      {
+        "id": "evolutionary-vs-revolutionary",
+        "title": "Obstacles: Evolutionary vs. Revolutionary Attack",
+        "initialFen": "5rk1/7p/5p2/8/8/8/6PR/R5K1 w - - 0 1",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["h7"],
+          "arrows": [["h2", "h7", "good"]]
+        },
+        "markdown": "When an enemy pawn obstructs the open file, Nimzowitsch outlined two distinct methods:\n\n1. **The Evolutionary Attack**: Piling up on the defending pawn (Rh2, Rah1) to win it by superior force.\n2. **The Revolutionary Attack**: Sacrificing material to forcibly blast the line open and penetrate immediately to the 7th or 8th rank.",
+        "moves": [
+          { "san": "Ra7", "comment": "White invades the 7th rank with the first rook." },
+          { "san": "Rf7", "comment": "Black tries to block the 7th rank." },
+          { "san": "Rhxh7", "comment": "Revolutionary liquidation on the 7th rank!" }
+        ]
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-seize-open-file",
+        "type": "single-move",
+        "title": "Claim the Outpost",
+        "orientation": "white",
+        "fen": "r3r1k1/pp3ppp/3p4/8/4P3/2N5/PPP2PPP/3R1RK1 w - - 0 1",
+        "markdown": "The d-file is open. Plant your knight on the d5 outpost to provoke Black into weakening the d6 pawn.",
+        "solution": { "san": ["Nd5"] },
+        "hints": [
+          { "text": "Move your knight from c3 to d5.", "arrows": [["c3", "d5", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Superb! 1.Nd5 establishes the textbook outpost on the open d-file.",
+          "wrong": "Jump the knight into d5."
+        }
+      },
+      {
+        "id": "drill-double-rooks-file",
+        "type": "single-move",
+        "title": "Double on the Target",
+        "orientation": "white",
+        "fen": "3rr1k1/ppq2ppp/2pp4/8/4P3/2N5/PPPR1PPP/5RK1 w - - 4 3",
+        "markdown": "Black's d6 pawn is backward on the open d-file. Double your rooks by moving the f1-rook to d1.",
+        "solution": { "san": ["Rfd1"] },
+        "hints": [
+          { "text": "Place your second rook on d1." }
+        ],
+        "feedback": {
+          "correct": "Decisive! The doubled rooks dominate the open d-file and overwhelm d6.",
+          "wrong": "Double your rooks on d1."
+        }
+      }
+    ]
+  }
+}

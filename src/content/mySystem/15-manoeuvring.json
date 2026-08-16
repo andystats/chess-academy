@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/15-manoeuvring",
+  "track": "classics",
+  "chapterNumber": "XIV",
+  "part": "Part II: Positional Play",
+  "title": "Manoeuvring Against Weaknesses",
+  "subtitle": "The Principle of Two Weaknesses and the Central Pivot",
+  "summary": "The art of positional manoeuvring: shifting pressure between two separated enemy weaknesses and utilizing central outposts as fluid pivots.",
+  "aphorism": "A single weakness can be defended; two weaknesses separated by the board will tear the defensive fabric apart.",
+  "estMinutes": 14,
+  "tags": ["strategy", "manoeuvring", "two-weaknesses", "pivot", "positional-play"],
+  "attribution": "100th Anniversary Centenary Edition. Newly authored prose and interactive studies inspired by Aron Nimzowitsch (1925).",
+  "body": {
+    "historicalContext": "Nimzowitsch introduced the Principle of Two Weaknesses, demonstrating that positional victory comes from probing back and forth between two distant targets until the defense collapses.",
+    "sections": [
+      {
+        "id": "principle-of-two-weaknesses",
+        "title": "The Principle of Two Weaknesses",
+        "initialFen": "r4rk1/pp1b1ppp/4pn2/2pp4/3P4/2PBPN2/PP3PPP/R4RK1 w - - 0 14",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["a7", "h7"],
+          "arrows": [["a1", "c1", "good"], ["d3", "h7", "good"]]
+        },
+        "markdown": "When the opponent has a single static weakness, their army can usually muster enough defenders to hold the line.\n\nTo break the impasse, you must apply the **Principle of Two Weaknesses**: create a second weakness on the opposite side of the board! Because your pieces possess greater central [[mobility]], you can pivot between the two targets faster than the defender can shuffle back and forth.",
+        "moves": [
+          { "san": "dxc5", "comment": "White liquidates to open attacking diagonals." },
+          { "san": "Bc6", "comment": "Black reorganizes." },
+          { "san": "b4", "comment": "White launches the second front on the queenside!" }
+        ]
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-shift-weakness",
+        "type": "single-move",
+        "title": "Open the Second Front",
+        "orientation": "white",
+        "fen": "r4rk1/pp1b1ppp/4pn2/2pp4/3P4/2PBPN2/PP3PPP/R4RK1 w - - 0 14",
+        "markdown": "Black is focused on defending the center. Capture on c5 to open a new highway on the queenside.",
+        "solution": { "san": ["dxc5"] },
+        "hints": [
+          { "text": "Play dxc5 to shatter Black's central structure." }
+        ],
+        "feedback": {
+          "correct": "Right! Creating queenside targets stretches Black's defensive resources to the limit.",
+          "wrong": "Capture on c5 (dxc5)."
+        }
+      }
+    ]
+  }
+}

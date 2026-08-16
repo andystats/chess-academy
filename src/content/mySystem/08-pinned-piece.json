@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/08-pinned-piece",
+  "track": "classics",
+  "chapterNumber": "VII",
+  "part": "Part I: The Elements",
+  "title": "The Pinned Piece",
+  "subtitle": "Absolute Pins, Half-Pins, and Piling Up on the Paralyzed Target",
+  "summary": "Mastering the paralyzing power of the pin: the distinction between wholly pinned and half-pinned pieces, piling up attackers, and techniques for unpinning.",
+  "aphorism": "A pinned piece is a paralyzed piece. The golden rule: pile on the pinned piece with your smallest units until it collapses.",
+  "estMinutes": 13,
+  "tags": ["tactics", "pins", "paralysis", "combinations"],
+  "attribution": "100th Anniversary Centenary Edition. Newly authored prose and interactive studies inspired by Aron Nimzowitsch (1925).",
+  "body": {
+    "historicalContext": "Nimzowitsch dissected the pin not merely as a one-move trick, but as a strategic condition that induces chronic paralysis across an entire sector of the board.",
+    "sections": [
+      {
+        "id": "wholly-vs-half-pinned",
+        "title": "Wholly Pinned vs. Half-Pinned Pieces",
+        "initialFen": "r1bqk2r/pppp1ppp/2n2n2/4p3/1bB1P3/2NP1N2/PPP2PPP/R1BQK2R w KQkq - 0 6",
+        "orientation": "white",
+        "annotations": {
+          "arrows": [["c1", "g5", "good"]]
+        },
+        "markdown": "A **[[pin]]** occurs when a piece cannot move without exposing a more valuable piece behind it.\n\n- **Wholly Pinned**: When pinned directly against the king, the piece cannot move at all under penalty of an illegal move.\n- **Half-Pinned**: When pinned along a ray (such as a bishop on the diagonal or rook on a file), the pinned unit retains the ability to move *along the line of the pin*, but cannot leave it.",
+        "moves": [
+          { "san": "Bg5", "comment": "White pins Black's knight to the queen." },
+          { "san": "h6", "comment": "Black puts the question to the bishop." },
+          { "san": "Bh4", "comment": "White maintains the pin, tying down Black's pieces." }
+        ]
+      },
+      {
+        "id": "piling-up-rule",
+        "title": "The Golden Rule: Piling Up on the Pinned Piece",
+        "initialFen": "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQK2R w KQkq - 0 6",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["f6"],
+          "arrows": [["c1", "g5", "good"], ["c3", "d5", "good"]]
+        },
+        "markdown": "When an enemy piece is pinned, do not rush to trade immediately!\n\nInstead, **pile up additional attackers** on the pinned piece. Here White pins the f6 knight with **1.Bg5!**, and when Black plays **1...d6**, White leaps with **2.Nd5!**, overloading the pinned defender and shattering Black's kingside.",
+        "moves": [
+          { "san": "Bg5", "comment": "White pins the f6 knight against Black's queen." },
+          { "san": "d6", "comment": "Black solidifies the center." },
+          { "san": "Nd5", "comment": "Nimzo's golden rule: jumping another attacker onto the pinned unit!" },
+          { "san": "Be6", "comment": "Black tries to counter-defend." },
+          { "san": "Nxf6+", "comment": "White captures with check, inflicting ruined pawns on Black." }
+        ]
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-pin-knight",
+        "type": "single-move",
+        "title": "Apply the Pin",
+        "orientation": "white",
+        "fen": "r1bqk2r/pppp1ppp/2n2n2/4p3/1b2P3/2NP1N2/PPP2PPP/R1BQKB1R w KQkq - 1 5",
+        "markdown": "Pin Black's f6 knight against the queen with your dark-squared bishop.",
+        "solution": { "san": ["Bg5"] },
+        "hints": [
+          { "text": "Move the bishop to g5.", "arrows": [["c1", "g5", "good"]] }
+        ],
+        "feedback": {
+          "correct": "Excellent! The knight is pinned, restricting Black's kingside coordination.",
+          "wrong": "Develop your bishop to g5 to pin the knight."
+        }
+      }
+    ]
+  }
+}

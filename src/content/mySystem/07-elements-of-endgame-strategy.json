@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/07-elements-of-endgame-strategy",
+  "track": "classics",
+  "chapterNumber": "VI",
+  "part": "Part I: The Elements",
+  "title": "Elements of Endgame Strategy",
+  "subtitle": "King Centralization, Active Rooks, and Cutting Off the Enemy King",
+  "summary": "The fundamental principles of endgame play: transforming the king from a sheltered monarch into an aggressive combatant, active rook placement, and cutting off opposing forces.",
+  "aphorism": "In the middlegame, the king trembles behind his pawns. In the endgame, the monarch unsheathes his sword and leads the charge into the center.",
+  "estMinutes": 14,
+  "tags": ["endgame", "king-activity", "rooks", "passed-pawn", "centralization"],
+  "attribution": "100th Anniversary Centenary Edition. Newly authored prose and interactive studies inspired by Aron Nimzowitsch (1925).",
+  "body": {
+    "historicalContext": "Nimzowitsch demystified endgame strategy by reducing it to clear geometric and dynamic principles rather than rote memory.",
+    "sections": [
+      {
+        "id": "king-centralization",
+        "title": "The Awakening of the King",
+        "initialFen": "8/5pk1/4p1p1/7p/4P2P/5PK1/6P1/8 w - - 0 35",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["e4", "d4", "e5", "d5"],
+          "arrows": [["g3", "f4", "good"], ["f4", "e5", "good"]]
+        },
+        "markdown": "As queens and major pieces leave the board, checkmating threats evaporate. The king must immediately march to the **[[center]]**.\n\nA centralized king controls vital squares, shields friendly passed pawns, and blockades or infiltrates the enemy position before the opposing monarch can arrive.",
+        "moves": [
+          { "san": "Kf4", "comment": "The white king takes its first bold step forward." },
+          { "san": "Kf6", "comment": "Black tries to oppose the king." },
+          { "san": "e5+", "comment": "White gains space and drives the black king back!" },
+          { "san": "Ke7", "comment": "Black is forced into retreat." },
+          { "san": "Ke4", "comment": "White maintains absolute central supremacy." }
+        ]
+      },
+      {
+        "id": "rook-behind-passer",
+        "title": "The Active Rook: Placement Behind the Passed Pawn",
+        "initialFen": "8/P4pk1/8/8/8/1r6/R5K1/8 w - - 0 45",
+        "orientation": "white",
+        "annotations": {
+          "arrows": [["a2", "a7", "good"]]
+        },
+        "markdown": "Where does a rook belong in the endgame? **Behind the passed pawn.**\n\n- If it is your own passed pawn, the rook supports its forward march without having to move out of the way.\n- If it is an enemy passed pawn, placing your rook behind it means the rook's scope increases with every step the pawn takes!",
+        "engineLens": {
+          "eval": "+6.5",
+          "takeaway": "Stockfish confirms: an active rook behind a passer guarantees promotion or decisive material gain."
+        }
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-king-charge",
+        "type": "single-move",
+        "title": "Lead with the King",
+        "orientation": "white",
+        "fen": "8/5pk1/4p1p1/7p/4P2P/5PK1/6P1/8 w - - 0 35",
+        "markdown": "The endgame has begun. Advance your king toward the center to dominate the board.",
+        "solution": { "san": ["Kf4"] },
+        "hints": [
+          { "text": "Move your king forward to f4." }
+        ],
+        "feedback": {
+          "correct": "Magnificent! The king takes center stage and dominates the endgame.",
+          "wrong": "March the king to f4."
+        }
+      }
+    ]
+  }
+}
