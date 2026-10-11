@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/14-overprotection",
+  "track": "classics",
+  "chapterNumber": "XIII",
+  "part": "Part II: Positional Play",
+  "title": "Overprotection and Weak Pawns",
+  "subtitle": "The Surplus Defense of Strategically Decisive Points",
+  "summary": "Nimzowitsch's most famous and misunderstood concept: why overprotecting strong central points radiates energy across the board and frees defenders for explosive counterattacks.",
+  "aphorism": "Overprotection is not mere defense; it is the deliberate accumulation of force around a vital strong point to give your entire army elastic freedom.",
+  "estMinutes": 14,
+  "tags": ["strategy", "overprotection", "strong-points", "coordination", "prophylaxis"],
+  "attribution": "100th Anniversary Centenary Edition. Newly authored prose and interactive studies inspired by Aron Nimzowitsch (1925).",
+  "body": {
+    "historicalContext": "Nimzowitsch argued that strong points (such as an advanced pawn on e5 or d5) deserve multiple surplus defenders. By overprotecting, you create an unshakeable fortress that anchors your entire position.",
+    "sections": [
+      {
+        "id": "overprotection-concept",
+        "title": "The Meaning of Surplus Defense",
+        "initialFen": "r1bq1rk1/pp1nbppp/2p1pn2/3p4/2PPP3/1PN2N2/PB2BPPP/R2Q1RK1 w - - 0 10",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["e5"],
+          "arrows": [["c3", "e4", "good"], ["f3", "e5", "good"], ["b2", "e5", "good"]]
+        },
+        "strategicOverlays": {
+          "overprotection": [
+            { "target": "e5", "defenders": ["f3", "b2", "c3"] }
+          ]
+        },
+        "markdown": "**[[overprotection|Overprotection]]** means defending a critical strong point (like **e5** or **d4**) with more pieces than immediately required to meet enemy attacks.\n\nWhy do this? Because an overprotected square:\n1. Cannot be undermined by sudden enemy tactics.\n2. Anchors your spatial advantage.\n3. Allows any single defender to detach and launch an attack elsewhere without worrying that the strong point will collapse!",
+        "moves": [
+          { "san": "e5", "comment": "White pushes the pawn to the anchor square." },
+          { "san": "Ne8", "comment": "Black is forced into retreat." },
+          { "san": "Bd3", "comment": "Developing the bishop to overprotect e5." },
+          { "san": "f5", "comment": "Black attempts to challenge the anchor." },
+          { "san": "exf6", "comment": "White takes en passant, opening lines for the overprotecting artillery." }
+        ]
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-reinforce-strong-point",
+        "type": "single-move",
+        "title": "Add Surplus Protection",
+        "orientation": "white",
+        "fen": "r1bq1rk1/pp1nbppp/2p1pn2/3pP3/2PP4/1PN2N2/PB2BPPP/R2Q1RK1 w - - 0 11",
+        "markdown": "Your e5 pawn is the anchor of your position. Bring your bishop to d3 to add another layer of overprotection.",
+        "solution": { "san": ["Bd3"] },
+        "hints": [
+          { "text": "Move your light-squared bishop from e2 to d3." }
+        ],
+        "feedback": {
+          "correct": "Superb! e5 is now thoroughly overprotected, anchoring your kingside initiative.",
+          "wrong": "Place the bishop on d3 to support the e5 pawn."
+        }
+      }
+    ]
+  }
+}

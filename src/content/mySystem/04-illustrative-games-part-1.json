@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/04-illustrative-games-part-1",
+  "track": "classics",
+  "chapterNumber": "III-A",
+  "part": "Part I: The Elements",
+  "title": "Illustrative Games: Chapters 1–3",
+  "subtitle": "Master Case Studies in Development, Files, and Ranks",
+  "summary": "Full annotated master game: Nimzowitsch vs. Alapin (Vilnius 1912) illustrating the deadly penalty of early queen pawn-hunting against rapid central development and open-file invasion.",
+  "aphorism": "Theory without living practice is a sterile tree. Let the master games demonstrate our principles in battle.",
+  "estMinutes": 16,
+  "tags": ["games", "nimzowitsch", "alapin", "open-file", "development", "brilliancy"],
+  "attribution": "100th Anniversary Centenary Edition. Based directly on Aron Nimzowitsch's My System (1925), Part I, Chapter 3a, Game 1.",
+  "body": {
+    "historicalContext": "In this famous miniature from Vilnius 1912, Nimzowitsch punished Semion Alapin for greedily hunting pawns with his queen while neglecting development, culminating in a legendary double-rook sacrifice and queen sacrifice on d8.",
+    "sections": [
+      {
+        "id": "intro-to-case-files",
+        "title": "The Fruits of Development and Open Files",
+        "initialFen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "orientation": "white",
+        "markdown": "We have analyzed the **center**, **democratic development**, **open files**, and the **seventh and eighth ranks**.\n\nNow we witness these elements synthesized in **Nimzowitsch vs. Alapin (Vilnius 1912)**. When Black goes pawn-hunting with **9...Qxg2?**, Nimzowitsch uses the open e- and d-files to unleash a stunning tactical assault.",
+        "engineLens": {
+          "eval": "+M1",
+          "takeaway": "Stockfish confirms that Nimzowitsch's piece sacrifices 12.O-O-O!, 14.Bf6!!, and 17.Qd8+! force mate in all lines."
+        }
+      }
+    ],
+    "illustrativeGames": [
+      {
+        "id": "nimzowitsch-alapin-1912",
+        "white": "Aron Nimzowitsch",
+        "black": "Semion Alapin",
+        "event": "Vilnius",
+        "year": 1912,
+        "result": "1-0",
+        "eco": "C10",
+        "summary": "Nimzowitsch vs. Alapin: The ultimate lesson on pawn hunting vs. central development and open-file invasion.",
+        "initialFen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "moves": [
+          { "ply": 1, "san": "e4", "comment": "Claiming the center." },
+          { "ply": 2, "san": "e6", "comment": "The French Defence." },
+          { "ply": 3, "san": "d4", "comment": "Establishing the classic pawn center." },
+          { "ply": 4, "san": "d5", "comment": "Black strikes back centrally." },
+          { "ply": 5, "san": "Nc3", "comment": "Developing a piece while defending e4." },
+          { "ply": 6, "san": "Nf6", "comment": "Black puts pressure on e4." },
+          { "ply": 7, "san": "exd5", "comment": "Nimzowitsch exchanges to clarify the center." },
+          { "ply": 8, "san": "Nxd5", "comment": "Black surrenders the center (Chapter 1)." },
+          { "ply": 9, "san": "Nf3", "comment": "Developing the kingside knight." },
+          { "ply": 10, "san": "c5", "comment": "Attacking White's d4 pawn." },
+          { "ply": 11, "san": "Nxd5", "comment": "Combining development with a tempo-gaining exchange." },
+          { "ply": 12, "san": "Qxd5", "comment": "Black's queen is drawn into the open center." },
+          { "ply": 13, "san": "Be3", "comment": "Developing the bishop and defending d4." },
+          { "ply": 14, "san": "cxd4", "comment": "Exchanging pawns in the center." },
+          { "ply": 15, "san": "Nxd4", "comment": "White's knight reaches a dominant central outpost on d4." },
+          { "ply": 16, "san": "a6", "comment": "Preventing Nb5, but losing a precious tempo." },
+          { "ply": 17, "san": "Be2", "comment": "Preparing kingside castling and opening diagonals." },
+          { "ply": 18, "san": "Qxg2", "comment": "The mortal sin: Black goes pawn-hunting with the queen in the opening!" },
+          { "ply": 19, "san": "Bf3", "comment": "Attacking the queen and gaining a huge tempo for development." },
+          { "ply": 20, "san": "Qg6", "comment": "The queen scurries away." },
+          { "ply": 21, "san": "Qd2", "comment": "Connecting rooks and preparing queenside castling to seize the d-file." },
+          { "ply": 22, "san": "e5", "comment": "Black tries to kick White's knight away." },
+          { "ply": 23, "san": "O-O-O", "comment": "Brilliant piece sacrifice! White mobilizes the d1-rook onto the open d-file." },
+          { "ply": 24, "san": "exd4", "comment": "Black takes the offered knight." },
+          { "ply": 25, "san": "Bxd4", "comment": "Threatening deadly discovery along the d-file." },
+          { "ply": 26, "san": "Nc6", "comment": "Black develops a knight to block the d-file." },
+          { "ply": 27, "san": "Bf6", "comment": "An 'express train of a move'! Threatening Qd8# and giving Black zero time." },
+          { "ply": 28, "san": "Qxf6", "comment": "Forced capture, or else mate on d8 immediately." },
+          { "ply": 29, "san": "Rhe1+", "comment": "Seizing the open e-file with check! Both central files are now firing." },
+          { "ply": 30, "san": "Be7", "comment": "Black tries to interpose (15...Be6 allowed 16.Qd7#)." },
+          { "ply": 31, "san": "Bxc6+", "comment": "Decisive removal of the d8 defender!" },
+          { "ply": 32, "san": "Kf8", "comment": "If 16...bxc6 then 17.Qd8#." },
+          { "ply": 33, "san": "Qd8+", "comment": "The immortal queen sacrifice!" },
+          { "ply": 34, "san": "Bxd8", "comment": "Forced recapture." },
+          { "ply": 35, "san": "Re8#", "comment": "Checkmate on the 8th rank! A supreme triumph of development and open files." }
+        ]
+      }
+    ]
+  }
+}

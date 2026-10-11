@@ -7,7 +7,7 @@
   "additionalProperties": false,
   "properties": {
     "schemaVersion": { "const": 1 },
-    "kind": { "enum": ["lesson", "glossary", "puzzleSet", "scenario", "reference"] },
+    "kind": { "enum": ["lesson", "glossary", "puzzleSet", "scenario", "reference", "bookChapter"] },
     "id": {
       "type": "string",
       "description": "Permanent path-shaped slug; also the route and progress key.",
@@ -16,6 +16,9 @@
     "track": { "enum": ["classics", "habits", "reference"] },
     "title": { "type": "string", "minLength": 1 },
     "subtitle": { "type": "string" },
+    "chapterNumber": { "type": "string" },
+    "part": { "type": "string" },
+    "aphorism": { "type": "string" },
     "summary": { "type": "string" },
     "estMinutes": { "type": "number", "minimum": 0 },
     "prereqs": { "type": "array", "items": { "type": "string" } },
@@ -40,6 +43,10 @@
     {
       "if": { "properties": { "kind": { "const": "scenario" } } },
       "then": { "properties": { "body": { "$ref": "#/definitions/scenarioBody" } } }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "bookChapter" } } },
+      "then": { "properties": { "body": { "$ref": "#/definitions/bookChapterBody" } } }
     }
   ],
   "definitions": {
@@ -275,6 +282,110 @@
             "properties": {
               "san": { "type": "string" },
               "explain": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "bookChapterBody": {
+      "type": "object",
+      "required": ["sections"],
+      "additionalProperties": false,
+      "properties": {
+        "aphorism": { "type": "string" },
+        "historicalContext": { "type": "string" },
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "markdown"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+              "title": { "type": "string", "minLength": 1 },
+              "markdown": { "type": "string", "minLength": 1 },
+              "initialFen": { "type": "string" },
+              "orientation": { "enum": ["white", "black"] },
+              "annotations": { "$ref": "#/definitions/annotations" },
+              "strategicOverlays": { "type": "object" },
+              "moves": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["san"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "san": { "type": "string" },
+                    "comment": { "type": "string" },
+                    "fen": { "type": "string" },
+                    "annotations": { "$ref": "#/definitions/annotations" }
+                  }
+                }
+              },
+              "engineLens": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "eval": { "type": "string" },
+                  "depth": { "type": "number" },
+                  "pv": { "type": "string" },
+                  "takeaway": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "drills": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/step" }
+        },
+        "illustrativeGames": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "white", "black", "event", "year", "result", "moves"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "white": { "type": "string" },
+              "black": { "type": "string" },
+              "event": { "type": "string" },
+              "year": { "type": ["number", "string"] },
+              "result": { "type": "string" },
+              "eco": { "type": "string" },
+              "summary": { "type": "string" },
+              "initialFen": { "type": "string" },
+              "moves": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["ply", "san"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "ply": { "type": "integer", "minimum": 1 },
+                    "san": { "type": "string" },
+                    "comment": { "type": "string" },
+                    "fen": { "type": "string" },
+                    "annotations": { "$ref": "#/definitions/annotations" },
+                    "guessMove": { "type": "boolean" },
+                    "options": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["san", "label", "correct"],
+                        "additionalProperties": false,
+                        "properties": {
+                          "san": { "type": "string" },
+                          "label": { "type": "string" },
+                          "correct": { "type": "boolean" },
+                          "explain": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }

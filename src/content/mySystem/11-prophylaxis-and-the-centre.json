@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/11-prophylaxis-and-the-centre",
+  "track": "classics",
+  "chapterNumber": "X",
+  "part": "Part II: Positional Play",
+  "title": "Prophylaxis and the Centre",
+  "subtitle": "The Art of Prevention and the Mysterious Rook Move",
+  "summary": "The pinnacle of hypermodern philosophy: anticipating the opponent's liberating freeing move, suffocating enemy counterplay, and the legendary mysterious rook move.",
+  "aphorism": "The threat is stronger than the execution. Prophylaxis is the art of seeing your opponent's dream and gently suffocating it before it can draw breath.",
+  "estMinutes": 15,
+  "tags": ["strategy", "prophylaxis", "prevention", "mysterious-rook", "positional-play"],
+  "attribution": "100th Anniversary Centenary Edition. Newly authored prose and interactive studies inspired by Aron Nimzowitsch (1925).",
+  "body": {
+    "historicalContext": "In Part II, Nimzowitsch introduced Prophylaxis — a revolutionary concept that modern grandmasters and supercomputers consider the very essence of deep positional mastery.",
+    "sections": [
+      {
+        "id": "what-is-prophylaxis",
+        "title": "The Soul of Prevention",
+        "initialFen": "r1bq1rk1/pp1nbppp/2p1pn2/3p4/2PP4/1PN1PN2/PB2BPPP/R2Q1RK1 w - - 0 10",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["e5"],
+          "arrows": [["d1", "c2", "good"], ["f1", "d1", "good"]]
+        },
+        "markdown": "**[[prophylaxis|Prophylaxis]]** is the habit of asking before every move: *'What is my opponent’s deepest wish or freeing idea?'*\n\nInstead of pursuing our own plan blindly, we identify the opponent's liberating move (such as a freeing pawn break like **...e5** or **...c5**) and take preventive measures to make that move impossible or disastrous.",
+        "moves": [
+          { "san": "Qc2", "comment": "White overprotects e4 and clamps down on Black's central breaks." },
+          { "san": "Re8", "comment": "Black prepares the ...e5 freeing break." },
+          { "san": "Rfd1", "comment": "The mysterious rook move: pre-empting Black's central break before it happens!" }
+        ]
+      },
+      {
+        "id": "mysterious-rook-move",
+        "title": "The Mysterious Rook Move",
+        "initialFen": "r1bqr1k1/pp1nbppp/2p1pn2/3p4/2PP4/1PN1PN2/PBQ1BPPP/R2R2K1 w - - 3 12",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["d1", "d5"]
+        },
+        "strategicOverlays": {
+          "mysteriousRooks": [{ "square": "d1", "targetFile": "d" }]
+        },
+        "markdown": "One of Nimzowitsch's most celebrated concepts is the **mysterious rook move**.\n\nA player moves a rook not to an already open file, but to an *apparently closed file* (like **Rd1** behind a closed pawn). Why? Because when the opponent eventually attempts their central pawn break (...e5 or ...dxe4), the file will open directly into the face of White's prepared rook!",
+        "engineLens": {
+          "eval": "+0.8",
+          "takeaway": "Stockfish 17 frequently chooses mysterious rook moves in quiet positions to preempt tactical breaks before they materialize."
+        }
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-mysterious-rook",
+        "type": "single-move",
+        "title": "Deploy the Mysterious Rook",
+        "orientation": "white",
+        "fen": "r1bqr1k1/pp1nbppp/2p1pn2/3p4/2PP4/1PN1PN2/PBQ1BPPP/R4RK1 w - - 2 11",
+        "markdown": "Anticipate Black's desire to break in the center. Place your f1 rook on d1 to pre-empt Black's liberating move.",
+        "solution": { "san": ["Rfd1", "Rad1"] },
+        "hints": [
+          { "text": "Move your rook to d1." }
+        ],
+        "feedback": {
+          "correct": "Brilliant! The mysterious rook on d1 exerts unseen pressure on the central file.",
+          "wrong": "Play Rfd1 to restrain Black's central liberation."
+        }
+      }
+    ]
+  }
+}

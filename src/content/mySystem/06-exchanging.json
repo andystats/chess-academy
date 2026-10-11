@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/06-exchanging",
+  "track": "classics",
+  "chapterNumber": "V",
+  "part": "Part I: The Elements",
+  "title": "On Exchanging",
+  "subtitle": "The Strategic Art of Liquidation",
+  "summary": "Why exchanges should never be automatic: trading to tear open a file, eliminating vital defenders, avoiding tempo loss, and simplifying into a winning endgame.",
+  "aphorism": "Never exchange simply because you can. An exchange is a surgical strike designed to seize a file, destroy a defender, or transition into victory.",
+  "estMinutes": 12,
+  "tags": ["strategy", "exchanging", "simplification", "endgame", "tempo"],
+  "attribution": "100th Anniversary Centenary Edition. Newly authored prose and interactive studies inspired by Aron Nimzowitsch (1925).",
+  "body": {
+    "historicalContext": "Amateurs often trade pieces when they don't know what else to do. Nimzowitsch treated the exchange as a decisive positional transaction that alters the landscape of the board.",
+    "sections": [
+      {
+        "id": "exchange-to-open-file",
+        "title": "Exchanging to Open a Line",
+        "initialFen": "r2q1rk1/pp1nbppp/2p1pn2/3p4/2PP4/1PN1PN2/PB2BPPP/R2Q1RK1 w - - 0 10",
+        "orientation": "white",
+        "annotations": {
+          "arrows": [["c4", "d5", "good"]]
+        },
+        "markdown": "An **[[exchange]]** should always serve a concrete strategic aim. One of the most common reasons to trade is to **blast open a file** for our rooks.\n\nBy playing **cxd5**, White forces an exchange of pawns that clears the c-file for the white heavy pieces.",
+        "moves": [
+          { "san": "cxd5", "comment": "White initiates the liquidating exchange." },
+          { "san": "exd5", "comment": "Black is forced to recapture, opening the c-file." },
+          { "san": "Rc1", "comment": "White immediately occupies the new open highway!" }
+        ]
+      },
+      {
+        "id": "destroy-defender",
+        "title": "Destroying the Key Defender",
+        "initialFen": "r1bq1rk1/pp3ppp/2n1pn2/3p4/1b1P4/2NB1N2/PPPB1PPP/R2QK2R w KQ - 4 8",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["c6", "e5"],
+          "arrows": [["d2", "g5", "good"]]
+        },
+        "markdown": "Another profound reason to exchange is to **eliminate a piece that guards a vital strategic square**.\n\nIf the opponent has a knight guarding the critical central outpost (e.g. e5 or d5), eliminating that knight clears the way for your own troops to conquer the outpost without opposition.",
+        "moves": [
+          { "san": "Bg5", "comment": "Pinning the knight defending d5 and e4." },
+          { "san": "h6", "comment": "Black challenges the bishop." },
+          { "san": "Bxf6", "comment": "White executes the exchange, removing the key central defender!" },
+          { "san": "Qxf6", "comment": "Black recaptures with the queen." },
+          { "san": "O-O", "comment": "White prepares to seize the center." }
+        ]
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-trade-for-file",
+        "type": "single-move",
+        "title": "Liquidate for the File",
+        "orientation": "white",
+        "fen": "r2q1rk1/pp1nbppp/2p1pn2/3p4/2PP4/1PN1PN2/PB2BPPP/R2Q1RK1 w - - 0 10",
+        "markdown": "Trade pawns in the center to crack open the c-file for your rooks.",
+        "solution": { "san": ["cxd5"] },
+        "hints": [
+          { "text": "Capture Black's pawn on d5 with your c-pawn." }
+        ],
+        "feedback": {
+          "correct": "Spot on! The c-file is now an open highway for your rooks.",
+          "wrong": "Capture on d5 (cxd5) to open the file."
+        }
+      }
+    ]
+  }
+}

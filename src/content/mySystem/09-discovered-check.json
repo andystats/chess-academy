@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/09-discovered-check",
+  "track": "classics",
+  "chapterNumber": "VIII",
+  "part": "Part I: The Elements",
+  "title": "Discovered Check",
+  "subtitle": "Double Checks, Seesaws, and the Unstoppable Masked Battery",
+  "summary": "The tactical sibling of the pin: unleashing discovered checks, the devastating nature of double check, and the legendary windmill / seesaw combination.",
+  "aphorism": "A discovered check is a pistol hidden behind a curtain. A double check is a thunderbolt that compels the king alone to flee.",
+  "estMinutes": 12,
+  "tags": ["tactics", "discovered-check", "double-check", "windmill", "combinations"],
+  "attribution": "100th Anniversary Centenary Edition. Newly authored prose and interactive studies inspired by Aron Nimzowitsch (1925).",
+  "body": {
+    "historicalContext": "Nimzowitsch demonstrated that discovered checks are not random accidents, but the direct result of setting up masked batteries on open files and diagonals.",
+    "sections": [
+      {
+        "id": "discovered-check-mechanics",
+        "title": "The Masked Battery",
+        "initialFen": "r1bqk2r/ppppbppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 1 5",
+        "orientation": "white",
+        "markdown": "A **discovered check** occurs when moving one piece unmasks a line of attack from a friendly bishop, rook, or queen standing behind it.\n\nThe moving piece is completely free to go anywhere — even to capture or deliver another [[threat]] — because the opponent is compelled to answer the [[check]] first!",
+        "engineLens": {
+          "eval": "+0.5",
+          "takeaway": "Engines prioritize discovered-check batteries because they create multiple simultaneous tactical threats that overwhelm defensive resources."
+        }
+      },
+      {
+        "id": "double-check-power",
+        "title": "Double Check: The Unblockable Threat",
+        "initialFen": "r1bqk2r/pppp1ppp/2n5/4N3/2B1n3/8/PPPP1PPP/RNBQK2R w KQkq - 0 6",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["f7", "e8"],
+          "arrows": [["c4", "f7", "good"], ["d1", "e2", "good"]]
+        },
+        "markdown": "When a discovered check is also a **double check** (both the unmasking piece and the battery piece give check simultaneously), it cannot be blocked and neither checking piece can be captured.\n\n**The king must move.** Here White strikes with **1.Bxf7+ Ke7 2.Nxc6+!**, delivering a devastating discovered check from the queen on d1 while the knight wins Black's queen on d8.",
+        "moves": [
+          { "san": "Bxf7+", "comment": "White cracks open Black's king." },
+          { "san": "Ke7", "comment": "The king is forced to move." },
+          { "san": "Nxc6+", "comment": "Discovered check from the d1 queen while winning Black's queen!" }
+        ]
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-double-check",
+        "type": "single-move",
+        "title": "Unleash the Battery",
+        "orientation": "white",
+        "fen": "r1bq1rk1/pppp1Npp/2n5/4p3/2B1n3/8/PPPP1PPP/RNBQK2R w KQ - 0 6",
+        "markdown": "White has a knight on f7 masking the bishop on c4. Deliver a devastating discovered check.",
+        "solution": { "san": ["Nxd8+", "Nd6+", "Nh6+", "Nxe5+"] },
+        "hints": [
+          { "text": "Move the knight on f7 to reveal check from the bishop on c4." }
+        ],
+        "feedback": {
+          "correct": "Crushing! The discovered check wins the black queen on d8.",
+          "wrong": "Move the knight on f7 with discovered check."
+        }
+      }
+    ]
+  }
+}

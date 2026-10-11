@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/16-immortal-zugzwang-and-revolution",
+  "track": "classics",
+  "chapterNumber": "XV",
+  "part": "Part III: Master Case Files",
+  "title": "The Immortal Zugzwang & The Revolution",
+  "subtitle": "The Masterpiece of Complete Positional Paralysis (Sämisch vs. Nimzowitsch, 1923)",
+  "summary": "The crowning jewel of hypermodern chess: Sämisch vs. Nimzowitsch (Copenhagen 1923), where an entire army of pieces is placed in complete zugzwang, followed by a historical retrospective on the hypermodern revolution.",
+  "aphorism": "A quiet pawn move (25...h6!) was enough to reduce White's entire army to stone. That is the triumph of positional harmony.",
+  "estMinutes": 18,
+  "tags": ["master-games", "zugzwang", "immortal-zugzwang", "nimzowitsch", "saemisch"],
+  "attribution": "100th Anniversary Centenary Edition. Game score in public domain; newly authored centenary analysis.",
+  "body": {
+    "historicalContext": "Played in Copenhagen in 1923, this game stunned the chess world. Nimzowitsch demonstrated that zugzwang (being forced to make a losing move because any move destroys your position) can happen with almost every piece still on the board!",
+    "sections": [
+      {
+        "id": "the-zugzwang-triumph",
+        "title": "The Concept of Total Paralysis",
+        "initialFen": "5rk1/3q2p1/p1nbp2p/1p1p1p1n/1P1P1P2/P3PN1P/1B1NB1P1/2RQ1RK1 b - - 0 16",
+        "orientation": "black",
+        "annotations": {
+          "highlight": ["f2", "d3"]
+        },
+        "markdown": "In standard chess understanding, **zugzwang** was thought to be an endgame phenomenon occurring only with bare kings and pawns.\n\nIn his famous battle against Friedrich Sämisch, Nimzowitsch proved that **deep positional restraint and prophylaxis can paralyze a full board of queens, rooks, bishops, and knights**.",
+        "engineLens": {
+          "eval": "-4.8",
+          "takeaway": "Stockfish evaluates Black's position at move 25 as completely winning (-5.0): White has zero legal non-losing moves!"
+        }
+      }
+    ],
+    "illustrativeGames": [
+      {
+        "id": "saemisch-nimzowitsch-1923",
+        "white": "Friedrich Sämisch",
+        "black": "Aron Nimzowitsch",
+        "event": "Copenhagen",
+        "year": 1923,
+        "result": "0-1",
+        "eco": "E17",
+        "summary": "The 'Immortal Zugzwang Game': Nimzowitsch weaves an invisible net of restraint, culminating in the quiet 25...h6!! which forces White's resignation.",
+        "initialFen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "moves": [
+          { "ply": 1, "san": "d4", "comment": "Sämisch opens with the queen's pawn." },
+          { "ply": 2, "san": "Nf6", "comment": "Nimzowitsch controls the center with hypermodern flexibility." },
+          { "ply": 3, "san": "c4", "comment": "White claims space." },
+          { "ply": 4, "san": "e6", "comment": "Preparing bishop development." },
+          { "ply": 5, "san": "Nf3", "comment": "Developing kingside knight." },
+          { "ply": 6, "san": "b6", "comment": "The Queen's Indian Defence." },
+          { "ply": 7, "san": "g3", "comment": "Fianchettoing the bishop." },
+          { "ply": 8, "san": "Bb7", "comment": "Black exerts diagonal pressure on the e4 square." },
+          { "ply": 9, "san": "Bg2", "comment": "White opposes on the long diagonal." },
+          { "ply": 10, "san": "Be7", "comment": "Developing and preparing castling." },
+          { "ply": 11, "san": "Nc3", "comment": "Developing the queen's knight." },
+          { "ply": 12, "san": "O-O", "comment": "King to safety." },
+          { "ply": 13, "san": "O-O", "comment": "White castles." },
+          { "ply": 14, "san": "d5", "comment": "Nimzo strikes in the center." },
+          { "ply": 15, "san": "Ne5", "comment": "White occupies the e5 outpost." },
+          { "ply": 16, "san": "c6", "comment": "Solidifying the center." },
+          { "ply": 17, "san": "cxd5", "comment": "White liquidates the tension." },
+          { "ply": 18, "san": "cxd5", "comment": "Opening the c-file." },
+          { "ply": 19, "san": "Bf4", "comment": "White develops the bishop." },
+          { "ply": 20, "san": "a6", "comment": "Prophylaxis! Preventing Nb5." },
+          { "ply": 21, "san": "Rc1", "comment": "Seizing the open c-file." },
+          { "ply": 22, "san": "b5", "comment": "Gaining queenside space." },
+          { "ply": 23, "san": "Qb3", "comment": "Targeting d5." },
+          { "ply": 24, "san": "Nc6", "comment": "Black challenges the e5 knight." },
+          { "ply": 25, "san": "Nxc6", "comment": "White exchanges." },
+          { "ply": 26, "san": "Bxc6", "comment": "Black's bishop pair becomes active." },
+          { "ply": 27, "san": "h3", "comment": "A passive waiting move." },
+          { "ply": 28, "san": "Qd7", "comment": "Connecting rooks and preparing central control." },
+          { "ply": 29, "san": "Kh2", "comment": "White vacates g1." },
+          { "ply": 30, "san": "Nh5", "comment": "Challenging White's dark-squared bishop." },
+          { "ply": 31, "san": "Bd2", "comment": "The bishop retreats." },
+          { "ply": 32, "san": "f5", "comment": "Restraining White's center forever!" },
+          { "ply": 33, "san": "Qd1", "comment": "The queen retreats to defend." },
+          { "ply": 34, "san": "b4", "comment": "Driving White's knight away from c3." },
+          { "ply": 35, "san": "Nb1", "comment": "The knight is driven back to the first rank!" },
+          { "ply": 36, "san": "Bb5", "comment": "Black's bishop cuts across the diagonal." },
+          { "ply": 37, "san": "Rg1", "comment": "White tries to prepare g4." },
+          { "ply": 38, "san": "Bd6", "comment": "Aiming at the white king." },
+          { "ply": 39, "san": "e4", "comment": "A desperate central break." },
+          { "ply": 40, "san": "fxe4", "comment": "Opening lines against White's king." },
+          { "ply": 41, "san": "Qxh5", "comment": "White wins a piece, but walks into an inescapable net." },
+          { "ply": 42, "san": "Rxf2", "comment": "The rook invades the 7th rank!" },
+          { "ply": 43, "san": "Qg5", "comment": "White's queen tries to stay active." },
+          { "ply": 44, "san": "Raf8", "comment": "Doubled rooks on the f-file!" },
+          { "ply": 45, "san": "Kh1", "comment": "The king cowers in the corner." },
+          { "ply": 46, "san": "R8f5", "comment": "Trapping the queen's retreat." },
+          { "ply": 47, "san": "Qe3", "comment": "The queen is driven back." },
+          { "ply": 48, "san": "Bd3", "comment": "Total blockade and paralysis of White's pieces." },
+          { "ply": 49, "san": "Rce1", "comment": "White shuffles the rook." },
+          { "ply": 50, "san": "h6", "comment": "25...h6!! The Immortal Zugzwang move! White has literally no move that does not instantly lose material. White resigns." }
+        ]
+      }
+    ]
+  }
+}

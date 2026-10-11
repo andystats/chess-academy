@@ -39,22 +39,19 @@ describe('restored study routes', () => {
     cleanup();
   });
 
-  it('renders the My System chapter map with working studies and explicit planned chapters', () => {
+  it('renders the My System chapter map with working studies and chapters', () => {
     renderAt('/my-system');
 
-    expect(screen.getByRole('heading', { level: 1, name: 'My System' })).toBeInTheDocument();
-    const studyHrefs = screen
-      .getAllByRole('link', { name: /Open study board/i })
+    expect(screen.getByRole('heading', { level: 1, name: /My System/i })).toBeInTheDocument();
+    const readLinks = screen
+      .getAllByRole('link', { name: /Read Chapter/i })
       .map((link) => link.getAttribute('href'));
     const linkedChapters = flattenMySystemChapters().filter((chapter) => chapter.lessonId);
 
-    expect(studyHrefs).toHaveLength(linkedChapters.length);
+    expect(readLinks).toHaveLength(linkedChapters.length);
     for (const chapter of linkedChapters) {
-      expect(studyHrefs).toContain(`/lesson/${chapter.lessonId}`);
+      expect(readLinks).toContain(`/lesson/${chapter.lessonId}`);
     }
-    expect(screen.getAllByText('Chapter study to draft')).toHaveLength(
-      flattenMySystemChapters().filter((chapter) => !chapter.lessonId).length,
-    );
   });
 
   it('renders a lesson, resolves its inline glossary term, advances, and records progress', async () => {

@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "kind": "bookChapter",
+  "id": "my-system/05-passed-pawn",
+  "track": "classics",
+  "chapterNumber": "IV",
+  "part": "Part I: The Elements",
+  "title": "The Passed Pawn",
+  "subtitle": "The Candidate, The Lust to Expand, and the Blockade",
+  "summary": "The anatomy of the passed pawn: how candidates are born, why passed pawns possess an innate lust to advance, and how the art of the blockade restrains them.",
+  "aphorism": "A passed pawn possesses an innate lust to expand. To tame it, one must establish an iron blockade on the square directly ahead.",
+  "estMinutes": 15,
+  "tags": ["strategy", "passed-pawn", "blockade", "endgame", "restraint"],
+  "attribution": "100th Anniversary Centenary Edition. Newly authored prose and interactive studies inspired by Aron Nimzowitsch (1925).",
+  "body": {
+    "historicalContext": "Nimzowitsch's doctrine of the Blockade ('Die Blockade') is one of his most celebrated contributions to chess strategy. He proved that the square in front of a passed pawn is not a passive guard post, but a magnificent strategic fortress.",
+    "sections": [
+      {
+        "id": "passed-pawn-anatomy",
+        "title": "The Candidate and the Birth of a Passer",
+        "initialFen": "8/1p1k4/8/1P1P4/8/8/5K2/8 w - - 0 1",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["d5"],
+          "highlightStyle": "good",
+          "arrows": [["d5", "d6", "good"]]
+        },
+        "markdown": "A pawn is **[[passed-pawn|passed]]** when there is no enemy pawn in front of it on the same file or on either neighboring file to oppose its march to the 8th rank.\n\nIn any pawn majority, the pawn with no opposing pawn directly opposite is the **candidate**. Nimzowitsch coined the famous rule of etiquette: **'The candidate takes precedence!'** The candidate must advance first to break the enemy cordon.",
+        "moves": [
+          { "san": "Ke3", "comment": "White brings the king into active centralization." },
+          { "san": "Kd6", "comment": "Black moves to blockade the passed d-pawn." },
+          { "san": "Kd4", "comment": "White secures the d4 anchor." },
+          { "san": "b6", "comment": "Black solidifies the wing." }
+        ]
+      },
+      {
+        "id": "the-blockade-post",
+        "title": "The Blockade: Taming the Expansion",
+        "initialFen": "4r1k1/pp3ppp/8/3p4/8/5N2/PPP2PPP/R5K1 w - - 0 20",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["d4"],
+          "arrows": [["f3", "d4", "good"]]
+        },
+        "strategicOverlays": {
+          "blockades": [{ "square": "d4", "pawnSquare": "d5", "color": "blue" }]
+        },
+        "markdown": "A passed pawn possesses what Nimzowitsch poetically called a **'lust to expand'** — it yearns to push forward.\n\nTo neutralize this dynamic danger, you must **[[blockade]]** it by placing a piece on the square directly in front of the pawn (here, **d4**). The blockader does not just stop the pawn; it uses that square as an invulnerable, permanent base of operations.",
+        "moves": [
+          { "san": "Nd4", "comment": "White plants the knight on d4, directly blockading the d5 passed pawn." },
+          { "san": "Kf8", "comment": "Black centralizes the king." },
+          { "san": "Rd1", "comment": "White develops the rook to reinforce the d4 blockade." }
+        ]
+      },
+      {
+        "id": "best-blockader",
+        "title": "The Knight: The Supreme Blockader",
+        "initialFen": "2r1r1k1/pp1b1ppp/8/3p4/3N4/2P5/PP3PPP/R3R1K1 w - - 3 21",
+        "orientation": "white",
+        "annotations": {
+          "highlight": ["d4"]
+        },
+        "strategicOverlays": {
+          "outposts": [{ "square": "d4", "piece": "N", "color": "emerald" }]
+        },
+        "markdown": "Why is the **knight** the ideal blockader?\n\nUnlike a rook or queen (which would be wasted performing guard duty), a knight standing directly in front of an enemy passed pawn radiates attacking power in eight directions, while shielding all friendly pieces behind it.",
+        "engineLens": {
+          "eval": "+1.8",
+          "takeaway": "Stockfish highly evaluates White's knight on d4: it neutralizes Black's d5 passer while exerting crushing pressure on c6, e6, and f5."
+        }
+      }
+    ],
+    "drills": [
+      {
+        "id": "drill-establish-blockade",
+        "type": "single-move",
+        "title": "Plant the Blockade",
+        "orientation": "white",
+        "fen": "r4rk1/pp1b1ppp/8/3p4/8/1NN5/PPP2PPP/R4RK1 w - - 0 15",
+        "markdown": "Black's d5 pawn is a potential passer. Jump your knight to d4 to erect a permanent blockade.",
+        "solution": { "san": ["Nbd4", "Nxd5"] },
+        "hints": [
+          { "text": "Move your knight from b3 to d4 directly in front of the d-pawn." }
+        ],
+        "feedback": {
+          "correct": "Superb! The knight on d4 locks down Black's pawn and becomes the master of the board.",
+          "wrong": "Occupy the d4 square directly ahead of Black's d-pawn."
+        }
+      },
+      {
+        "id": "drill-candidate-advance",
+        "type": "single-move",
+        "title": "Advance the Candidate",
+        "orientation": "white",
+        "fen": "8/pppk4/8/1P1P4/8/8/5K2/8 w - - 0 1",
+        "markdown": "White has a 2-vs-1 majority on the queenside. Advance the candidate pawn to create a breakthrough.",
+        "solution": { "san": ["b6", "Ke3"] },
+        "hints": [
+          { "text": "Push the b-pawn or centralize the king." }
+        ],
+        "feedback": {
+          "correct": "Right on! Pushing the majority creates an unstoppable passed pawn.",
+          "wrong": "Activate the majority or bring the king."
+        }
+      }
+    ]
+  }
+}
