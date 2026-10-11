@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Chess } from 'chess.js';
 import {
   BookOpen,
@@ -11,14 +11,8 @@ import {
   Sparkles,
   Layers,
   Cpu,
-  Bookmark,
-  Share2,
   Menu,
   X,
-  Volume2,
-  VolumeX,
-  Play,
-  Pause,
   ScanSearch,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -29,7 +23,6 @@ import { useProfile } from '../../profile/ProfileContext.jsx';
 import { withStepComplete, withLessonComplete } from '../../profile/progress.js';
 import StrategicBoardOverlays from './StrategicBoardOverlays.jsx';
 import ClickableMove from './ClickableMove.jsx';
-import InlineDiagram from './InlineDiagram.jsx';
 import Markdown from '../Markdown.jsx';
 import GlossaryLink from '../GlossaryLink.jsx';
 import { MY_SYSTEM_PARTS } from '../../content/mySystem.js';
@@ -37,7 +30,6 @@ import { MY_SYSTEM_PARTS } from '../../content/mySystem.js';
 const renderTerm = ({ slug, display }) => <GlossaryLink slug={slug} display={display} />;
 
 export default function MySystemReader({ chapter, initialMode = 'read' }) {
-  const navigate = useNavigate();
   const { recordLessonProgress } = useProfile();
 
   const sections = useMemo(() => chapter?.body?.sections ?? [], [chapter]);
@@ -46,10 +38,7 @@ export default function MySystemReader({ chapter, initialMode = 'read' }) {
 
   const [activeMode, setActiveMode] = useState(initialMode); // 'read' | 'drills' | 'games'
   const [activeSectionIdx, setActiveSectionIdx] = useState(0);
-  const [activeGameIdx, setActiveGameIdx] = useState(0);
   const [isTocOpen, setIsTocOpen] = useState(false);
-  const [showEngineLens, setShowEngineLens] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
 
   // Strategic Overlays Toggle
   const [activeOverlays, setActiveOverlays] = useState({
@@ -60,7 +49,7 @@ export default function MySystemReader({ chapter, initialMode = 'read' }) {
   });
 
   const activeSection = sections[activeSectionIdx] ?? sections[0] ?? null;
-  const activeGame = games[activeGameIdx] ?? games[0] ?? null;
+  const activeGame = games[0] ?? null;
 
   // Board State for Reader Mode
   const [boardOrientation, setBoardOrientation] = useState(

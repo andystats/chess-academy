@@ -1,5 +1,6 @@
 import { render } from '@testing-library/react';
-import StrategicBoardOverlays, { squareToCoords } from './StrategicBoardOverlays.jsx';
+import StrategicBoardOverlays from './StrategicBoardOverlays.jsx';
+import { squareToCoords } from './boardCoordinates.js';
 
 describe('StrategicBoardOverlays', () => {
   it('correctly maps algebraic squares to percentage coordinates', () => {
