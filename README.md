@@ -46,18 +46,27 @@ In `/coach`, two dedicated **Stockfish 10 WASM** Web Workers run in parallel:
 
 ---
 
-## Quick start
+## Quick start (Clone & Run Your Own Copy)
+
+Anyone can clone this repository and have a complete local Chess Academy running in under 60 seconds—the Stockfish 10 WASM engine and deterministic strategy coach work out-of-the-box with zero API keys required:
 
 ```bash
+git clone https://github.com/andystats/chess-academy.git
+cd chess-academy
 npm install
 npm run dev                # start the dev server (http://localhost:5173)
+```
+
+Additional developer scripts:
+
+```bash
 npm test                   # run the unit/integration tests
 npm run lint               # run ESLint (zero warnings)
 npm run validate-content   # verify all authored FENs and moves are legal
 npm run build              # production build
 ```
 
-Requires Node 18+ (developed on Node 22).
+Requires Node 18+ (developed on Node 22). To deploy your own fork for free, enable **GitHub Pages** (via the included `.github/workflows/deploy.yml` workflow) or import the repo into **Vercel**.
 
 ---
 

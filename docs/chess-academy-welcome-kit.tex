@@ -347,8 +347,8 @@ Take one critical position from a game you played today, click \textbf{FEN} in t
 \end{supplementbox}
 
 \vspace{2pt}
-\subsection*{\sffamily\normalsize\textcolor{brand}{Your 4-Week Progression}}
-\footnotesize
+\subsection*{\sffamily\small\textcolor{brand}{Your 4-Week Progression}}
+\scriptsize
 \begin{tabularx}{\textwidth}{@{}llX@{}}
 \toprule
 \textbf{\sffamily Week} & \textbf{\sffamily Focus} & \textbf{\sffamily Goal at the Board} \\
@@ -359,14 +359,25 @@ Take one critical position from a game you played today, click \textbf{FEN} in t
 \textbf{Week 4} & Endgame Conversion & Activate the king immediately in the endgame and convert 1-pawn or 1-piece edges cleanly vs.\ Stockfish. \\
 \bottomrule
 \end{tabularx}
+
+\vspace{4pt}
+\begin{manualbox}{PLAY A FRIEND ONLINE (\texttt{/arena/online}) --- HOUSE VARIANTS}
+\scriptsize
+Want a break from training? Click \textbf{Play a Friend} on the home screen, pick a variant, click \textbf{Create Game}, and text the invite link to a friend for instant real-time play + live chat (no accounts required):
+\begin{itemize}[leftmargin=12pt, itemsep=1.5pt, topsep=1pt]
+  \item \textbf{Standard Chess:} Classic rules with real-time move sync.
+  \item \textbf{Duck Chess:} Move a piece, then place the indestructible \textbf{rubber duck} blocker on any empty square. No check or checkmate---capture the enemy king to win!
+  \item \textbf{Duck Chess Decay:} Squares left behind by the duck stay \textbf{decayed} (blocked) for several turns, with optional \emph{Duck Prime} charges.
+\end{itemize}
+\end{manualbox}
 \normalsize
 
 \newpage
 
 % ======================================================================
-% PAGE 6: DUCK CHESS, ENGINE RATINGS & TECHNICAL SPECIFICATIONS
+% PAGE 6: ENGINE RATINGS, TECH SPECS & CLONE YOUR OWN FROM GITHUB
 % ======================================================================
-\manualsection{CHAPTER 6 \textbar\ MULTIPLAYER \& TECH SPECS}{Ratings, Capabilities \& Under the Hood}
+\manualsection{CHAPTER 6 \textbar\ TECH SPECS \& OPEN SOURCE}{Ratings, Capabilities \& Clone Your Own}
 
 \subsection*{\sffamily\small\textcolor{brand}{Engine Ratings vs.\ Coach Strength (Why the Coach Always Wins)}}
 \scriptsize
@@ -390,29 +401,35 @@ In \texttt{/coach}, two Stockfish 10 WASM workers run in parallel: one plays as 
 \vspace{2pt}
 \subsection*{\sffamily\small\textcolor{brand}{Technical Capabilities \& AI Architecture}}
 \scriptsize
-\begin{itemize}[leftmargin=12pt, itemsep=1.5pt, topsep=1pt]
+\begin{itemize}[leftmargin=12pt, itemsep=1.2pt, topsep=1pt]
   \item \textbf{SEE-Verified Threat Radar (\texttt{positionAnalyzer.js}):} Simulates passing the turn (\emph{null-move}) and runs a full \textbf{Static Exchange Evaluation (SEE)} recapture chain on every target square. Filters out ``nonsense checks'' where you can simply capture the checking piece or safely block, so red arrows only flag real material-winning threats, checkmates, or forks.
   \item \textbf{Tapered Evaluation X-Ray (\texttt{MG} vs.\ \texttt{EG}):} Breaks down 8 classical factors (\emph{Material, Imbalance, Pawns, Mobility, King Safety, Threats, Passed Pawns, Space}) into \textbf{\texttt{MG} (Middlegame)} and \textbf{\texttt{EG} (Endgame)} weights blended by game phase.
   \item \textbf{Takeback Memory \& Hypothetical Move Simulator:} Undoing a move preserves the undone move review so the Coach knows what you just took back and why it failed. Asking \emph{``What if I play Bc4?''} plays the candidate move on a cloned \texttt{chess.js} board and checks SEE-verified opponent refutations before answering.
-  \item \textbf{Claude Sonnet 4.5 + Pluggable Providers:} Sends the verified board brief (including an explicit piece-to-square map and 3-turn chat memory) through a \textbf{Supabase Edge Function (\texttt{coach-chat})} to \textbf{Anthropic Claude Sonnet 4.5} (\texttt{claude-sonnet-4-5}, $\sim$2s latency). Also supports \textbf{Local Ollama (\texttt{llama3.2})}, the instant \textbf{Built-in Synthesizer}, or \textbf{BYOK}.
+  \item \textbf{Claude Sonnet 4.5 + Pluggable Providers:} Sends the verified board brief (with an explicit piece-to-square map and 3-turn chat memory) through a \textbf{Supabase Edge Function (\texttt{coach-chat})} to \textbf{Anthropic Claude Sonnet 4.5} (\texttt{claude-sonnet-4-5}, $\sim$2s latency).
 \end{itemize}
 
 \vspace{2pt}
-\begin{manualbox}{PLAY A FRIEND ONLINE (\texttt{/arena/online}) --- HOUSE VARIANTS}
+\begin{supplementbox}{FOR VIBE CODERS: CLONE \& RUN YOUR OWN FROM GITHUB (60 SECONDS)}
 \scriptsize
-Send an instant invite link for real-time multiplayer with live chat (no accounts required):
-\begin{itemize}[leftmargin=12pt, itemsep=1pt, topsep=1pt]
-  \item \textbf{Standard Chess:} Classic rules with real-time move sync.
-  \item \textbf{Duck Chess:} Move a piece, then place the indestructible \textbf{rubber duck} blocker on any empty square. Capture the enemy king to win!
-  \item \textbf{Duck Chess Decay:} Squares left behind by the duck stay \textbf{decayed} (blocked) for several turns, with optional \emph{Duck Prime} charges.
-\end{itemize}
-\end{manualbox}
+Want to hack on the Coach, customize the curriculum, or run your own private instance?
+\begin{enumerate}[leftmargin=13pt, itemsep=1.5pt, topsep=1pt]
+  \item \textbf{Clone \& Start Locally (Zero API Keys Required):}\\
+  \texttt{git clone https://github.com/andystats/chess-academy.git}\\
+  \texttt{cd chess-academy \&\& npm install \&\& npm run dev} \hfill \emph{(opens \texttt{localhost:5173})}
+  \item \textbf{Choose Your AI Companion Mode (Click \texttt{Provider} in Ask Coach):}
+  \begin{itemize}[leftmargin=10pt, itemsep=0.5pt, topsep=0.5pt]
+    \item \textbf{Free Local LLM (Ollama):} Run \texttt{OLLAMA\_ORIGINS="*" ollama serve} and \texttt{ollama pull llama3.2}.
+    \item \textbf{Bring Your Own Key (BYOK):} Paste your own Claude, OpenAI, or Gemini key in the UI gear menu.
+    \item \textbf{Host for Friends (Supabase + GitHub Pages):} Deploy \texttt{supabase/functions/coach-chat} with your \texttt{ANTHROPIC\_API\_KEY} secret and push to your fork!
+  \end{itemize}
+\end{enumerate}
+\end{supplementbox}
 
 \vfill
 \begin{center}
   {\color{rulecolor}\hrule height 0.6pt}
   \vspace{3pt}
-  {\scriptsize\sffamily\bfseries Ready to play? Jump in at \href{https://andystats.github.io/chess-academy/}{\texttt{andystats.github.io/chess-academy}}}
+  {\scriptsize\sffamily\bfseries Play Live: \href{https://andystats.github.io/chess-academy/}{\texttt{andystats.github.io/chess-academy}} \hspace{6pt}\textbar\hspace{6pt} GitHub: \href{https://github.com/andystats/chess-academy}{\texttt{github.com/andystats/chess-academy}}}
 \end{center}
 
 \end{document}
