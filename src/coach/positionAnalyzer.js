@@ -60,6 +60,15 @@ function findKingSquare(pieces, color) {
   return pieces.find((p) => p.color === color && p.type === 'k')?.square ?? null;
 }
 
+const SEE_PIECE_VALUES = Object.freeze({
+  p: 1,
+  n: 3,
+  b: 3,
+  r: 5,
+  q: 9,
+  k: 100,
+});
+
 function lowestAttackerValue(game, attackers) {
   let min = Infinity;
   for (const sq of attackers) {
@@ -69,6 +78,100 @@ function lowestAttackerValue(game, attackers) {
     }
   }
   return min;
+}
+
+/**
+ * Standard Static Exchange Evaluation (SEE) swap algorithm on sorted attacker/defender value arrays.
+ * Returns the net material gain for the side initiating the capture on `targetVal`.
+ */
+function staticExchangeGain(targetVal, attackerVals, defenderVals) {
+  if (attackerVals.length === 0) return 0;
+  const gains = [targetVal];
+  let trophy = attackerVals[0];
+  let aIdx = 1;
+  let dIdx = 0;
+  let defenderTurn = true;
+
+  while (defenderTurn ? dIdx < defenderVals.length : aIdx < attackerVals.length) {
+    gains.push(trophy - gains[gains.length - 1]);
+    trophy = defenderTurn ? defenderVals[dIdx++] : attackerVals[aIdx++];
+    defenderTurn = !defenderTurn;
+  }
+
+  let i = gains.length - 1;
+  while (i > 0) {
+    gains[i - 1] = -Math.max(-gains[i - 1], gains[i]);
+    i -= 1;
+  }
+  return gains[0];
+}
+
+/**
+ * Exact legal-move Static Exchange Evaluation (SEE) from `gameAfterMove` on `targetSq`, where a
+ * piece of value `trophyVal` currently sits on `targetSq`. Uses actual legal moves in `chess.js`
+ * so pins, discovered checks, and X-ray batteries are respected.
+ */
+function seeRecaptureGain(gameAfterMove, targetSq, trophyVal, depth = 0) {
+  if (depth >= 8) return 0;
+  const turn = gameAfterMove.turn();
+  if (gameAfterMove.attackers(targetSq, turn).length === 0) return 0;
+
+  const legalCaptures = gameAfterMove
+    .moves({ verbose: true })
+    .filter((m) => m.to === targetSq);
+  if (legalCaptures.length === 0) return 0;
+
+  legalCaptures.sort(
+    (a, b) => (SEE_PIECE_VALUES[a.piece] ?? 100) - (SEE_PIECE_VALUES[b.piece] ?? 100),
+  );
+  const bestCapture = legalCaptures[0];
+  const nextGame = new Chess(gameAfterMove.fen());
+  let applied;
+  try {
+    applied = nextGame.move(bestCapture);
+  } catch {
+    return 0;
+  }
+  if (nextGame.isCheckmate()) return 100;
+
+  const promotionGain = applied.promotion ? (SEE_PIECE_VALUES[applied.promotion] ?? 9) - 1 : 0;
+  const nextTrophyVal = SEE_PIECE_VALUES[applied.promotion ?? applied.piece] ?? 100;
+  const counterGain = seeRecaptureGain(nextGame, targetSq, nextTrophyVal, depth + 1);
+  return Math.max(0, trophyVal + promotionGain - counterGain);
+}
+
+/**
+ * Returns the net material outcome for `gameAfterMove.turn()` if they immediately capture the
+ * piece on `targetSq` (worth `trophyVal`). Returns `-Infinity` if no legal capture on `targetSq`
+ * exists, `>= 0` if capturing on `targetSq` wins material or trades evenly, and `< 0` if capturing
+ * on `targetSq` loses material because the piece is protected.
+ */
+function bestLegalRecaptureNet(gameAfterMove, targetSq, trophyVal) {
+  const turn = gameAfterMove.turn();
+  if (gameAfterMove.attackers(targetSq, turn).length === 0) return -Infinity;
+
+  const legalCaptures = gameAfterMove
+    .moves({ verbose: true })
+    .filter((m) => m.to === targetSq);
+  if (legalCaptures.length === 0) return -Infinity;
+
+  legalCaptures.sort(
+    (a, b) => (SEE_PIECE_VALUES[a.piece] ?? 100) - (SEE_PIECE_VALUES[b.piece] ?? 100),
+  );
+  const bestCapture = legalCaptures[0];
+  const nextGame = new Chess(gameAfterMove.fen());
+  let applied;
+  try {
+    applied = nextGame.move(bestCapture);
+  } catch {
+    return -Infinity;
+  }
+  if (nextGame.isCheckmate()) return 100;
+
+  const promotionGain = applied.promotion ? (SEE_PIECE_VALUES[applied.promotion] ?? 9) - 1 : 0;
+  const nextTrophyVal = SEE_PIECE_VALUES[applied.promotion ?? applied.piece] ?? 100;
+  const counterGain = seeRecaptureGain(nextGame, targetSq, nextTrophyVal, 1);
+  return trophyVal + promotionGain - counterGain;
 }
 
 /**
@@ -83,12 +186,20 @@ export function assessSquareVulnerability(game, square, targetColor) {
 
   const defenders = game.attackers(square, targetColor);
   const pieceValue = PIECE_VALUES[piece.type] ?? 1;
-  const minAttackerVal = lowestAttackerValue(game, attackers);
-  const isUndefended = defenders.length === 0;
-  const isOutnumbered = attackers.length > defenders.length;
-  const isLowValueAttacked = minAttackerVal < pieceValue;
+  const attackerVals = attackers
+    .map((sq) => SEE_PIECE_VALUES[game.get(sq)?.type] ?? 100)
+    .sort((a, b) => a - b);
+  const defenderVals = defenders
+    .map((sq) => SEE_PIECE_VALUES[game.get(sq)?.type] ?? 100)
+    .sort((a, b) => a - b);
 
-  if (!isUndefended && !isOutnumbered && !isLowValueAttacked) return null;
+  const minAttackerVal = lowestAttackerValue(game, attackers);
+  const seeGain = staticExchangeGain(pieceValue, attackerVals, defenderVals);
+  const isUndefended = defenders.length === 0;
+  const isOutnumbered = !isUndefended && attackers.length > defenders.length && seeGain > 0;
+  const isLowValueAttacked = minAttackerVal < pieceValue && seeGain > 0;
+
+  if (!isUndefended && seeGain <= 0) return null;
 
   const leadAttackerSq = attackers[0];
   const leadAttacker = game.get(leadAttackerSq);
@@ -109,13 +220,14 @@ export function assessSquareVulnerability(game, square, targetColor) {
       ? pieceValue * 2
       : isLowValueAttacked
         ? (pieceValue - minAttackerVal) * 1.5
-        : pieceValue,
+        : seeGain,
   };
 }
 
 /**
  * Simulate passing the turn (null move) to see what concrete captures or checks the opponent
- * threatens right now if the side to move does nothing.
+ * threatens right now if the side to move does nothing. Filters out unsound captures and
+ * "nonsense checks" where the checking piece can simply be captured or harmlessly blocked.
  */
 export function detectOpponentThreats(game, fen) {
   if (game.inCheck() || game.isGameOver()) return [];
@@ -130,6 +242,7 @@ export function detectOpponentThreats(game, fen) {
   }
 
   const friendlyColor = game.turn();
+  const enemyColor = oppositeColor(friendlyColor);
   const oppMoves = oppGame.moves({ verbose: true });
   const threats = [];
 
@@ -159,15 +272,19 @@ export function detectOpponentThreats(game, fen) {
       continue;
     }
 
+    const attackerVal = PIECE_VALUES[applied.promotion ?? move.piece] ?? 1;
+
     if (move.captured) {
       const capturedVal = PIECE_VALUES[move.captured] ?? 1;
-      const attackerVal = PIECE_VALUES[move.piece] ?? 1;
-      const defenders = game.attackers(move.to, friendlyColor);
-      const attackers = game.attackers(move.to, oppositeColor(friendlyColor));
-      const undefended = defenders.length === 0;
-      const outnumbered = attackers.length > defenders.length;
-      const winningTrade = capturedVal > attackerVal;
-      if (undefended || outnumbered || winningTrade || givesCheck) {
+      const friendlyRecaptureGain = seeRecaptureGain(after, move.to, attackerVal);
+      const netGain = capturedVal - friendlyRecaptureGain;
+
+      // Only flag a capture as a threat if the opponent genuinely comes out ahead in the exchange
+      if (netGain > 0) {
+        const defenders = game.attackers(move.to, friendlyColor);
+        const attackers = game.attackers(move.to, enemyColor);
+        const undefended = defenders.length === 0 || friendlyRecaptureGain === 0;
+        const outnumbered = !undefended && attackers.length > defenders.length;
         const targetLabel = `${PIECE_NAMES[move.captured]} on ${move.to}`;
         threats.push({
           san: applied.san,
@@ -185,21 +302,63 @@ export function detectOpponentThreats(game, fen) {
             ? `threatens ${applied.san}, winning the undefended ${targetLabel}`
             : `threatens ${applied.san} against the ${targetLabel}`,
           priority:
-            (undefended ? capturedVal * 3 : outnumbered ? capturedVal * 2.2 : (capturedVal - attackerVal) * 2) +
-            (givesCheck ? 4 : 0),
+            (undefended ? capturedVal * 3 : netGain * 2.4) + (givesCheck ? 2 : 0),
         });
       }
     } else if (givesCheck) {
-      threats.push({
-        san: applied.san,
-        uci: `${applied.from}${applied.to}${applied.promotion ?? ''}`,
-        from: applied.from,
-        to: applied.to,
-        kind: 'check',
-        targetSquare: applied.to,
-        description: `threatens a disruptive check with ${applied.san}`,
-        priority: 3.5,
+      // 1. If the player can simply capture the checking piece on `move.to` without losing material,
+      // it is a blunder/trade check, NOT a threat!
+      const recaptureNet = bestLegalRecaptureNet(after, move.to, attackerVal);
+      if (recaptureNet >= 0) continue;
+
+      // 2. Check whether this check forks a second vulnerable friendly piece or forces the King to move
+      const friendlyPiecesAfter = listPieces(after).filter(
+        (p) => p.color === friendlyColor && p.type !== 'k',
+      );
+      const forkedPiece = friendlyPiecesAfter.find((fp) => {
+        const attackedFromChecker = after.attackers(fp.square, enemyColor).includes(move.to);
+        if (!attackedFromChecker) return false;
+        const fpVuln = assessSquareVulnerability(after, fp.square, friendlyColor);
+        return Boolean(fpVuln);
       });
+
+      const legalEvasions = after.moves({ verbose: true });
+      const hasSafeBlock = legalEvasions.some((ev) => {
+        if (ev.piece === 'k' || ev.to === move.to) return false;
+        const afterBlock = new Chess(after.fen());
+        try {
+          afterBlock.move(ev);
+        } catch {
+          return false;
+        }
+        const blockerVal = PIECE_VALUES[ev.piece] ?? 1;
+        return seeRecaptureGain(afterBlock, ev.to, blockerVal) === 0;
+      });
+
+      if (forkedPiece) {
+        const forkLabel = `${PIECE_NAMES[forkedPiece.type]} on ${forkedPiece.square}`;
+        threats.push({
+          san: applied.san,
+          uci: `${applied.from}${applied.to}${applied.promotion ?? ''}`,
+          from: applied.from,
+          to: applied.to,
+          kind: 'check',
+          targetSquare: forkedPiece.square,
+          description: `threatens ${applied.san}, checking the king and forking the ${forkLabel}`,
+          priority: (PIECE_VALUES[forkedPiece.type] ?? 1) * 2.5 + 3,
+        });
+      } else if (!hasSafeBlock) {
+        threats.push({
+          san: applied.san,
+          uci: `${applied.from}${applied.to}${applied.promotion ?? ''}`,
+          from: applied.from,
+          to: applied.to,
+          kind: 'check',
+          targetSquare: applied.to,
+          description: `threatens a forcing check with ${applied.san} that displaces your king`,
+          priority: 3.5,
+        });
+      }
     }
   }
 
@@ -250,6 +409,26 @@ function detectPawnStructure(pieces, sideColor) {
   return { openFiles, halfOpenFiles, passedPawns, enemyPassedPawns };
 }
 
+function formatPieceLocations(pieces) {
+  const formatSide = (color) => {
+    const sidePieces = pieces.filter((p) => p.color === color);
+    const majorsMinors = ['k', 'q', 'r', 'b', 'n']
+      .flatMap((type) =>
+        sidePieces
+          .filter((p) => p.type === type)
+          .map((p) => `${type.toUpperCase()}${p.square}`),
+      );
+    const pawns = sidePieces.filter((p) => p.type === 'p').map((p) => p.square);
+    return [...majorsMinors, pawns.length ? `pawns(${pawns.join(',')})` : null]
+      .filter(Boolean)
+      .join(', ');
+  };
+  return {
+    white: formatSide('w'),
+    black: formatSide('b'),
+  };
+}
+
 /**
  * Inspect a chess position and return structured tactical and positional facts.
  */
@@ -260,6 +439,7 @@ export function inspectPosition(fen) {
   const pieces = listPieces(game);
   const legalMoves = game.moves({ verbose: true });
   const moveNumber = game.moveNumber();
+  const pieceLocations = formatPieceLocations(pieces);
 
   const nonPawnMaterial = pieces
     .filter((p) => p.type !== 'p' && p.type !== 'k')
@@ -314,6 +494,7 @@ export function inspectPosition(fen) {
     looseTargets,
     opponentThreats,
     structure,
+    pieceLocations,
   };
 }
 
@@ -717,6 +898,7 @@ export function buildCoachingBrief({
   fen,
   analysis,
   lastMoveReview = null,
+  lastTakenBackReview = null,
 }) {
   const facts = inspectPosition(fen);
   const latestSnapshot = analysis?.depthSnapshots?.at?.(-1) ?? null;
@@ -849,9 +1031,193 @@ export function buildCoachingBrief({
     optimalMoves,
     topMove,
     lastMoveReview,
+    lastTakenBackReview,
     strategyCard,
     staticEvaluation: staticEval,
   };
+}
+
+/**
+ * Simulate and analyze any hypothetical moves (SAN or coordinate notation) mentioned in a player's
+ * natural-language question so the Coach can accurately reason about moves not currently on the board.
+ */
+export function analyzeHypotheticalMoves(fen, question) {
+  if (!fen || !question || typeof question !== 'string') return [];
+
+  let baseFacts;
+  try {
+    baseFacts = inspectPosition(fen);
+  } catch {
+    return [];
+  }
+
+  // Strip common punctuation around move tokens while keeping +, #, =, -
+  const rawTokens = question
+    .replace(/[?,!.;:"'()[\]]/g, ' ')
+    .split(/\s+/)
+    .map((t) => t.replace(/^\d+\.+/, '').trim())
+    .filter(Boolean);
+
+  const MOVE_LIKE_REGEX =
+    /^(?:O-O(?:-O)?|0-0(?:-0)?|[KQRBN][a-h]?[1-8]?x?[a-h][1-8](?:=[QRBN])?[+#]?|[a-h]x[a-h][1-8](?:=[QRBN])?[+#]?|[a-h][1-8](?:=[QRBN])?[+#]?|[a-h][1-8]-?[a-h][1-8][qrbn]?)$/;
+
+  const candidateTokens = [];
+  const seen = new Set();
+  for (const tok of rawTokens) {
+    if (!MOVE_LIKE_REGEX.test(tok)) continue;
+    const normalized = tok.replace(/^0-0-0$/, 'O-O-O').replace(/^0-0$/, 'O-O');
+    if (!seen.has(normalized)) {
+      seen.add(normalized);
+      candidateTokens.push(normalized);
+    }
+  }
+
+  if (candidateTokens.length === 0) return [];
+
+  const results = [];
+
+  for (let i = 0; i < candidateTokens.length && results.length < 4; i += 1) {
+    const token = candidateTokens[i];
+    const cleanToken = token.replace(/[+#]+$/, '');
+    const coordToken = /^[a-h][1-8]-[a-h][1-8][qrbn]?$/.test(cleanToken)
+      ? cleanToken.replace('-', '')
+      : cleanToken;
+
+    // 1. Try applying on the current board (side to move)
+    const testGame = new Chess(fen);
+    let applied = null;
+    try {
+      applied = applyMove(testGame, coordToken);
+    } catch {
+      try {
+        applied = applyMove(testGame, token);
+      } catch {
+        applied = null;
+      }
+    }
+
+    if (applied) {
+      const uci = moveToLan(applied);
+      const moveExp = explainEngineMove(
+        fen,
+        { rank: 1, uciMoves: [uci], sanMoves: [applied.san] },
+        baseFacts,
+      );
+
+      // Inspect the opponent's immediate forcing replies in the resulting position
+      const oppMoves = testGame.moves({ verbose: true });
+      const forcingReplies = [];
+      for (const reply of oppMoves) {
+        const afterReply = new Chess(testGame.fen());
+        let repApplied;
+        try {
+          repApplied = afterReply.move(reply);
+        } catch {
+          continue;
+        }
+        if (afterReply.isCheckmate()) {
+          forcingReplies.push({
+            san: repApplied.san,
+            priority: 100,
+            note: `${repApplied.san} delivers immediate checkmate`,
+          });
+        } else if (reply.captured) {
+          const capVal = PIECE_VALUES[reply.captured] ?? 1;
+          const attVal = PIECE_VALUES[repApplied.promotion ?? reply.piece] ?? 1;
+          const recapGain = seeRecaptureGain(afterReply, reply.to, attVal);
+          const netGain = capVal - recapGain;
+          const undefended = recapGain === 0;
+          if (netGain > 0 || (reply.to === applied.to && netGain >= 0)) {
+            forcingReplies.push({
+              san: repApplied.san,
+              priority: (undefended ? capVal * 3 : Math.max(1, netGain) * 2) + (afterReply.inCheck() ? 2 : 0),
+              note: undefended
+                ? `${repApplied.san} captures the undefended ${PIECE_NAMES[reply.captured]} on ${reply.to}`
+                : `${repApplied.san} captures the ${PIECE_NAMES[reply.captured]} on ${reply.to}${afterReply.inCheck() ? ' with check' : ''}`,
+            });
+          }
+        } else if (afterReply.inCheck()) {
+          const attVal = PIECE_VALUES[repApplied.promotion ?? reply.piece] ?? 1;
+          if (bestLegalRecaptureNet(afterReply, reply.to, attVal) < 0) {
+            forcingReplies.push({
+              san: repApplied.san,
+              priority: 3,
+              note: `${repApplied.san} gives check`,
+            });
+          }
+        }
+      }
+      forcingReplies.sort((a, b) => b.priority - a.priority);
+
+      // Check if the next token in the question is a follow-up reply in this hypothetical line
+      let followUpNote = null;
+      const nextToken = candidateTokens[i + 1];
+      if (nextToken) {
+        const replyGame = new Chess(testGame.fen());
+        try {
+          const nextClean = nextToken.replace(/[+#]+$/, '').replace('-', '');
+          const repMove = applyMove(replyGame, nextClean);
+          followUpNote = `If followed by ${repMove.san}, resulting position is ${replyGame.fen()}`;
+        } catch {
+          // Next token is a separate alternative move, not a reply
+        }
+      }
+
+      results.push({
+        token,
+        legal: true,
+        side: baseFacts.sideLabel,
+        san: applied.san,
+        uci,
+        from: applied.from,
+        to: applied.to,
+        resultingFen: testGame.fen(),
+        summary: moveExp?.why ?? `Moves ${PIECE_NAMES[applied.piece]} from ${applied.from} to ${applied.to}.`,
+        opponentReplies: forcingReplies.slice(0, 3).map((r) => r.note),
+        followUpNote,
+      });
+      continue;
+    }
+
+    // 2. Check if the player is asking about an opponent's hypothetical move (if it were opponent's turn)
+    const flippedFen = flipFenTurn(fen);
+    if (flippedFen) {
+      try {
+        const oppGame = new Chess(flippedFen);
+        const oppApplied = applyMove(oppGame, coordToken);
+        if (oppApplied) {
+          results.push({
+            token,
+            legal: true,
+            side: baseFacts.opponentLabel,
+            san: oppApplied.san,
+            uci: moveToLan(oppApplied),
+            from: oppApplied.from,
+            to: oppApplied.to,
+            resultingFen: oppGame.fen(),
+            summary: `Hypothetical ${baseFacts.opponentLabel} move (${PIECE_NAMES[oppApplied.piece]} ${oppApplied.from}->${oppApplied.to}${oppApplied.captured ? `, capturing ${PIECE_NAMES[oppApplied.captured]}` : ''}).`,
+            opponentReplies: [],
+            followUpNote: null,
+          });
+          continue;
+        }
+      } catch {
+        // Not a legal opponent move either
+      }
+    }
+
+    // 3. Only flag as illegal if it looks unmistakably like an explicit algebraic move (piece prefix, capture, or castling)
+    if (/^(?:O-O|[KQRBN][a-h]?[1-8]?x?[a-h][1-8]|[a-h]x[a-h][1-8])/.test(token)) {
+      results.push({
+        token,
+        legal: false,
+        side: baseFacts.sideLabel,
+        summary: `"${token}" is not a legal move in the current board position.`,
+      });
+    }
+  }
+
+  return results;
 }
 
 /**

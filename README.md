@@ -10,11 +10,11 @@ An open-source chess study and play room built around a **real-time Stockfish + 
 - **Live Engine & AI Coach (`/coach`)** — a calm, board-centric study room where you can play against Stockfish (adjustable strength, Levels 1–20) or switch to **Both Sides (Sandbox)** to explore openings, middlegames, or endgames. Built around a permanent central chessboard and a fixed-geometry 4-tab coaching panel that never jitters or resizes:
   - **Main Idea Tab:** null-move threat detection (e.g., *"If given a move, White threatens Qxb7, winning the undefended pawn on b7"*), loose-piece warnings, king-safety/castling prompts, and a plain-English recommended plan.
   - **Key Best Moves Tab:** Stockfish `MultiPV=3` lines translated into concrete natural-language explanations (e.g., *"Castling (`O-O`) neutralizes the current threat on f7 while tucking the king to safety"*), with interactive board arrows and variation preview.
-  - **State of the Board Tab:** evaluation strip, opening/phase badge, classical Stockfish evaluation breakdown (`Material`, `Pieces`, `Mobility`, `King Safety`, `Threats`, `Pawns`, `Passed`, `Space`), hanging/undefended piece radars, and full clickable move history + FEN loader.
-  - **Ask Coach Tab:** conversational Q&A grounded in Stockfish’s live calculation and classical chess literature (*My System*, *Chess Fundamentals*, opening theory, tactical motifs, and endgame technique).
+  - **State of the Board Tab:** evaluation strip, opening/phase badge, classical Stockfish evaluation breakdown (`Material`, `Pieces`, `Mobility`, `King Safety`, `Threats`, `Pawns`, `Passed`, `Space` — showing Middlegame `MG` and Endgame `EG` tapered scores), hanging/undefended piece radars, and full clickable move history + FEN loader.
+  - **Ask Coach Tab:** conversational Q&A grounded in Stockfish’s live Depth 15+ calculation, exact piece-square maps, takeback memory (remembering moves you just undid and why they failed), real-time simulation of hypothetical candidate moves (*"What if I play..."*), multi-turn conversation memory, and classical chess literature (*My System*, *Chess Fundamentals*, opening theory, tactical motifs, and endgame technique).
   - **Live Coach vs. Guided Play (No Spoilers):** see optimal moves in real time, or switch to **Guided Play** to receive threat and mistake warnings while keeping the exact best move hidden until you ask.
-  - **Permanent Last-Move Feedback Banner:** grades every move played (`Optimal Move`, `Solid Choice`, `Inaccuracy`, `Mistake`, `Blunder — Tactical Alert`) directly under the board with a one-click **Take back** button.
-- **Pluggable AI & Strategy Companion** — runs out-of-the-box with a deterministic synthesizer, or connects to **Local Ollama** (100% offline/free), **Supabase Edge Function (`coach-chat` with Claude Haiku 4.5)**, **Anthropic Claude**, **OpenAI**, or **Google Gemini**.
+  - **Permanent Last-Move Feedback Banner:** grades every move played (`Optimal Move`, `Solid Choice`, `Inaccuracy`, `Mistake`, `Blunder — Tactical Alert`) directly under the board with a one-click **Take back** button that preserves the undone move context for the Coach.
+- **Pluggable AI & Strategy Companion** — runs out-of-the-box with a deterministic synthesizer, or connects to **Supabase Edge Function (`coach-chat` with Anthropic Claude Sonnet / Haiku)**, **Local Ollama** (100% offline/free), **Anthropic Claude**, **OpenAI**, or **Google Gemini**.
 - **Practice Arena & Scenarios (`/`)** — focused tactical/strategic practice positions, unassisted Stockfish free play (`/arena/free`), and glossary-linked mini-lessons.
 - **Play a Friend Online (`/arena/online`)** — invite-link multiplayer supporting Standard Chess, **Duck Chess**, and **Duck Chess Decay**.
 
@@ -71,13 +71,14 @@ To enable free-form conversational LLM coaching in the **Ask Coach** tab, you ca
    ```
 
 3. **Select Ollama in the Coach UI:**
-   - Open `http://localhost:5173/coach`, select the **Ask Coach** tab, click the provider button in the top-right corner of the card, and select **Local Ollama (`http://localhost:11434`)**.
+   - Open `http://localhost:5173/coach` (or the live hosted site), select the **Ask Coach** tab, click the **⚙ Provider** button in the top-right corner of the card, and select **Local Ollama (`http://localhost:11434`)**.
+   - *Online Note:* Visitors on the hosted site can also select **Local Ollama** to connect their browser directly to Ollama running on their own machine (`http://localhost:11434`) as long as `OLLAMA_ORIGINS="*"` is set.
 
 ---
 
 ### Option 2: Wiring Up Claude / OpenAI / Gemini for the Public Online Site (Supabase Edge Function)
 
-Because Chess Academy deploys as a static site on **GitHub Pages**, you should **never** put a secret `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` into a `VITE_*` build variable on GitHub (anything prefixed with `VITE_` is compiled into the public JavaScript bundle).
+Because Chess Academy deploys as a static site (GitHub Pages / Vercel), you should **never** put a secret `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` into a `VITE_*` build variable (anything prefixed with `VITE_` is compiled into the public JavaScript bundle).
 
 Instead, this repository includes a ready-to-deploy **Supabase Edge Function** at [`supabase/functions/coach-chat/index.ts`](./supabase/functions/coach-chat/index.ts). Your secret API key stays safely on Supabase’s server, and your public site calls `supabase.functions.invoke('coach-chat')`.
 
@@ -88,8 +89,10 @@ Instead, this repository includes a ready-to-deploy **Supabase Edge Function** a
    ```
 2. **Set your server-side LLM secret key** (pick one—the Edge Function checks Anthropic first, then OpenAI, then Gemini):
    ```bash
-   # For Anthropic Claude (defaults to claude-haiku-5-5):
+   # For Anthropic Claude (tries claude-sonnet-4-5 / claude-sonnet-5-5 with fallback to claude-haiku-5-5):
    npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+   # Optional: pin a specific model ID via ANTHROPIC_MODEL
+   # npx supabase secrets set ANTHROPIC_MODEL=claude-sonnet-4-5
 
    # OR for OpenAI (defaults to gpt-4o-mini):
    npx supabase secrets set OPENAI_API_KEY=sk-...

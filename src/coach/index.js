@@ -5,6 +5,7 @@ export {
 export { normalizeCoachQuery, retrieveCoachKnowledge } from './retrieveKnowledge';
 export { EXTENDED_STRATEGY_CARDS, getStrategyCard } from './strategyLibrary';
 export {
+  analyzeHypotheticalMoves,
   assessSquareVulnerability,
   buildCoachingBrief,
   detectOpponentThreats,

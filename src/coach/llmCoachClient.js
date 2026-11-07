@@ -1,5 +1,6 @@
 import { retrieveCoachKnowledge } from './retrieveKnowledge.js';
 import { EXTENDED_STRATEGY_CARDS } from './strategyLibrary.js';
+import { analyzeHypotheticalMoves } from './positionAnalyzer.js';
 import { supabase, isRealtimeConfigured } from '../lib/supabase.js';
 
 const STORAGE_KEY = 'chess-academy:llm-settings:v1';
@@ -22,13 +23,13 @@ export const LLM_PROVIDERS = Object.freeze([
     id: 'supabase-edge',
     label: 'Hosted Cloud Coach (Supabase Edge Function Proxy)',
     requiresKey: false,
-    defaultModel: 'server-configured',
+    defaultModel: 'claude-sonnet-4-5',
   },
   {
     id: 'anthropic',
     label: 'Anthropic Claude API (Direct / BYOK)',
     requiresKey: true,
-    defaultModel: 'claude-haiku-5-5',
+    defaultModel: 'claude-sonnet-4-5',
     placeholderKey: 'sk-ant-...',
   },
   {
@@ -53,7 +54,7 @@ function envDefaultSettings() {
     return {
       provider: 'supabase-edge',
       apiKey: '',
-      model: 'server-configured',
+      model: 'claude-sonnet-4-5',
       endpoint: '',
     };
   }
@@ -77,7 +78,7 @@ function envDefaultSettings() {
     return {
       provider: 'anthropic',
       apiKey: env.VITE_ANTHROPIC_API_KEY,
-      model: 'claude-haiku-5-5',
+      model: 'claude-sonnet-4-5',
       endpoint: '',
     };
   }
@@ -116,11 +117,24 @@ export function saveLlmSettings(settings) {
 
 /**
  * Format the verified engine + board brief so an LLM never has to guess which piece is on which
- * square or hallucinate legal moves.
+ * square or hallucinate legal moves—including taken-back moves and simulated hypothetical moves.
  */
-export function formatStructuredBriefForPrompt(brief, history = [], coachingMode = 'live') {
+export function formatStructuredBriefForPrompt(
+  brief,
+  history = [],
+  coachingMode = 'live',
+  options = {},
+) {
   if (!brief) return 'No board position loaded.';
-  const { facts, optimalMoves, whatToThinkAbout, lastMoveReview, strategyCard } = brief;
+  const {
+    facts,
+    optimalMoves,
+    whatToThinkAbout,
+    lastMoveReview,
+    lastTakenBackReview,
+    strategyCard,
+  } = brief;
+  const { question = '', conversationHistory = [] } = options;
 
   const linesSummary = optimalMoves.length
     ? optimalMoves
@@ -146,18 +160,56 @@ export function formatStructuredBriefForPrompt(brief, history = [], coachingMode
           .join('; ')
       : 'None';
 
+  const piecesLine = facts.pieceLocations
+    ? `Exact piece squares — White: ${facts.pieceLocations.white} | Black: ${facts.pieceLocations.black}`
+    : null;
+
+  const takenBackLine = lastTakenBackReview
+    ? `Recently taken-back (undone) move from this position: ${lastTakenBackReview.moverLabel ?? facts.sideLabel} previously played ${lastTakenBackReview.moveSan} (${lastTakenBackReview.badge}) and took it back.${lastTakenBackReview.engineReplySan ? ` (Opponent had replied ${lastTakenBackReview.engineReplySan} before the takeback.)` : ''} Why ${lastTakenBackReview.moveSan} was problematic: ${lastTakenBackReview.summary}`
+    : null;
+
+  const hypotheticals = question ? analyzeHypotheticalMoves(brief.fen, question) : [];
+  const hypotheticalLines =
+    hypotheticals.length > 0
+      ? `Verified Simulation of Hypothetical Move(s) Mentioned in Question:\n` +
+        hypotheticals
+          .map((h) => {
+            if (!h.legal) return `  - ${h.token}: ${h.summary}`;
+            const replies =
+              h.opponentReplies?.length > 0
+                ? ` Immediate forcing opponent replies after ${h.san}: ${h.opponentReplies.join('; ')}.`
+                : ' No immediate forcing capture/check against this move.';
+            const follow = h.followUpNote ? ` ${h.followUpNote}` : '';
+            return `  - ${h.san} (${h.side}, ${h.from}->${h.to}): ${h.summary}${replies}${follow}`;
+          })
+          .join('\n')
+      : null;
+
+  const recentConvoLines =
+    Array.isArray(conversationHistory) && conversationHistory.length > 0
+      ? `Recent Coach Q&A History:\n` +
+        conversationHistory
+          .slice(-3)
+          .map((turn) => `  Player: ${turn.question}\n  Coach: ${turn.answerText}`)
+          .join('\n')
+      : null;
+
   return [
     `FEN: ${brief.fen}`,
+    piecesLine,
     `Side to move: ${facts.sideLabel} (Move ${facts.moveNumber}, Phase: ${facts.phase})`,
-    `Recent moves: ${history.slice(-10).join(' ') || 'Game start'}`,
+    `Move history to this board: ${history.slice(-14).join(' ') || 'Game start'}`,
     `Coaching mode: ${coachingMode === 'guided' ? 'Guided Play (do NOT spoil the exact best move unless the player explicitly asks for the move)' : 'Live Coach (explain optimal moves and why)'}`,
     `Opponent threats if ${facts.sideLabel} passes: ${threatsSummary}`,
     `Vulnerable ${facts.sideLabel} squares: ${hangingSummary}`,
     `Open files: ${facts.structure.openFiles.join(', ') || 'none'} | Passed pawns: ${facts.structure.passedPawns.join(', ') || 'none'} (Opponent: ${facts.structure.enemyPassedPawns.join(', ') || 'none'})`,
     lastMoveReview ? `Last move played: ${lastMoveReview.moveSan} (${lastMoveReview.badge}) — ${lastMoveReview.summary}` : null,
+    takenBackLine,
     `Stockfish Top Candidate Lines (Depth ${brief.depth ?? '—'}):\n${linesSummary}`,
+    hypotheticalLines,
     `Key thoughts:\n${whatToThinkAbout.map((t) => `  - ${t.label}: ${t.text}`).join('\n')}`,
     strategyCard ? `Relevant literary concept: ${strategyCard.title} (${strategyCard.citation.label}) — ${strategyCard.summary}` : null,
+    recentConvoLines,
   ]
     .filter(Boolean)
     .join('\n');
@@ -166,10 +218,11 @@ export function formatStructuredBriefForPrompt(brief, history = [], coachingMode
 const SYSTEM_PROMPT = `You are the Chess Academy Grandmaster Coach—an insightful, warm, and deeply practical chess teacher who pairs real-time Stockfish engine calculation with classical strategic wisdom (Aron Nimzowitsch's My System, José Raúl Capablanca's Chess Fundamentals, Siegbert Tarrasch, and modern opening, middlegame, and endgame theory).
 
 CRITICAL RULES:
-1. NEVER invent moves or board facts that contradict the verified Stockfish & Board Brief provided to you.
-2. Connect concrete tactics to strategic ideas—for example: "Castling (O-O) neutralizes the current threat on b7 while tucking your king to safety and bringing your rook into the game."
-3. Keep responses concise (2 to 4 short paragraphs or bullet points), clear, and directly actionable for the player.
-4. When Coaching Mode is "Guided Play", warn about threats, explain what to think about, and discuss strategic plans WITHOUT naming the exact top move unless the user explicitly asks "what is the best move?".`;
+1. NEVER invent moves or board facts that contradict the verified Stockfish & Board Brief provided to you (use the Exact piece squares, Taken-back move notes, and Verified Simulation of Hypothetical Moves).
+2. If the player asks about a move they just took back (undid) or asks a "what if / why not [move]" hypothetical, directly use the Taken-back Move and Hypothetical Move Simulation sections in the brief to explain what that move does and how the opponent refutes or answers it.
+3. Connect concrete tactics to strategic ideas—for example: "Castling (O-O) neutralizes the current threat on b7 while tucking your king to safety and bringing your rook into the game."
+4. Keep responses concise (2 to 4 short paragraphs or bullet points), clear, and directly actionable for the player.
+5. When Coaching Mode is "Guided Play", warn about threats, explain what to think about, and discuss strategic plans WITHOUT naming the exact top move unless the user explicitly asks "what is the best move?".`;
 
 /**
  * Deterministic natural-language answer synthesizer that combines live board + Stockfish facts
@@ -197,6 +250,13 @@ export function synthesizeDeterministicCoachReply(question, brief, coachingMode 
   const secondMove = brief?.optimalMoves?.[1];
   const facts = brief?.facts;
   const thoughts = brief?.whatToThinkAbout ?? [];
+  const takenBack = brief?.lastTakenBackReview ?? null;
+  const hypotheticals = brief?.fen ? analyzeHypotheticalMoves(brief.fen, clean) : [];
+
+  const asksAboutTakeback =
+    /take\s*back|took\s*back|undid|undo|previous move|last move|why.*bad|why.*mistake|why.*blunder|what went wrong/i.test(
+      lower,
+    );
   const asksForBestMove =
     /best move|optimal|what should i play|recommend|what move|hint|show move|engine like/i.test(lower);
   const asksAboutThreat =
@@ -206,7 +266,44 @@ export function synthesizeDeterministicCoachReply(question, brief, coachingMode 
 
   const paragraphs = [];
 
-  if (asksAboutThreat && facts) {
+  if (asksAboutTakeback && takenBack) {
+    paragraphs.push(
+      `You just took back **${takenBack.moveSan}** (${takenBack.badge}). ${takenBack.summary}${
+        takenBack.engineReplySan
+          ? ` Before the takeback, the opponent answered with **${takenBack.engineReplySan}**.`
+          : ''
+      }`,
+    );
+    if (topMove && (coachingMode === 'live' || asksForBestMove)) {
+      paragraphs.push(
+        `Instead, Stockfish recommends **${topMove.san}** (${topMove.scoreLabel}): ${topMove.why}`,
+      );
+    }
+  } else if (hypotheticals.length > 0) {
+    for (const h of hypotheticals) {
+      if (!h.legal) {
+        paragraphs.push(h.summary);
+      } else {
+        const matchedOptimal = brief?.optimalMoves?.find((m) => m.san === h.san || m.uci === h.uci);
+        if (matchedOptimal) {
+          paragraphs.push(
+            `**${h.san}** is Stockfish’s #${matchedOptimal.rank} choice (${matchedOptimal.scoreLabel}): ${matchedOptimal.why}`,
+          );
+        } else {
+          const replyWarning =
+            h.opponentReplies?.length > 0
+              ? ` Watch out for the opponent's forcing reply: ${h.opponentReplies.join('; ')}.`
+              : '';
+          paragraphs.push(`If **${h.san}** is played (${h.from}→${h.to}): ${h.summary}${replyWarning}`);
+        }
+      }
+    }
+    if (topMove && coachingMode === 'live' && !hypotheticals.some((h) => h.san === topMove.san)) {
+      paragraphs.push(
+        `For comparison, Stockfish’s top recommendation is **${topMove.san}** (${topMove.scoreLabel}): ${topMove.why}`,
+      );
+    }
+  } else if (asksAboutThreat && facts) {
     if (facts.opponentThreats.length > 0) {
       const t = facts.opponentThreats[0];
       paragraphs.push(
@@ -277,6 +374,7 @@ export async function askCoachCompanion({
   question,
   brief,
   history = [],
+  conversationHistory = [],
   coachingMode = 'live',
   settings = loadLlmSettings(),
   signal,
@@ -285,7 +383,10 @@ export async function askCoachCompanion({
     return synthesizeDeterministicCoachReply(question, brief, coachingMode);
   }
 
-  const structuredBrief = formatStructuredBriefForPrompt(brief, history, coachingMode);
+  const structuredBrief = formatStructuredBriefForPrompt(brief, history, coachingMode, {
+    question,
+    conversationHistory,
+  });
   const userPrompt = `Verified Position & Engine Brief:\n${structuredBrief}\n\nPlayer question: ${question}`;
 
   if (settings.provider === 'supabase-edge') {
@@ -295,7 +396,12 @@ export async function askCoachCompanion({
       );
     }
     const { data, error } = await supabase.functions.invoke('coach-chat', {
-      body: { structuredBrief, question, coachingMode },
+      body: {
+        structuredBrief,
+        question,
+        coachingMode,
+        model: settings.model || 'claude-sonnet-4-5',
+      },
     });
     if (error || data?.error) {
       throw new Error(error?.message || data?.error || 'Supabase Edge Function coach-chat failed.');
@@ -393,26 +499,31 @@ export async function askCoachCompanion({
     if (!settings.apiKey?.trim()) {
       throw new Error('Please add your Anthropic API key in Coach Settings, or switch to Local Ollama / Built-in Coach.');
     }
-    const model = settings.model || 'claude-haiku-5-5';
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': settings.apiKey.trim(),
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      signal,
-      body: JSON.stringify({
-        model,
-        max_tokens: 600,
-        thinking: { type: 'disabled' },
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: userPrompt }],
-      }),
-    });
-    if (!response.ok) {
-      throw new Error(`Anthropic API returned ${response.status}. Check your API key.`);
+    const preferred = settings.model || 'claude-sonnet-4-5';
+    const candidateModels = [...new Set([preferred, 'claude-sonnet-4-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'])];
+    let response = null;
+    for (const model of candidateModels) {
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': settings.apiKey.trim(),
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        signal,
+        body: JSON.stringify({
+          model,
+          max_tokens: 800,
+          thinking: { type: 'disabled' },
+          system: SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: userPrompt }],
+        }),
+      });
+      if (response.status !== 404) break;
+    }
+    if (!response || !response.ok) {
+      throw new Error(`Anthropic API returned ${response?.status ?? 'error'}. Check your API key.`);
     }
     const data = await response.json();
     const text =

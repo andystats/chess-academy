@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  analyzeHypotheticalMoves,
   buildCoachingBrief,
   detectOpponentThreats,
   evaluateLastMove,
@@ -147,5 +148,36 @@ describe('positionAnalyzer', () => {
     expect(brief.whatToThinkAbout.length).toBeGreaterThan(0);
     expect(brief.topMove.san).toBe('Nxe5');
     expect(brief.topMove.why).toMatch(/captures the undefended knight on e5/i);
+  });
+
+  it('includes explicit piece coordinates and simulates hypothetical moves from a question', () => {
+    const facts = inspectPosition(THREAT_ON_F7_FEN);
+    expect(facts.pieceLocations.white).toContain('Qf3');
+    expect(facts.pieceLocations.white).toContain('Bc4');
+    expect(facts.pieceLocations.black).toContain('Ke8');
+
+    // In THREAT_ON_F7_FEN (Black to move), what if Black plays a6? White has Qxf7#!
+    const hypos = analyzeHypotheticalMoves(THREAT_ON_F7_FEN, 'What happens if I play a6 or Nh6?');
+    const a6Hypo = hypos.find((h) => h.san === 'a6');
+    expect(a6Hypo).toBeDefined();
+    expect(a6Hypo.legal).toBe(true);
+    expect(a6Hypo.opponentReplies[0]).toMatch(/Qxf7#/);
+
+    // Nh6 defends f7 so Qxf7# is no longer mate
+    const nh6Hypo = hypos.find((h) => h.san === 'Nh6');
+    expect(nh6Hypo).toBeDefined();
+    expect(nh6Hypo.legal).toBe(true);
+    expect(nh6Hypo.opponentReplies.some((p) => /Qxf7#/.test(p))).toBe(false);
+  });
+
+  it('filters out nonsense checks where the checking piece can simply be captured', () => {
+    // In this position, White's queen on b3 attacks undefended b7 (real threat Qxb7),
+    // and can also play Qxe6+ (blundering the queen to fxe6) or Qa4+ (harmlessly blocked by c6/Nc6/Bd7).
+    const fen = 'r2qk2r/pppp1ppp/2n1bn2/2b1p3/4P3/1Q6/PPPPBPPP/RNB1K1NR b KQkq - 3 5';
+    const game = new Chess(fen);
+    const threats = detectOpponentThreats(game, fen);
+
+    expect(threats.some((t) => t.san === 'Qxb7')).toBe(true);
+    expect(threats.some((t) => t.san === 'Qxe6+')).toBe(false);
   });
 });

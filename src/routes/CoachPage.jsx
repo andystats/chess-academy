@@ -139,7 +139,7 @@ function EvalMeter({ label, phase, value }) {
  * Permanent, fixed-height (`h-20`) move feedback slot below the board so playing a move never
  * mounts/unmounts a box or shifts the board layout.
  */
-function LastMoveBanner({ review, onTakeBack, canTakeBack }) {
+function LastMoveBanner({ review, takenBackReview, onTakeBack, canTakeBack }) {
   const styles = {
     idle: 'border-gray-300 bg-white text-gray-700',
     best: 'border-correct bg-green-50 text-green-900',
@@ -148,6 +148,26 @@ function LastMoveBanner({ review, onTakeBack, canTakeBack }) {
     mistake: 'border-accent-orange bg-orange-50 text-orange-950',
     blunder: 'border-red-700 bg-red-50 text-red-950',
   };
+
+  if (!review && takenBackReview) {
+    return (
+      <section
+        className={clsx(
+          'flex h-20 w-full min-w-0 flex-col justify-center overflow-y-auto overscroll-contain border-2 px-3.5 py-2 transition-colors duration-200 [scrollbar-gutter:stable]',
+          styles[takenBackReview.tone] ?? styles.idle,
+        )}
+        aria-label="Last move feedback"
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <Undo2 size={15} className="shrink-0 text-brand-600" aria-hidden="true" />
+          <span className="truncate font-mono text-[0.68rem] font-bold uppercase tracking-wide">
+            Took back {takenBackReview.moveSan} ({takenBackReview.badge}) · Try a stronger continuation
+          </span>
+        </div>
+        <p className="mt-1 break-words text-xs leading-5">{takenBackReview.summary}</p>
+      </section>
+    );
+  }
 
   if (!review) {
     return (
@@ -265,10 +285,17 @@ export default function CoachPage() {
     }
   }, [playMode, game.fen]);
 
+  const strengthConfig = levelConfig(skillLevel);
+  const coachTargetDepth = useMemo(() => {
+    const presetDepth = activePreset.recommendedDepth ?? 15;
+    const oppDepth = strengthConfig.search.depth ?? 11;
+    return Math.max(presetDepth, oppDepth + 4, 15);
+  }, [activePreset.recommendedDepth, strengthConfig.search.depth]);
+
   const analysis = useStockfishAnalysis({
     fen: game.fen,
     learnerSide: learnerPerspective,
-    depth: activePreset.recommendedDepth ?? 11,
+    depth: coachTargetDepth,
     enabled: game.status !== 'over',
   });
 
@@ -353,14 +380,35 @@ export default function CoachPage() {
     });
   }, [game.lastMoveDetail, game.fen, stabilizedAnalysis]);
 
+  const lastTakenBackReview = useMemo(() => {
+    const tb = game.takenBackDetail;
+    if (!tb || !tb.prevFen) return null;
+    const prevAnalysis = analysisByFenRef.current.get(tb.prevFen) ?? stabilizedAnalysis;
+    const afterAnalysis = tb.afterFen ? (analysisByFenRef.current.get(tb.afterFen) ?? null) : null;
+    const review = evaluateLastMove({
+      prevFen: tb.prevFen,
+      prevAnalysis,
+      moveSan: tb.san,
+      moveUci: tb.uci,
+      currentFen: tb.afterFen || game.fen,
+      currentAnalysis: afterAnalysis,
+    });
+    if (!review) return null;
+    return {
+      ...review,
+      engineReplySan: tb.engineReplySan ?? null,
+    };
+  }, [game.takenBackDetail, game.fen, stabilizedAnalysis]);
+
   const brief = useMemo(
     () =>
       buildCoachingBrief({
         fen: game.fen,
         analysis: stabilizedAnalysis,
         lastMoveReview,
+        lastTakenBackReview,
       }),
-    [game.fen, stabilizedAnalysis, lastMoveReview],
+    [game.fen, stabilizedAnalysis, lastMoveReview, lastTakenBackReview],
   );
 
   const selectedOptimal =
@@ -404,7 +452,6 @@ export default function CoachPage() {
   }, [game.fen]);
 
   const pairs = pairMoves(game.history);
-  const strengthConfig = levelConfig(skillLevel);
   const isSearching = analysis.status === 'loading' || analysis.status === 'searching';
 
   const handleTabKeyDown = (event, index) => {
@@ -774,6 +821,7 @@ export default function CoachPage() {
             {/* Row 4: Permanent Fixed-Height (`h-20`) Last-Move Feedback Box */}
             <LastMoveBanner
               review={lastMoveReview}
+              takenBackReview={lastTakenBackReview}
               onTakeBack={game.takeBack}
               canTakeBack={game.history.length > 0 && game.status !== 'engine-thinking'}
             />

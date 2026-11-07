@@ -17,10 +17,11 @@ const corsHeaders = {
 const SYSTEM_PROMPT = `You are the Chess Academy Grandmaster Coach—an insightful, warm, and deeply practical chess teacher who pairs real-time Stockfish engine calculation with classical strategic wisdom (Aron Nimzowitsch's My System, José Raúl Capablanca's Chess Fundamentals, Siegbert Tarrasch, and modern opening, middlegame, and endgame theory).
 
 CRITICAL RULES:
-1. NEVER invent moves or board facts that contradict the verified Stockfish & Board Brief provided to you.
-2. Connect concrete tactics to strategic ideas—for example: "Castling (O-O) neutralizes the current threat on b7 while tucking your king to safety and bringing your rook into the game."
-3. Keep responses concise (2 to 4 short paragraphs or bullet points), clear, and directly actionable for the player.
-4. When Coaching Mode is "Guided Play", warn about threats, explain what to think about, and discuss strategic plans WITHOUT naming the exact top move unless the user explicitly asks "what is the best move?".`;
+1. NEVER invent moves or board facts that contradict the verified Stockfish & Board Brief provided to you (use the Exact piece squares, Taken-back move notes, and Verified Simulation of Hypothetical Moves).
+2. If the player asks about a move they just took back (undid) or asks a "what if / why not [move]" hypothetical, directly use the Taken-back Move and Hypothetical Move Simulation sections in the brief to explain what that move does and how the opponent refutes or answers it.
+3. Connect concrete tactics to strategic ideas—for example: "Castling (O-O) neutralizes the current threat on b7 while tucking your king to safety and bringing your rook into the game."
+4. Keep responses concise (2 to 4 short paragraphs or bullet points), clear, and directly actionable for the player.
+5. When Coaching Mode is "Guided Play", warn about threats, explain what to think about, and discuss strategic plans WITHOUT naming the exact top move unless the user explicitly asks "what is the best move?".`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -28,7 +29,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { structuredBrief, question } = await req.json();
+    const { structuredBrief, question, model: requestedModel } = await req.json();
     if (!question || typeof question !== 'string') {
       return new Response(JSON.stringify({ error: 'Missing question.' }), {
         status: 400,
@@ -44,25 +45,51 @@ Deno.serve(async (req) => {
 
     // 1. Prefer Anthropic Claude if ANTHROPIC_API_KEY is configured
     if (anthropicKey) {
-      const model = Deno.env.get('ANTHROPIC_MODEL') || 'claude-haiku-5-5';
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': anthropicKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 600,
-          thinking: { type: 'disabled' },
-          system: SYSTEM_PROMPT,
-          messages: [{ role: 'user', content: userPrompt }],
-        }),
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Anthropic upstream error (${res.status}): ${errText}`);
+      const envModel = Deno.env.get('ANTHROPIC_MODEL');
+      const clientModel =
+        typeof requestedModel === 'string' && requestedModel.startsWith('claude-')
+          ? requestedModel
+          : null;
+      const candidateModels = [
+        ...new Set(
+          [
+            envModel,
+            clientModel,
+            'claude-sonnet-4-5',
+            'claude-sonnet-5-5',
+            'claude-haiku-5-5',
+          ].filter(Boolean),
+        ),
+      ] as string[];
+
+      let res: Response | null = null;
+      let activeModel = candidateModels[0];
+      let lastErrText = '';
+
+      for (const candidate of candidateModels) {
+        activeModel = candidate;
+        res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': anthropicKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: candidate,
+            max_tokens: 800,
+            thinking: { type: 'disabled' },
+            system: SYSTEM_PROMPT,
+            messages: [{ role: 'user', content: userPrompt }],
+          }),
+        });
+        if (res.ok) break;
+        lastErrText = await res.text();
+        if (res.status !== 404) break;
+      }
+
+      if (!res || !res.ok) {
+        throw new Error(`Anthropic upstream error (${res?.status ?? 500}): ${lastErrText}`);
       }
       const data = await res.json();
       const text =
@@ -71,7 +98,7 @@ Deno.serve(async (req) => {
           .map((b: { text?: string }) => b.text ?? '')
           .join('\n')
           .trim() || '';
-      return new Response(JSON.stringify({ provider: 'anthropic', model, text }), {
+      return new Response(JSON.stringify({ provider: 'anthropic', model: activeModel, text }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

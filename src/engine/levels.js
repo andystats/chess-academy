@@ -36,9 +36,9 @@ function getDepth(level) {
   if (level <= 11) return 6;
   if (level <= 13) return 7;
   if (level <= 15) return 8;
-  if (level <= 17) return 10;
-  if (level <= 19) return 12;
-  return undefined; // uncapped depth for master level
+  if (level <= 17) return 9;
+  if (level <= 19) return 10;
+  return 11; // capped at depth 11 (~2200-2300 Master) so the Coach (depth 15+) always out-calculates it
 }
 
 /** The level config for a slider value, falling back to a sensible default. */

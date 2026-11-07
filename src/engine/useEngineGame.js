@@ -21,6 +21,7 @@ const initialState = {
   history: [],
   lastMove: null,
   lastMoveDetail: null,
+  takenBackDetail: null,
   captured: { white: [], black: [] },
   evaluation: null,
   phase: 'free', // 'guided' | 'free'
@@ -37,6 +38,7 @@ function reducer(state, action) {
         history: action.history,
         lastMove: null,
         lastMoveDetail: null,
+        takenBackDetail: null,
         captured: action.captured,
         evaluation: null,
         status: action.status,
@@ -51,7 +53,10 @@ function reducer(state, action) {
         fen: action.fen,
         history: action.history,
         lastMove: action.lastMove ?? null,
-        lastMoveDetail: action.lastMoveDetail ?? state.lastMoveDetail,
+        lastMoveDetail:
+          'lastMoveDetail' in action ? action.lastMoveDetail : state.lastMoveDetail,
+        takenBackDetail:
+          'takenBackDetail' in action ? action.takenBackDetail : state.takenBackDetail,
         captured: action.captured,
         evaluation: action.evaluation ?? state.evaluation,
         status: action.status,
@@ -253,6 +258,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
           prevFen: fenBefore,
           byEngine: false,
         },
+        takenBackDetail: null,
         status: result ? 'over' : shouldScheduleEngine ? 'engine-thinking' : 'player-turn',
         result,
         evaluation: null,
@@ -304,12 +310,32 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
     runIdRef.current += 1;
     interrupt();
     const game = gameRef.current;
+    let undoneEngineReply = null;
+    let undonePlayerMove = null;
+    let fenAfterPlayerMove = null;
+
     if (isBothSides) {
-      game.undo();
+      undonePlayerMove = game.undo();
     } else {
-      if (game.turn() === playerChar) game.undo();
-      game.undo();
+      if (game.turn() === playerChar) {
+        undoneEngineReply = game.undo();
+      }
+      fenAfterPlayerMove = game.fen();
+      undonePlayerMove = game.undo();
     }
+
+    const takenBackDetail = undonePlayerMove
+      ? {
+          san: undonePlayerMove.san,
+          uci: moveToLan(undonePlayerMove),
+          color: undonePlayerMove.color === 'b' ? 'black' : 'white',
+          prevFen: game.fen(),
+          afterFen: fenAfterPlayerMove,
+          engineReplySan: undoneEngineReply?.san ?? null,
+          engineReplyUci: undoneEngineReply ? moveToLan(undoneEngineReply) : null,
+        }
+      : null;
+
     const engineToMove = !isBothSides && game.turn() !== playerChar && !game.isGameOver();
     dispatch({
       type: 'sync',
@@ -318,6 +344,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
       captured: capturedPieces(game),
       lastMove: null,
       lastMoveDetail: null,
+      takenBackDetail,
       status: engineToMove ? 'engine-thinking' : 'player-turn',
       result: null,
       evaluation: null,
@@ -345,6 +372,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
     history: state.history,
     lastMove: state.lastMove,
     lastMoveDetail: state.lastMoveDetail,
+    takenBackDetail: state.takenBackDetail,
     captured: state.captured,
     evaluation: state.evaluation,
     selectedSquare,

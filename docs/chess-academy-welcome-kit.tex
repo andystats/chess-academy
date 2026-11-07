@@ -1,0 +1,399 @@
+\documentclass[10pt,twoside]{article}
+
+% --- Page Geometry: 6in x 9in Game Manual / Trade Booklet ---
+\usepackage[
+  paperwidth=6in,
+  paperheight=9in,
+  top=0.65in,
+  bottom=0.65in,
+  inner=0.62in,
+  outer=0.58in,
+  headheight=19pt,
+  headsep=12pt,
+  footskip=20pt
+]{geometry}
+
+% --- Typography & Encoding ---
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathpazo}
+\usepackage[scaled=0.88]{helvet}
+\usepackage{courier}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+
+% --- Colors (Matching Chess Academy UI Palette) ---
+\usepackage[dvipsnames,table]{xcolor}
+\definecolor{ink}{HTML}{111827}
+\definecolor{slate}{HTML}{374151}
+\definecolor{muted}{HTML}{6B7280}
+\definecolor{brand}{HTML}{B45309}
+\definecolor{branddark}{HTML}{78350F}
+\definecolor{brandlight}{HTML}{FEF3C7}
+\definecolor{paper}{HTML}{FBFAF4}
+\definecolor{rulecolor}{HTML}{D1D5DB}
+\definecolor{goodgreen}{HTML}{15803D}
+\definecolor{alertred}{HTML}{B91C1C}
+
+% --- Graphics, Boxes, Tables & Chess Diagrams ---
+\usepackage{tikz}
+\usepackage[most]{tcolorbox}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{chessboard}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=branddark,
+  urlcolor=brand,
+  pdftitle={Chess Academy - Player's Welcome Kit & Instruction Booklet},
+  pdfauthor={Chess Academy}
+}
+
+% --- Running Headers & Footers ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\footnotesize\sffamily\bfseries\textcolor{brand}{CHESS ACADEMY}}
+\fancyhead[LO,RE]{\footnotesize\sffamily\textcolor{muted}{PLAYER'S MANUAL \& FIELD GUIDE}}
+\fancyfoot[C]{\footnotesize\sffamily\textcolor{muted}{--- \thepage\ ---}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{rulecolor}\leaders\hrule height \headrulewidth\hfill}}
+
+% --- Custom Callout Boxes ---
+\newtcolorbox{manualbox}[2][]{
+  enhanced,
+  colback=paper,
+  colframe=ink,
+  boxrule=1.1pt,
+  sharp corners,
+  fonttitle=\sffamily\bfseries\scriptsize,
+  coltitle=white,
+  colbacktitle=ink,
+  attach boxed title to top left={yshift=-0.5mm, xshift=0mm},
+  boxed title style={sharp corners, boxrule=0pt, top=2.5pt, bottom=2.5pt, left=6pt, right=6pt},
+  top=7pt,
+  bottom=5pt,
+  left=8pt,
+  right=8pt,
+  title={#2},
+  #1
+}
+
+\newtcolorbox{supplementbox}[2][]{
+  enhanced,
+  colback=brandlight!45!white,
+  colframe=brand,
+  boxrule=1.1pt,
+  sharp corners,
+  fonttitle=\sffamily\bfseries\scriptsize,
+  coltitle=white,
+  colbacktitle=brand,
+  attach boxed title to top left={yshift=-0.5mm, xshift=0mm},
+  boxed title style={sharp corners, boxrule=0pt, top=2.5pt, bottom=2.5pt, left=6pt, right=6pt},
+  top=7pt,
+  bottom=5pt,
+  left=8pt,
+  right=8pt,
+  title={#2},
+  #1
+}
+
+% --- Section Styling ---
+\newcommand{\manualsection}[2]{%
+  \vspace{2pt}
+  {\noindent\sffamily\bfseries\scriptsize\textcolor{brand}{#1}}\\[3pt]
+  {\noindent\Large\bfseries\textcolor{ink}{#2}}\\[3pt]
+  {\color{ink}\hrule height 1.2pt}
+  \vspace{4pt}
+}
+
+\newcommand{\pill}[1]{%
+  \tikz[baseline=(X.base)]\node[draw=ink,fill=paper,inner xsep=4pt,inner ysep=1.8pt,font=\ttfamily\scriptsize\bfseries](X){#1};%
+}
+
+\begin{document}
+\color{ink}
+
+% ======================================================================
+% PAGE 1: COVER PAGE
+% ======================================================================
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture, overlay]
+  % Outer double border for classic game booklet look
+  \draw[line width=1.8pt, color=ink]
+    ([xshift=0.38in, yshift=-0.38in]current page.north west)
+    rectangle
+    ([xshift=-0.38in, yshift=0.38in]current page.south east);
+  \draw[line width=0.5pt, color=brand]
+    ([xshift=0.44in, yshift=-0.44in]current page.north west)
+    rectangle
+    ([xshift=-0.44in, yshift=0.44in]current page.south east);
+\end{tikzpicture}
+
+\vspace*{4pt}
+\begin{center}
+  {\sffamily\bfseries\scriptsize\textcolor{brand}{OPEN-SOURCE CHESS STUDY ROOM \& MULTIPLAYER ARENA}}\\[6pt]
+  {\fontsize{28}{32}\selectfont\bfseries CHESS ACADEMY}\\[4pt]
+  {\large\itshape\textcolor{slate}{Player's Welcome Kit \& Instruction Booklet}}\\[8pt]
+  {\color{brand}\rule{2.2in}{1.5pt}}\\[8pt]
+  {\small\sffamily\bfseries\textcolor{ink}{THE ``+200 ELO IN 30 DAYS'' DAILY CHESS SUPPLEMENT}}
+\end{center}
+
+\vspace{2pt}
+\begin{center}
+  \chessboard[
+    setfen=r2qk2r/pppp1ppp/2n1bn2/2b1p3/4P3/1Q6/PPPPBPPP/RNB1K1NR b KQkq - 3 5,
+    showmover=false,
+    boardfontsize=12pt,
+    marginwidth=3pt
+  ]\\[10pt]
+  {\footnotesize\itshape\textcolor{muted}{Featured Study Position: ``Neutralize the Threat on b7'' (Black to move)}}
+\end{center}
+
+\vspace{4pt}
+\begin{manualbox}{WHAT'S INSIDE THE BOX}
+\footnotesize
+\begin{itemize}[leftmargin=12pt, itemsep=2.5pt, topsep=2pt]
+  \item \textbf{Real-Time Grandmaster Coach:} Stockfish 10 WASM paired with classical strategy (\emph{My System}, \emph{Chess Fundamentals}) and a live Claude AI companion.
+  \item \textbf{Threat Radar \& Move Grading:} Instant detection of what your opponent threatens if you pass, plus live move grading with one-click \textbf{Take Back}.
+  \item \textbf{Guided Play (No Spoilers):} Train like a tournament player---get tactical warnings and positional prompts while keeping the best move hidden until you ask.
+  \item \textbf{Invite-Link Multiplayer:} Play friends in Standard Chess, \textbf{Duck Chess}, or \textbf{Duck Chess Decay}---no accounts, no app install.
+\end{itemize}
+\end{manualbox}
+
+\vfill
+\begin{center}
+  \footnotesize\sffamily
+  \textbf{PLAY ONLINE NOW:} \href{https://andystats.github.io/chess-academy/}{\texttt{https://andystats.github.io/chess-academy/}}\\[2pt]
+  \textbf{SOURCE CODE:} \href{https://github.com/andystats/chess-academy}{\texttt{https://github.com/andystats/chess-academy}}
+\end{center}
+\vspace*{4pt}
+\newpage
+
+% ======================================================================
+% PAGE 2: WHY THIS EXISTS & THE FOUR GAME MODES
+% ======================================================================
+\manualsection{CHAPTER 1 \textbar\ PHILOSOPHY}{Why Chess Academy Feels Like a Cheat Code}
+
+Most chess players plateau for one of two reasons:
+\begin{enumerate}[leftmargin=16pt, itemsep=2pt, topsep=1pt]
+  \item \textbf{Raw engines don't speak human.} Stockfish will flash \texttt{+1.85} and a 12-move computer line, without ever telling you \emph{``Castling right now neutralizes the threat on b7 while activating your rook.''}
+  \item \textbf{Books don't answer back.} Reading Aron Nimzowitsch's \emph{My System} teaches timeless concepts like \emph{prophylaxis} and \emph{the blockade}, but a printed page can't watch your live board or answer your question when the position changes.
+\end{enumerate}
+
+\textbf{Chess Academy} fuses both worlds inside your browser. Every time a piece moves, an in-browser engine + tactical analyzer inspects the board, checks what your opponent threatens if you pass your turn, translates the best engine moves into plain English, and attaches that verified brief to an AI Coach powered by Claude.
+
+\vspace{2pt}
+\manualsection{CHAPTER 2 \textbar\ GAME SELECT}{The Four Modes of the Arena}
+
+From the home lobby (\href{https://andystats.github.io/chess-academy/}{\texttt{/}}), you can jump straight into four modes:
+
+\begin{manualbox}{1. LIVE ENGINE \& AI COACH (\texttt{/coach})}
+\footnotesize
+Play as White or Black against Stockfish (adjustable from Level 1 \emph{First Steps, $\sim$500 Elo} up to Level 20 \emph{Maximum, $\sim$2650 Elo}). The 4-tab Coach Panel updates on every ply with threat alerts, best-move explanations, and live move grading.
+\end{manualbox}
+
+\begin{manualbox}{2. TWO-SIDED ANALYSIS LAB (\texttt{/coach?side=both})}
+\footnotesize
+Control \textbf{Both Sides} freely in sandbox mode---or paste any custom \textbf{FEN} from a game you just played on Lichess or Chess.com---to test opening prep, middlegame plans, and endgame technique with full Coach commentary.
+\end{manualbox}
+
+\begin{manualbox}{3. PRACTICE POSITIONS \& CLASSICS (\texttt{/})}
+\footnotesize
+Six bite-sized interactive training scenarios where you first solve the critical tactical or strategic turning point (\emph{Exploit the Pin}, \emph{Spring the Discovery}, \emph{Command the Center}, \emph{Attack the Chain Base}, \emph{Seize the Open File}, \emph{Blockade the Passer}) and then play out the position against the engine.
+\end{manualbox}
+
+\begin{manualbox}{4. PLAY A FRIEND ONLINE (\texttt{/arena/online})}
+\footnotesize
+One-click invite-link multiplayer. Pick \textbf{Standard Chess}, \textbf{Duck Chess}, or \textbf{Duck Chess Decay}, copy the link, and send it to a friend for an instant real-time game with live chat.
+\end{manualbox}
+
+\newpage
+
+% ======================================================================
+% PAGE 3: INSIDE THE LIVE COACH COCKPIT
+% ======================================================================
+\manualsection{CHAPTER 3 \textbar\ CONTROLS \& HUD}{Inside the Live Coach Cockpit}
+
+When you open \href{https://andystats.github.io/chess-academy/coach}{\texttt{/coach}}, the screen is organized into a locked, zero-jitter study table: your chessboard and move-feedback banner on the left, and the \textbf{Four Coaching Tabs} on the right.
+
+\subsection*{\sffamily\normalsize\textcolor{brand}{The Four Coaching Tabs}}
+
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{\sffamily Tab} & \textbf{\sffamily What It Shows You in Real Time} \\
+\midrule
+\textbf{1. Main Idea} &
+  \textbf{Null-Move Threat Radar:} Simulates passing your turn to reveal what your opponent threatens right now (e.g., \emph{``If given a move, White threatens Qxb7''}), plus loose-piece alerts, king-safety prompts, and a classical strategy card. \\[4pt]
+\textbf{2. Key Best Moves} &
+  \textbf{MultiPV=3 Engine Lines in Plain English:} Explains \emph{why} the top 3 moves work, draws color-coded arrows on the board (\textcolor{alertred}{\textbf{red}} = opponent threat, \textcolor{goodgreen}{\textbf{green}} = top move), and lets you step forward through the variation (\texttt{Ply +1, +2...}). \\[4pt]
+\textbf{3. State of Board} &
+  \textbf{8-Factor Classical Eval Meter:} Breaks down Material, Imbalance, Pawns, Mobility, King Safety, Threats, Passed Pawns, and Space (showing Middlegame \texttt{MG} and Endgame \texttt{EG} tapered scores), alongside a hanging-piece radar and full move list. \\[4pt]
+\textbf{4. Ask Coach} &
+  \textbf{Live AI Grandmaster Q\&A:} Ask any question in plain English---including \emph{``What if I play...''} hypotheticals or why a move you just \textbf{took back} failed. Because the Coach simulates candidate moves and receives Stockfish's verified board brief behind the scenes, it never hallucinates piece locations or illegal moves. \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{4pt}
+\begin{supplementbox}{PRO TIP: LIVE COACH VS. GUIDED PLAY (NO SPOILERS)}
+\footnotesize
+In the top bar of \texttt{/coach}, toggle between two coaching styles:
+\begin{itemize}[leftmargin=12pt, itemsep=2pt, topsep=2pt]
+  \item \textbf{Live Coach:} Shows Stockfish's top candidate moves and arrows immediately---ideal for learning new openings or exploring unfamiliar structures.
+  \item \textbf{Guided Play (No Spoilers):} Hides the exact best move and green arrow while still warning you about opponent threats and strategic themes. You make your own move first---and can click \textbf{Reveal Optimal Moves} anytime you get stuck!
+\end{itemize}
+\end{supplementbox}
+
+\subsection*{\sffamily\normalsize\textcolor{brand}{The Move-Grading Banner \& ``Take Back'' Loop}}
+Directly beneath the board sits the permanent \textbf{Move Feedback Banner}. Every move you play is graded on the spot:
+\begin{center}
+  \pill{Optimal Move} \hspace{4pt} \pill{Solid Move} \hspace{4pt} \pill{Inaccuracy} \hspace{4pt} \pill{Mistake} \hspace{4pt} \pill{Blunder}
+\end{center}
+Whenever you play an inaccuracy, mistake, or blunder, the banner explains \emph{why} it drops ground (including how the opponent can punish it) and gives you a one-click \textbf{Take back \& try again} button.
+
+\newpage
+
+% ======================================================================
+% PAGE 4: TWO SIGNATURE LESSONS FROM THE COACH
+% ======================================================================
+\manualsection{CHAPTER 4 \textbar\ FIELD STUDIES}{How the Coach Thinks: Two Classic Studies}
+
+To see how Chess Academy blends concrete tactics with classical principles from \emph{My System}, try loading these two built-in presets in the \texttt{/coach} scenario selector:
+
+\vspace{2pt}
+\begin{minipage}[t]{0.44\textwidth}
+\vspace{0pt}
+\centering
+\chessboard[
+  setfen=r2qk2r/pppp1ppp/2n1bn2/2b1p3/4P3/1Q6/PPPPBPPP/RNB1K1NR b KQkq - 3 5,
+  showmover=false,
+  boardfontsize=10.5pt,
+  marginwidth=2pt
+]
+\end{minipage}\hfill
+\begin{minipage}[t]{0.53\textwidth}
+\vspace{0pt}
+{\sffamily\bfseries\scriptsize\textcolor{brand}{STUDY 1 \textbar\ PROPHYLAXIS \& KING SAFETY}}\\[1pt]
+{\normalsize\bfseries Neutralize the Threat on b7}\\[2pt]
+{\footnotesize
+White's queen on \textbf{b3} eyes both \textbf{f7} and the undefended pawn on \textbf{b7}. Instead of playing a passive defensive move like \texttt{...Rb8}, watch what the Coach highlights:\\[3pt]
+\textbf{Stockfish \#1: \texttt{O-O}} --- \emph{``Castling (O-O) neutralizes the current threat on b7 while tucking the king to safety and bringing the rook toward the center.''} Once \textbf{f7} is securely defended by the castled rook, \texttt{Qxb7} is met by \texttt{...Nd4!} with a winning counter-attack.}
+\end{minipage}
+
+\vspace{8pt}
+{\color{rulecolor}\hrule height 0.6pt}
+\vspace{6pt}
+
+\begin{minipage}[t]{0.44\textwidth}
+\vspace{0pt}
+\centering
+\chessboard[
+  setfen=6k1/5ppp/8/8/3p1N2/8/5PPP/6K1 w - - 0 1,
+  showmover=false,
+  boardfontsize=10.5pt,
+  marginwidth=2pt
+]
+\end{minipage}\hfill
+\begin{minipage}[t]{0.53\textwidth}
+\vspace{0pt}
+{\sffamily\bfseries\scriptsize\textcolor{brand}{STUDY 2 \textbar\ NIMZOWITSCH'S BLOCKADE}}\\[1pt]
+{\normalsize\bfseries Blockade the Passed Pawn}\\[2pt]
+{\footnotesize
+Black has a dangerous passed pawn on \textbf{d4}. A natural-looking attack like \texttt{Ne2?} is a trap: it lets the pawn advance with tempo (\texttt{...d3!}).\\[3pt]
+\textbf{Stockfish \#1: \texttt{Nd3!}} --- \emph{``First restrain, next blockade, lastly destroy.''} Parking the knight directly on the blockade square \textbf{d3} halts the pawn in its tracks while the knight radiates control over \textbf{b4, c5, e5,} and \textbf{f4}.}
+\end{minipage}
+
+\vspace{10pt}
+\begin{manualbox}{3 QUESTIONS TO ASK THE COACH IN ANY POSITION}
+\footnotesize
+When you open the \textbf{Ask Coach} tab on any board, try these three high-leverage prompts:
+\begin{enumerate}[leftmargin=15pt, itemsep=1.5pt, topsep=1pt]
+  \item \emph{``What is my opponent threatening right now if I do nothing?''}
+  \item \emph{``Why is Stockfish's top move better than [my candidate move]?''}
+  \item \emph{``What is the long-term plan for my pawn structure and worst-placed piece?''}
+\end{enumerate}
+\end{manualbox}
+
+\newpage
+
+% ======================================================================
+% PAGE 5: THE +200 ELO IN 30 DAYS PROTOCOL
+% ======================================================================
+\manualsection{CHAPTER 5 \textbar\ TRAINING REGIMEN}{The ``+200 Elo in 30 Days'' Supplement}
+
+You don't need 4 hours of opening memorization to jump 200 rating points at club level. Most rating swings between 800 and 1800 come down to eliminating one-move tactical oversights (blunder-checking) and always having a purposeful plan when there are no immediate tactics.
+
+Use Chess Academy for \textbf{20 minutes a day} alongside your normal games:
+
+\begin{supplementbox}{DAILY 20-MINUTE REGIMEN}
+\footnotesize
+\textbf{Minutes 0--5 \textbar\ One Classical Pattern (\texttt{/})}\\[2pt]
+Open the Practice Arena and play through one of the six classical scenarios (\emph{Pin, Discovery, Center, Pawn Chain Base, Open File, Blockade}). Convert the resulting advantage against Stockfish until the technique feels automatic.
+
+\vspace{4pt}
+\textbf{Minutes 5--15 \textbar\ One ``Guided Play'' Game (\texttt{/coach})}\\[2pt]
+Switch \texttt{/coach} to \textbf{Guided Play (No Spoilers)} and set the engine strength 1--2 notches above your level. Before touching a piece, check the \textbf{Main Idea} tab to verify you haven't missed an opponent threat. Whenever the Move Feedback Banner flags an \emph{Inaccuracy}, \emph{Mistake}, or \emph{Blunder}, hit \textbf{Take back \& try again} immediately---rewiring the habit in real time.
+
+\vspace{4pt}
+\textbf{Minutes 15--20 \textbar\ The 1-Position Post-Mortem (\texttt{FEN Loader})}\\[2pt]
+Take one critical position from a game you played today, click \textbf{FEN} in the top bar of \texttt{/coach}, and paste it in. Step through the top 3 candidate lines in \textbf{Key Best Moves} and ask the AI Coach why the top line works.
+\end{supplementbox}
+
+\vspace{2pt}
+\subsection*{\sffamily\normalsize\textcolor{brand}{Your 4-Week Progression}}
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+\textbf{\sffamily Week} & \textbf{\sffamily Focus} & \textbf{\sffamily Goal at the Board} \\
+\midrule
+\textbf{Week 1} & Threat Hygiene & Zero undefended pieces dropped; every opponent check, capture, and threat spotted one ply ahead. \\
+\textbf{Week 2} & Opening Purpose & Complete minor-piece development, castle on time, and strike the center before launching flank attacks. \\
+\textbf{Week 3} & Classical Plans & Use open files (7th-rank rooks), attack pawn chains at their base, and blockade enemy passed pawns. \\
+\textbf{Week 4} & Endgame Conversion & Activate the king immediately in the endgame and convert 1-pawn or 1-piece edges cleanly vs.\ Stockfish. \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\newpage
+
+% ======================================================================
+% PAGE 6: DUCK CHESS MULTIPLAYER & UNDER THE HOOD
+% ======================================================================
+\manualsection{CHAPTER 6 \textbar\ MULTIPLAYER \& TECH}{Duck Chess \& Under the Hood}
+
+\subsection*{\sffamily\normalsize\textcolor{brand}{Play a Friend Online (\texttt{/arena/online})}}
+Want a break from serious study? Click \textbf{Play a Friend} on the home screen, choose your color and variant, click \textbf{Create Game}, and text the invite link to a friend.
+
+\begin{manualbox}{HOUSE VARIANTS REFERENCE}
+\footnotesize
+\begin{itemize}[leftmargin=12pt, itemsep=3pt, topsep=2pt]
+  \item \textbf{Standard Chess:} Classic rules with live move sync and an in-game chat box.
+  \item \textbf{Duck Chess:} Every turn has \textbf{two phases}: first make a normal chess move, then move the \textbf{rubber duck} to any empty square on the board. The duck is an indestructible blocker---no piece can land on or jump over it (except knights). There is no check or checkmate: \textbf{capture the enemy king to win!}
+  \item \textbf{Duck Chess Decay:} Whenever the duck moves, the squares it leaves behind stay \textbf{decayed} (blocked) for a configurable number of turns, creating shifting labyrinths across the board. Optional \emph{Duck Prime} mode adds limited charges to clear or reinforce squares!
+\end{itemize}
+\end{manualbox}
+
+\vspace{2pt}
+\subsection*{\sffamily\normalsize\textcolor{brand}{For the Vibe Coders: How It's Built}}
+Chess Academy is an open-source web app designed to run fast, free, and zero-install in any modern browser:
+\begin{itemize}[leftmargin=14pt, itemsep=2.5pt, topsep=2pt]
+  \item \textbf{In-Browser Engine + AST Position Analyzer:} Stockfish 10 WASM runs in a dedicated Web Worker (\texttt{MultiPV=3}), while a custom JavaScript position analyzer (\texttt{positionAnalyzer.js}) performs null-move threat detection, square vulnerability scoring, and move explanation without spending a single API token.
+  \item \textbf{Grounded LLM Architecture:} When you ask a question in the \textbf{Ask Coach} tab, the frontend packages the verified Stockfish lines (Depth 15+), exact piece-square coordinates, taken-back move notes, and real-time simulated hypothetical moves into a structured brief and sends it through a \textbf{Supabase Edge Function} to \textbf{Anthropic Claude}---keeping API keys private on the server while guaranteeing the LLM never hallucinates illegal moves.
+  \item \textbf{Pluggable AI Providers:} Click the gear icon in \textbf{Ask Coach} anytime to switch between the \textbf{Hosted Cloud Coach (Claude)}, the instant \textbf{Built-in Strategy Synthesizer}, \textbf{Local Ollama} (\texttt{http://localhost:11434} for 100\% offline local LLMs), or Bring-Your-Own-Key (Anthropic, OpenAI, or Gemini).
+\end{itemize}
+
+\vfill
+\begin{center}
+  {\color{rulecolor}\hrule height 0.6pt}
+  \vspace{5pt}
+  {\footnotesize\sffamily\bfseries Ready to play? Jump in at \href{https://andystats.github.io/chess-academy/}{\texttt{andystats.github.io/chess-academy}}}
+\end{center}
+
+\end{document}

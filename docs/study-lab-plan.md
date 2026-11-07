@@ -34,13 +34,16 @@ calm, board-centric **Live Engine & AI Coach** (`/coach`):
    - **Key Best Moves:** Top 3 Stockfish candidate moves translated into natural-language *why*
      explanations (`neutralizes threat`, `captures material`, `develops piece`, `castles to safety`,
      etc.) with interactive board arrows and PV preview.
-   - **State of the Board:** Evaluation strip, classical evaluation factor grid, hanging/undefended
-     piece radar, clickable move history, and FEN loader.
+   - **State of the Board:** Evaluation strip, classical evaluation factor grid (with Middlegame `MG`
+     and Endgame `EG` tapered scores), hanging/undefended piece radar, clickable move history, and
+     FEN loader.
    - **Ask Coach:** Grounded conversational Q&A backed by `strategyLibrary.js` (Nimzowitsch's *My
      System*, Capablanca's *Chess Fundamentals*, opening principles, tactical motifs, and endgame
-     technique) plus a pluggable LLM companion (**Built-in Offline Synthesizer**, **Local Ollama
-     (`llama3.2`)**, **Supabase Edge Function (`coach-chat` → Claude Haiku 4.5)**, or direct
-     BYOK for Anthropic/OpenAI/Gemini).
+     technique), exact piece-square maps, takeback memory (`lastTakenBackReview`), real-time
+     simulation of hypothetical candidate moves (`analyzeHypotheticalMoves`), and multi-turn Q&A
+     history, plus a pluggable LLM companion (**Supabase Edge Function (`coach-chat` → Claude Sonnet
+     4.5 / 5.5 with Haiku 5.5 fallback)**, **Built-in Offline Synthesizer**, **Local Ollama
+     (`llama3.2`)**, or direct BYOK for Anthropic/OpenAI/Gemini).
 
 ```mermaid
 flowchart LR
@@ -112,7 +115,8 @@ Supports six provider modes:
   and retrieved `STRATEGY_CARDS`.
 - `ollama`: Local offline LLM at `http://localhost:11434/api/chat` (default model `llama3.2`).
 - `supabase`: Server-side Supabase Edge Function (`coach-chat`) on project `xhgthecnlswsvikgokfd`,
-  using `ANTHROPIC_API_KEY` (`claude-haiku-5-5` with `thinking: { type: 'disabled' }`).
+  using `ANTHROPIC_API_KEY` (`claude-sonnet-4-5` / `claude-sonnet-5-5` with automatic fallback to
+  `claude-haiku-5-5`, and `thinking: { type: 'disabled' }`).
 - `anthropic` / `openai` / `gemini`: Direct browser BYOK or `.env.local` fallback.
 
 ## Release map
@@ -133,6 +137,9 @@ Supports six provider modes:
 - [x] R7.5 Install and configure local **Ollama** (`v0.40.15`, `llama3.2`, `OLLAMA_ORIGINS="*"`) for 100% free offline coaching.
 - [x] R7.6 Restore paused Supabase project `xhgthecnlswsvikgokfd`, configure `ANTHROPIC_API_KEY` in Supabase Secrets, deploy `supabase/functions/coach-chat/index.ts` (`claude-haiku-5-5`), and verify live cloud responses end-to-end.
 - [x] R7.7 Redesign `/coach` (`src/routes/CoachPage.jsx` & `src/components/NimzoCoach.jsx`) into a calm, board-centric layout with a permanent central board, depth-stabilized analysis, and a fixed-height (`h-[39.25rem]`) 4-tab panel (`Main Idea`, `Key Best Moves`, `State of the Board`, `Ask Coach`) free of box resizing or right-side text clipping.
+- [x] R7.8 Balance Coach search depth (`depth >= 15`, always at least 4 plies deeper than the opponent engine, with `Master 2200+` capped at `depth: 11`) so optimal Coach recommendations consistently out-calculate `Master 2200+`.
+- [x] R7.9 Enhance `Ask Coach` off-board reasoning with explicit piece-square maps (`pieceLocations`), takeback memory (`takenBackDetail` / `lastTakenBackReview`), real-time `chess.js` simulation of hypothetical moves (`analyzeHypotheticalMoves`), multi-turn Q&A history, and upgraded Claude Sonnet (`claude-sonnet-4-5` / `claude-sonnet-5-5` with `claude-haiku-5-5` fallback).
+- [x] R7.10 Compile the 6-page `6in x 9in` LaTeX Player's Welcome Kit PDF (`docs/chess-academy-welcome-kit.tex` → `docs/chess-academy-welcome-kit.pdf`).
 
 ## Validation record
 
@@ -141,6 +148,7 @@ Supports six provider modes:
 | 2026-07-30 | `7ba3379` baseline | 223 passed | Pass | 20 files / 50 terms | Pass | Pending | Clean baseline before feature work |
 | 2026-07-30 | Visual-polish worktree | 293 passed | Pass | 20 files / 50 terms | Pass | Pass | Initial Study Lab pilot |
 | 2026-11-07 | Unified `/coach` + Supabase + Ollama | 33 files / 302 passed | Pass (0 warnings) | 20 files / 50 terms | Pass (`dist/` clean) | Pass | Verified live `/coach` 4-tab fixed layout, local Ollama (`llama3.2`), and live Supabase `coach-chat` Edge Function (`claude-haiku-5-5`) |
+| 2026-11-07 | Depth 15+ Coach, Takeback & Hypothetical Simulator, Claude Sonnet upgrade | 33 files / 303 passed | Pass (0 warnings) | 20 files / 50 terms | Pass (`dist/` clean) | Pass | Verified Coach vs. Master 2200+ depth advantage, `analyzeHypotheticalMoves`, `lastTakenBackReview`, and LaTeX Welcome Kit PDF |
 
 ## Decision log
 
@@ -159,9 +167,20 @@ Supports six provider modes:
   updates and conditional banners previously caused layout jitter. Every panel in `/coach` now has a
   fixed height, internal scrolling, `grid-cols-[minmax(0,1fr)]` width constraints to prevent text
   clipping, and depth stabilization (`depth >= 6`) so cards gently swap text in place.
-- **2026-11-07 — Use `claude-haiku-5-5` with `thinking: { type: 'disabled' }` in `coach-chat`.**
-  Anthropic's newer Haiku 4.5 (`claude-haiku-5-5`) replaces retired 3.5 Haiku model IDs and returns
-  fast, direct coaching prose when extended thinking is disabled.
+- **2026-11-07 — Upgrade from retired `claude-3-5-haiku` IDs to `claude-sonnet-4-5` / `claude-sonnet-5-5` with `claude-haiku-5-5` fallback (`thinking: { type: 'disabled' }`).**
+  Anthropic retired legacy 3.5 Haiku model IDs (`claude-3-5-haiku-*`). The Edge Function and client
+  now try `claude-sonnet-4-5` / `claude-sonnet-5-5` first and automatically fall back to
+  `claude-haiku-5-5` on 404, with extended thinking disabled for fast (~1.5–2.5s), high-IQ tactical
+  and strategic coaching.
+- **2026-11-07 — Keep Coach search depth 4+ plies deeper than the opponent engine (`depth >= 15` vs. Master `depth: 11`).**
+  Previously, `Master (2200+)` searched uncapped during its time budget (Depth 16–20+, ~3100 Elo)
+  while the Coach stopped at Depth 11. Capping Level 20 at Depth 11 and raising the Coach to Depth
+  15+ guarantees the Coach's top moves reliably beat every opponent level.
+- **2026-11-07 — Simulate off-board hypothetical moves and preserve takeback context in `formatStructuredBriefForPrompt`.**
+  LLMs struggle when asked about moves that were just undone (`Take Back`) or hypothetical candidate
+  moves (`"what if I play..."`). Preserving `takenBackDetail` in `useEngineGame.js` and simulating
+  candidate moves via `analyzeHypotheticalMoves` in `positionAnalyzer.js` gives Claude verified
+  board facts for off-board variations.
 
 ## Session log
 

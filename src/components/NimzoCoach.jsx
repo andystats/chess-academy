@@ -2,11 +2,13 @@ import { useMemo, useState } from 'react';
 import { BookOpen, Cpu, KeyRound, Loader2, MessageCircle, Send, Settings2, Sparkles } from 'lucide-react';
 import {
   LLM_PROVIDERS,
+  analyzeHypotheticalMoves,
   askCoachCompanion,
   getCoachKnowledgeCard,
   loadLlmSettings,
   retrieveCoachKnowledge,
   saveLlmSettings,
+  synthesizeDeterministicCoachReply,
 } from '../coach/index.js';
 
 const STARTER_TOPICS = [
@@ -34,12 +36,32 @@ function leadingLine(analysis, branch) {
   };
 }
 
-function answerFrom(result, preferredCardId, analysis, branch, brief, coachingMode) {
+function answerFrom(result, preferredCardId, analysis, branch, brief, coachingMode, question = '') {
   const preferred = preferredCardId ? getCoachKnowledgeCard(preferredCardId) : null;
   const uncertain = result.confidence === 'low' || result.confidence === 'none';
   const card = uncertain && !preferred ? null : result.matches[0]?.card ?? preferred;
   const engine = leadingLine(analysis, branch);
   const topMove = brief?.topMove ?? null;
+  const hypotheticals = brief?.fen && question ? analyzeHypotheticalMoves(brief.fen, question) : [];
+  const asksAboutTakeback =
+    brief?.lastTakenBackReview &&
+    /take\s*back|took\s*back|undid|undo|previous move|last move|why.*bad|why.*mistake|why.*blunder|what went wrong/i.test(
+      question,
+    );
+
+  if (brief && (hypotheticals.length > 0 || asksAboutTakeback)) {
+    const synth = synthesizeDeterministicCoachReply(question, brief, coachingMode);
+    return {
+      confidence: 'high',
+      text: synth.text,
+      principles: synth.principles ?? [],
+      citation: synth.citation ? { label: synth.citation } : null,
+      engine: engine
+        ? `Separately, Stockfish's ${engine.selected ? 'selected branch' : 'current leading line'} at depth ${engine.depth} begins ${engine.moves.join(' ')}.`
+        : null,
+      followUps: (synth.followUps ?? []).map((label) => ({ cardId: preferredCardId, label })),
+    };
+  }
 
   if (!card) {
     // If we have a live coaching brief and the player asked about the current board, answer from the brief!
@@ -131,6 +153,7 @@ export default function NimzoCoach({
 }) {
   const [query, setQuery] = useState('');
   const [exchange, setExchange] = useState(null);
+  const [conversationHistory, setConversationHistory] = useState([]);
   const [loadingLlm, setLoadingLlm] = useState(false);
   const [llmError, setLlmError] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -166,10 +189,15 @@ export default function NimzoCoach({
           question: clean,
           brief,
           history,
+          conversationHistory,
           coachingMode,
           settings: llmSettings,
         });
         const engine = leadingLine(analysis, branch);
+        setConversationHistory((prev) => [
+          ...prev.slice(-5),
+          { question: clean, answerText: reply.text },
+        ]);
         setExchange({
           question: clean,
           answer: {
@@ -193,9 +221,22 @@ export default function NimzoCoach({
     }
 
     const result = retrieveCoachKnowledge(clean);
+    const builtInAnswer = answerFrom(
+      result,
+      preferredCardId,
+      analysis,
+      branch,
+      brief,
+      coachingMode,
+      clean,
+    );
+    setConversationHistory((prev) => [
+      ...prev.slice(-5),
+      { question: clean, answerText: builtInAnswer.text },
+    ]);
     setExchange({
       question: clean,
-      answer: answerFrom(result, preferredCardId, analysis, branch, brief, coachingMode),
+      answer: builtInAnswer,
     });
   };
 

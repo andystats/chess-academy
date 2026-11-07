@@ -51,12 +51,50 @@ describe('llmCoachClient', () => {
     expect(reply.text).not.toMatch(/Stockfish’s top choice is \*\*Rb8\*\*/);
   });
 
-  it('formats a structured brief for external LLM providers', () => {
-    const brief = buildCoachingBrief({ fen: B7_THREAT_FEN, analysis: mockAnalysis });
-    const formatted = formatStructuredBriefForPrompt(brief, ['e4', 'e5', 'Be3', 'Be6', 'Qb3'], 'live');
+  it('formats a structured brief for external LLM providers including piece coordinates, takeback context, and hypotheticals', () => {
+    const lastTakenBackReview = {
+      moveSan: 'a6',
+      badge: 'Blunder',
+      verdict: 'blunder',
+      cpLoss: 240,
+      bestMoveSan: 'Rb8',
+      engineReplySan: 'Qxb7',
+      summary: 'Your move a6 left b7 undefended, allowing Qxb7.',
+    };
+    const brief = buildCoachingBrief({
+      fen: B7_THREAT_FEN,
+      analysis: mockAnalysis,
+      lastTakenBackReview,
+    });
+    const formatted = formatStructuredBriefForPrompt(
+      brief,
+      ['e4', 'e5', 'Be3', 'Be6', 'Qb3'],
+      'live',
+      {
+        question: 'Why was my taken back move bad, and what if I play b6 instead?',
+        conversationHistory: [
+          { question: 'What is threatened?', answerText: 'White threatens Qxb7.' },
+        ],
+      },
+    );
 
     expect(formatted).toContain(`FEN: ${B7_THREAT_FEN}`);
+    expect(formatted).toContain('Exact piece squares — White:');
+    expect(formatted).toContain('Qb3');
+    expect(formatted).toContain('Recently taken-back (undone) move from this position: Black previously played a6 (Blunder)');
+    expect(formatted).toContain('Verified Simulation of Hypothetical Move(s) Mentioned in Question:');
+    expect(formatted).toContain('b6 (Black, b7->b6):');
+    expect(formatted).toContain('Recent Coach Q&A History:');
     expect(formatted).toContain('#1: Rb8');
     expect(formatted).toContain('neutralizes the current threat on b7');
+
+    // Also verify deterministic fallback handles takeback questions directly
+    const takebackReply = synthesizeDeterministicCoachReply(
+      'Why did I have to take back my last move?',
+      brief,
+      'live',
+    );
+    expect(takebackReply.text).toMatch(/took back \*\*a6\*\*/i);
+    expect(takebackReply.text).toMatch(/Qxb7/);
   });
 });
