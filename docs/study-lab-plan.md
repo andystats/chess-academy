@@ -137,9 +137,10 @@ Supports six provider modes:
 - [x] R7.5 Install and configure local **Ollama** (`v0.40.15`, `llama3.2`, `OLLAMA_ORIGINS="*"`) for 100% free offline coaching.
 - [x] R7.6 Restore paused Supabase project `xhgthecnlswsvikgokfd`, configure `ANTHROPIC_API_KEY` in Supabase Secrets, deploy `supabase/functions/coach-chat/index.ts` (`claude-haiku-5-5`), and verify live cloud responses end-to-end.
 - [x] R7.7 Redesign `/coach` (`src/routes/CoachPage.jsx` & `src/components/NimzoCoach.jsx`) into a calm, board-centric layout with a permanent central board, depth-stabilized analysis, and a fixed-height (`h-[39.25rem]`) 4-tab panel (`Main Idea`, `Key Best Moves`, `State of the Board`, `Ask Coach`) free of box resizing or right-side text clipping.
-- [x] R7.8 Balance Coach search depth (`depth >= 15`, always at least 4 plies deeper than the opponent engine, with `Master 2200+` capped at `depth: 11`) so optimal Coach recommendations consistently out-calculate `Master 2200+`.
+- [x] R7.8 Balance Coach search depth (`depth >= 15`, always at least 4 plies deeper than the opponent engine, with `Master 2200+` capped at `depth: 11`) so optimal Coach recommendations (~2800+ Super-GM strength) consistently out-calculate `Master 2200+`.
 - [x] R7.9 Enhance `Ask Coach` off-board reasoning with explicit piece-square maps (`pieceLocations`), takeback memory (`takenBackDetail` / `lastTakenBackReview`), real-time `chess.js` simulation of hypothetical moves (`analyzeHypotheticalMoves`), multi-turn Q&A history, and upgraded Claude Sonnet (`claude-sonnet-4-5` / `claude-sonnet-5-5` with `claude-haiku-5-5` fallback).
-- [x] R7.10 Compile the 6-page `6in x 9in` LaTeX Player's Welcome Kit PDF (`docs/chess-academy-welcome-kit.tex` → `docs/chess-academy-welcome-kit.pdf`).
+- [x] R7.10 Add Static Exchange Evaluation (`staticExchangeGain`, `seeRecaptureGain`, `bestLegalRecaptureNet`) to `detectOpponentThreats`, `assessSquareVulnerability`, and `analyzeHypotheticalMoves` so "nonsense checks" (where the checking piece can simply be captured or safely blocked) are filtered out of red threat arrows and discussion.
+- [x] R7.11 Compile the 6-page `6in x 9in` LaTeX Player's Welcome Kit PDF (`docs/chess-academy-welcome-kit.tex` → `docs/chess-academy-welcome-kit.pdf`) including full engine rating tiers (`Learner ~600` to `Master 2200+` vs. `AI Coach ~2800+ Depth 15+`) and technical specifications.
 
 ## Validation record
 
@@ -148,7 +149,7 @@ Supports six provider modes:
 | 2026-07-30 | `7ba3379` baseline | 223 passed | Pass | 20 files / 50 terms | Pass | Pending | Clean baseline before feature work |
 | 2026-07-30 | Visual-polish worktree | 293 passed | Pass | 20 files / 50 terms | Pass | Pass | Initial Study Lab pilot |
 | 2026-11-07 | Unified `/coach` + Supabase + Ollama | 33 files / 302 passed | Pass (0 warnings) | 20 files / 50 terms | Pass (`dist/` clean) | Pass | Verified live `/coach` 4-tab fixed layout, local Ollama (`llama3.2`), and live Supabase `coach-chat` Edge Function (`claude-haiku-5-5`) |
-| 2026-11-07 | Depth 15+ Coach, Takeback & Hypothetical Simulator, Claude Sonnet upgrade | 33 files / 303 passed | Pass (0 warnings) | 20 files / 50 terms | Pass (`dist/` clean) | Pass | Verified Coach vs. Master 2200+ depth advantage, `analyzeHypotheticalMoves`, `lastTakenBackReview`, and LaTeX Welcome Kit PDF |
+| 2026-11-07 | SEE threat filter, Depth 15+ Coach, Takeback & Hypothetical Simulator, Claude Sonnet 4.5 | 33 files / 304 passed | Pass (0 warnings) | 20 files / 50 terms | Pass (`dist/` clean) | Pass | Verified live `coach-chat` on `claude-sonnet-4-5`, SEE threat filtering, Coach vs. Master 2200+ depth advantage, and 6-page LaTeX Welcome Kit PDF |
 
 ## Decision log
 

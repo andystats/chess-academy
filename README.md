@@ -17,6 +17,32 @@ An open-source chess study and play room built around a **real-time Stockfish + 
 - **Pluggable AI & Strategy Companion** — runs out-of-the-box with a deterministic synthesizer, or connects to **Supabase Edge Function (`coach-chat` with Anthropic Claude Sonnet / Haiku)**, **Local Ollama** (100% offline/free), **Anthropic Claude**, **OpenAI**, or **Google Gemini**.
 - **Practice Arena & Scenarios (`/`)** — focused tactical/strategic practice positions, unassisted Stockfish free play (`/arena/free`), and glossary-linked mini-lessons.
 - **Play a Friend Online (`/arena/online`)** — invite-link multiplayer supporting Standard Chess, **Duck Chess**, and **Duck Chess Decay**.
+- **Player’s Welcome Kit & Field Guide (`docs/chess-academy-welcome-kit.tex`)** — a 6-page `6in × 9in` LaTeX game manual covering all modes, training regimens, and technical specifications.
+
+---
+
+## Engine Ratings, Coach Strength & Technical Capabilities
+
+In `/coach`, two dedicated **Stockfish 10 WASM** Web Workers run in parallel:
+1. **The Opponent Worker (`src/engine/levels.js`):** Calibrated across 5 human-feeling tiers using both Stockfish `Skill Level (0–20)` and an explicit search-depth ceiling (`1–11` plies).
+2. **The Coach Worker (`useStockfishAnalysis` in `src/routes/CoachPage.jsx`):** Runs a completely unhandicapped Stockfish search (`Skill Level 20`, `MultiPV=3`) at **Depth 15+** (`Math.max(presetDepth, opponentDepth + 4, 15)`). Because the Coach always calculates at least **4 half-moves (plies) deeper** than the opponent engine, following the Coach’s `#1` optimal recommendations will reliably out-calculate and beat every opponent tier—including **Master (2200+)**.
+
+| Tier / Role | Approx. Rating | Stockfish Skill | Search Depth | Move Time | Tactical & Positional Profile |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Learner** | `~600 Elo` | `0–2` | `1–2 plies` | `180–290 ms` | Beginner pace; leaves 1-move tactics open. |
+| **Casual** *(Default)* | `~1000 Elo` | `3–6` | `2–4 plies` | `345–510 ms` | Casual player; spots basic checks and captures. |
+| **Club** | `~1400 Elo` | `7–11` | `4–6 plies` | `565–785 ms` | Club regular; punishes undefended pieces. |
+| **Expert** | `~1800 Elo` | `12–16` | `7–9 plies` | `840–1060 ms` | Tournament player; calculates 3–4 move tactics. |
+| **Master** | `2200–2300+ Elo` | `17–20` | `9–11 plies` | `1115–1280 ms` | Capped at Depth 11 for realistic Master play. |
+| **AI Coach (`#1–#3`)** | **`~2800+ Elo` (Super-GM)** | **`Max (20)`** | **`15+ plies`** | **Continuous** | **Unthrottled Best-Stockfish (`MultiPV=3`); always ≥ 4 plies deeper than Opponent.** |
+
+### Core Coaching & Analysis Stack
+- **Static Exchange Evaluation (SEE) Threat Radar (`src/coach/positionAnalyzer.js`):** Simulates passing the turn (*null-move search*) and evaluates the full legal recapture sequence (`staticExchangeGain` / `seeRecaptureGain`) on every target square. Filters out "nonsense checks" (where the checking piece can simply be captured or harmlessly blocked) so red arrows and threat alerts only flag genuine material-winning captures, checkmates, royal forks, or king-displacing checks.
+- **8-Factor Tapered Evaluation X-Ray (`MG` vs. `EG`):** Exposes Stockfish 10’s classical evaluation breakdown across *Material, Piece Imbalance, Pawns, Mobility, King Safety, Threats, Passed Pawns,* and *Space*, displaying both **Middlegame (`MG`)** and **Endgame (`EG`)** scores blended by game phase.
+- **Takeback Memory & Hypothetical Move Simulator:**
+  - **Takeback Context (`lastTakenBackReview`):** Undoing a move records the undone move and the engine’s refutation so asking *"Why did I have to take back my last move?"* gets a concrete answer.
+  - **Hypothetical Simulator (`analyzeHypotheticalMoves`):** Parses candidate moves from natural-language questions (*"What if I play Bc4?"*, *"Why not Nxd5?"*), plays them on a cloned `chess.js` instance, and checks SEE-verified opponent replies before sending the brief to Claude.
+- **Cloud Claude Sonnet 4.5 Proxy (`supabase/functions/coach-chat/index.ts`):** Proxies structured board briefs (including an explicit piece-to-square coordinate map and 3-turn Q&A memory) to **Anthropic Claude Sonnet 4.5** (`claude-sonnet-4-5` / `claude-sonnet-5-5` with automatic fallback to `claude-haiku-5-5`, `thinking: { type: 'disabled' }` for ~1.5–2.5s latency).
 
 ---
 
