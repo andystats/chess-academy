@@ -139,7 +139,7 @@ export default function StepPanel({ lesson, chapterTitle }) {
         )}
 
         {isLastStep && canAdvance ? (
-          <Link to="/my-system" className="tao-btn-primary ml-auto">
+          <Link to="/coach" className="tao-btn-primary ml-auto">
             Done <Sparkles size={18} />
           </Link>
         ) : (

@@ -29,3 +29,7 @@ npm-debug.log*
 
 # CI writes this with Supabase secrets at build time; never commit it
 .env.production
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/

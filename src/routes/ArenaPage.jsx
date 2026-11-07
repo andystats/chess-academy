@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ArrowRight, Swords, Cpu, Globe, Github, BookOpen, ScanSearch } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Swords, Cpu, Globe, Github, BrainCircuit, Users } from 'lucide-react';
 import { listScenarios, getContent } from '../content/registry.js';
 import { useProfile } from '../profile/ProfileContext.jsx';
 import Badge from '../components/ui/Badge.jsx';
@@ -50,13 +50,16 @@ export default function ArenaPage() {
           </h1>
           <div className="gradient-divider mt-5 w-24" />
           <p className="mt-5 max-w-3xl text-base leading-7 text-gray-700 md:text-lg md:leading-8">
-            A convenient, playable chess space you can run in a browser: Stockfish free play, focused
-            practice positions, and invite-link games with standard chess or Duck variants. The code is
-            public, small enough to fork, and built for quick experiments.
+            A convenient, playable chess space in your browser: real-time Stockfish + AI coaching,
+            two-sided sandbox exploration, focused practice positions, and invite-link online games
+            with standard chess or Duck variants.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Link to="/arena/free" className="tao-btn-primary">
-              <Cpu size={18} /> Play engine
+            <Link to="/coach" className="tao-btn-primary">
+              <BrainCircuit size={18} /> Play with Live Coach
+            </Link>
+            <Link to="/arena/free" className="tao-btn-ghost">
+              <Cpu size={18} /> Free Play vs Engine
             </Link>
             <Link to="/arena/online" className="tao-btn-ghost">
               <Globe size={18} /> Play a friend
@@ -78,28 +81,28 @@ export default function ArenaPage() {
 
       <section className="mx-auto grid max-w-6xl gap-4 px-4 pb-12 sm:grid-cols-2 lg:grid-cols-4">
         <ArenaModeLink
+          to="/coach"
+          icon={<BrainCircuit className="shrink-0 text-brand-500" size={36} />}
+          title="Live Engine & AI Coach"
+          text="Play vs. Stockfish with real-time advice on threats, optimal moves, and why they work."
+        />
+        <ArenaModeLink
+          to="/coach?side=both"
+          icon={<Users className="shrink-0 text-brand-500" size={36} />}
+          title="Two-Sided Analysis Lab"
+          text="Play both sides freely to test openings, middlegames, or endgames with live engine + book coaching."
+        />
+        <ArenaModeLink
           to="/arena/free"
           icon={<Cpu className="shrink-0 text-brand-500" size={36} />}
           title="Free Play vs Engine"
-          text="Pick a side and strength, load any legal FEN, and play a complete game against Stockfish."
+          text="Pick a side and strength, load any legal FEN, and play an unassisted game against Stockfish."
         />
         <ArenaModeLink
           to="/arena/online"
           icon={<Globe className="shrink-0 text-brand-500" size={36} />}
           title="Play a Friend Online"
           text="Real-time games over an invite link — standard chess or Duck variants, with chat."
-        />
-        <ArenaModeLink
-          to="/my-system"
-          icon={<BookOpen className="shrink-0 text-brand-500" size={36} />}
-          title="Study My System"
-          text="Follow Nimzowitsch’s strategic ideas through a chapter map and playable board lessons."
-        />
-        <ArenaModeLink
-          to="/study/engine-xray"
-          icon={<ScanSearch className="shrink-0 text-brand-500" size={36} />}
-          title="Engine X-Ray"
-          text="Predict candidates, reveal Stockfish’s changing lines, and inspect its classical evaluation."
         />
       </section>
 

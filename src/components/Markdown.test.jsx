@@ -30,3 +30,9 @@ describe('Markdown', () => {
     expect(container.querySelectorAll('p')).toHaveLength(1);
   });
 });
+
+it('renders glossary links inside bold without exposing formatting markers', () => {
+  render(<Markdown renderTerm={({display}) => <em>{display}</em>}>{'A **[[center|central point]]** and **another** idea.'}</Markdown>);
+  expect(screen.getByText('central point').closest('strong')).toBeInTheDocument();
+  expect(screen.queryByText(/\*\*/)).not.toBeInTheDocument();
+});

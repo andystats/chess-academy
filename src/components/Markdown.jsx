@@ -7,15 +7,18 @@ import { tokenizeTermLinks } from '../content/glossaryLinks.js';
 
 const BOLD = /\*\*(.+?)\*\*/g;
 
-function renderBold(text, keyPrefix) {
+function renderBold(text, keyPrefix, renderTerm) {
+  let termKey = 0;
+  const terms = (value) => tokenizeTermLinks(value).map((seg) =>
+    <Fragment key={termKey++}>{seg.type === 'text' ? seg.value : renderTerm(seg)}</Fragment>);
   const nodes = [];
   let last = 0;
   for (const match of text.matchAll(BOLD)) {
-    if (match.index > last) nodes.push(text.slice(last, match.index));
-    nodes.push(<strong key={`${keyPrefix}-b${match.index}`}>{match[1]}</strong>);
+    if (match.index > last) nodes.push(...terms(text.slice(last, match.index)));
+    nodes.push(<strong key={`${keyPrefix}-b${match.index}`}>{terms(match[1])}</strong>);
     last = match.index + match[0].length;
   }
-  if (last < text.length) nodes.push(text.slice(last));
+  if (last < text.length) nodes.push(...terms(text.slice(last)));
   return nodes;
 }
 
@@ -29,13 +32,7 @@ export default function Markdown({ children = '', renderTerm = defaultRenderTerm
     <div className={className}>
       {paragraphs.map((para, pi) => (
         <p key={pi} className="mb-3 last:mb-0">
-          {tokenizeTermLinks(para).map((seg, si) =>
-            seg.type === 'text' ? (
-              <Fragment key={si}>{renderBold(seg.value, `${pi}-${si}`)}</Fragment>
-            ) : (
-              <Fragment key={si}>{renderTerm(seg)}</Fragment>
-            ),
-          )}
+          {renderBold(para, `${pi}`, renderTerm)}
         </p>
       ))}
     </div>

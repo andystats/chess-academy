@@ -15,8 +15,8 @@ export default function AppHeader() {
         <nav className="ml-auto flex items-center gap-1 sm:gap-2" aria-label="Primary">
           {[
             { to: '/', label: 'Arena', end: true },
-            { to: '/my-system', label: 'My System' },
-            { to: '/study/engine-xray', label: 'X-Ray' },
+            { to: '/coach', label: 'Live Coach' },
+            { to: '/arena/online', label: 'Online' },
           ].map((item) => (
             <NavLink
               key={item.to}

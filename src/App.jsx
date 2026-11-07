@@ -9,8 +9,7 @@ import OnlinePlayPage from './routes/OnlinePlayPage.jsx';
 import ComingSoonPage from './routes/ComingSoonPage.jsx';
 import NotFoundPage from './routes/NotFoundPage.jsx';
 import LessonPage from './routes/LessonPage.jsx';
-import MySystemPage from './routes/MySystemPage.jsx';
-import EngineXRayPage from './routes/EngineXRayPage.jsx';
+import CoachPage from './routes/CoachPage.jsx';
 import { useProfile } from './profile/ProfileContext.jsx';
 import VersionStamp from './components/VersionStamp.jsx';
 
@@ -28,9 +27,11 @@ export default function App() {
             <Routes>
               <Route path="/" element={<ArenaPage />} />
               <Route path="/training" element={<Navigate to="/" replace />} />
+              <Route path="/coach" element={<CoachPage />} />
+              <Route path="/study/engine-xray" element={<CoachPage />} />
+              <Route path="/my-system" element={<Navigate to="/coach" replace />} />
+              <Route path="/my-system/*" element={<Navigate to="/coach" replace />} />
               <Route path="/lesson/*" element={<LessonPage />} />
-              <Route path="/my-system" element={<MySystemPage />} />
-              <Route path="/study/engine-xray" element={<EngineXRayPage />} />
               <Route path="/glossary" element={<Navigate to="/" replace />} />
               <Route path="/arena" element={<ArenaPage />} />
               <Route path="/arena/free" element={<FreePlayPage />} />

@@ -1,7 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from './App.jsx';
-import { flattenMySystemChapters } from './content/mySystem.js';
 import { freshProgress } from './profile/progress.js';
 
 const profileMocks = vi.hoisted(() => ({
@@ -16,10 +15,33 @@ vi.mock('./profile/ProfileContext.jsx', () => ({
   }),
 }));
 
-// Route tests exercise study composition and content without depending on react-chessboard's browser
-// measurements. Board behavior has its own controller and style tests.
 vi.mock('./components/BoardPanel.jsx', () => ({
   default: ({ fen }) => <div data-testid="study-board" data-fen={fen} />,
+}));
+
+vi.mock('./engine/useStockfish.js', () => ({
+  useStockfish: () => ({
+    ready: true,
+    error: null,
+    requestMove: vi.fn(() => new Promise(() => {})),
+    setStrength: vi.fn(),
+    interrupt: vi.fn(),
+  }),
+}));
+
+vi.mock('./engine/useStockfishAnalysis.js', () => ({
+  useStockfishAnalysis: ({ fen }) => ({
+    fen,
+    status: 'complete',
+    learnerSide: 'white',
+    depthSnapshots: [],
+    staticEvaluation: null,
+    bestMove: null,
+    error: null,
+    cached: false,
+    cancel: vi.fn(),
+    retry: vi.fn(),
+  }),
 }));
 
 function renderAt(path) {
@@ -30,7 +52,7 @@ function renderAt(path) {
   );
 }
 
-describe('restored study routes', () => {
+describe('application routes', () => {
   beforeEach(() => {
     profileMocks.recordLessonProgress.mockClear();
   });
@@ -39,26 +61,17 @@ describe('restored study routes', () => {
     cleanup();
   });
 
-  it('renders the My System chapter map with working studies and chapters', () => {
+  it('renders the Live Chess Coach route and redirects legacy /my-system links to /coach', () => {
     renderAt('/my-system');
-
-    expect(screen.getByRole('heading', { level: 1, name: /My System/i })).toBeInTheDocument();
-    const readLinks = screen
-      .getAllByRole('link', { name: /Read Chapter/i })
-      .map((link) => link.getAttribute('href'));
-    const linkedChapters = flattenMySystemChapters().filter((chapter) => chapter.lessonId);
-
-    expect(readLinks).toHaveLength(linkedChapters.length);
-    for (const chapter of linkedChapters) {
-      expect(readLinks).toContain(`/lesson/${chapter.lessonId}`);
-    }
+    expect(screen.getByRole('heading', { level: 1, name: /Live Chess Coach/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /What to Think About Now/i })).toBeInTheDocument();
   });
 
-  it('renders a lesson, resolves its inline glossary term, advances, and records progress', async () => {
+  it('renders a scenario lesson, resolves its inline glossary term, advances, and records progress', async () => {
     renderAt('/lesson/classics/the-center');
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Meet the center' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /My System study room/i })).toHaveAttribute('href', '/my-system');
+    expect(screen.getByRole('link', { name: /Practice Arena/i })).toHaveAttribute('href', '/arena');
 
     fireEvent.click(screen.getByRole('button', { name: 'center' }));
     expect(

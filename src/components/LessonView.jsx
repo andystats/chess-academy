@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ScanSearch } from 'lucide-react';
+import { BrainCircuit } from 'lucide-react';
 import { useChessLesson } from '../lesson/useChessLesson.js';
 import { useProfile } from '../profile/ProfileContext.jsx';
 import { withStepComplete, withLessonComplete } from '../profile/progress.js';
@@ -63,10 +63,10 @@ export default function LessonView({ lesson }) {
             className="w-full"
           />
           <Link
-            to={`/study/engine-xray?${analysisParams.toString()}`}
+            to={`/coach?${analysisParams.toString()}`}
             className="tao-btn-ghost mt-5 w-full bg-white"
           >
-            <ScanSearch size={17} /> Analyze this position
+            <BrainCircuit size={17} /> Open position in Live Coach
           </Link>
         </div>
       }

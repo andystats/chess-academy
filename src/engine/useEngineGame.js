@@ -9,14 +9,10 @@ import { useBoardInput } from '../components/useBoardInput.js';
 
 const DEFAULT_WRONG = 'Not quite — look for the move the lesson points to and try again.';
 
-// React wrapper for free play / scenario play against Stockfish. Mirrors useChessLesson: the live
-// chess.js game lives in a ref (gameRef), the reducer holds only derived, renderable state.
+// React wrapper for free play / scenario play / two-sided coaching board. Mirrors useChessLesson:
+// the live chess.js game lives in a ref (gameRef), the reducer holds only derived, renderable state.
 //
-// The opponent reply is an ASYNC engine request (hundreds of ms to seconds), not a fixed timer, so
-// the stale-reply guard matters more here than in lessons: while the engine thinks, the user can hit
-// New game / Take back / Resign / change strength / unmount. We bump a monotonic runIdRef on every
-// such action; the reply captured before the request is dropped if the runId moved under it —
-// otherwise a late bestmove would apply an illegal-or-wrong move and corrupt the board.
+// `playerSide` may be 'white', 'black', or 'both' (sandbox/analysis mode where the user plays both sides).
 
 const initialState = {
   fen: START_FEN,
@@ -24,13 +20,12 @@ const initialState = {
   result: null,
   history: [],
   lastMove: null,
+  lastMoveDetail: null,
   captured: { white: [], black: [] },
   evaluation: null,
-  // Scenarios start in a 'guided' phase where the player's key move is checked against the
-  // authored solution; once it's right (solved), play continues freely against the engine.
   phase: 'free', // 'guided' | 'free'
   solved: false,
-  feedback: null, // { kind: 'correct' | 'wrong', text } — persists so the explanation stays visible
+  feedback: null, // { kind: 'correct' | 'wrong', text }
 };
 
 function reducer(state, action) {
@@ -41,6 +36,7 @@ function reducer(state, action) {
         fen: action.fen,
         history: action.history,
         lastMove: null,
+        lastMoveDetail: null,
         captured: action.captured,
         evaluation: null,
         status: action.status,
@@ -49,12 +45,13 @@ function reducer(state, action) {
         solved: false,
         feedback: null,
       };
-    case 'sync': // a move was committed; feedback is preserved so the "why" stays on screen
+    case 'sync':
       return {
         ...state,
         fen: action.fen,
         history: action.history,
         lastMove: action.lastMove ?? null,
+        lastMoveDetail: action.lastMoveDetail ?? state.lastMoveDetail,
         captured: action.captured,
         evaluation: action.evaluation ?? state.evaluation,
         status: action.status,
@@ -66,6 +63,7 @@ function reducer(state, action) {
         fen: action.fen,
         history: action.history,
         lastMove: action.lastMove ?? null,
+        lastMoveDetail: action.lastMoveDetail ?? state.lastMoveDetail,
         captured: action.captured,
         evaluation: action.evaluation ?? state.evaluation,
         status: action.status,
@@ -74,7 +72,7 @@ function reducer(state, action) {
         solved: true,
         feedback: { kind: 'correct', text: action.text },
       };
-    case 'guided-wrong': // the live game is untouched; only the feedback changes
+    case 'guided-wrong':
       return { ...state, feedback: { kind: 'wrong', text: action.text } };
     case 'thinking':
       return { ...state, status: 'engine-thinking' };
@@ -93,14 +91,14 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
   const gameRef = useRef(null);
   const runIdRef = useRef(0);
   const [state, dispatch] = useReducer(reducer, initialState);
-  const [orientation, setOrientation] = useState(playerSide);
+  const [orientation, setOrientation] = useState(playerSide === 'black' ? 'black' : 'white');
   const [resetNonce, setResetNonce] = useState(0);
 
+  const isBothSides = playerSide === 'both';
   const playerChar = SIDE_CHAR[playerSide] ?? 'w';
   const config = useMemo(() => levelConfig(skillLevel), [skillLevel]);
   const startFen = fen || START_FEN;
 
-  // Ask the engine for a move from the current position and apply it, unless the run was superseded.
   const scheduleEngineMove = useCallback(async () => {
     const myRun = runIdRef.current;
     dispatch({ type: 'thinking' });
@@ -108,7 +106,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
     try {
       reply = await requestMove(gameRef.current.fen(), config.search);
     } catch {
-      if (myRun !== runIdRef.current) return; // stale failure
+      if (myRun !== runIdRef.current) return;
       dispatch({
         type: 'sync',
         fen: gameRef.current.fen(),
@@ -119,14 +117,25 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
       });
       return;
     }
-    if (myRun !== runIdRef.current) return; // a reset/takeback/resign happened while thinking
+    if (myRun !== runIdRef.current) return;
     const { uci, evaluation } = readEngineReply(reply);
     const game = gameRef.current;
+    const prevFen = game.fen();
     let lastMove = null;
+    let lastMoveDetail = null;
     if (uci) {
       try {
         const m = applyMove(game, uci);
         lastMove = { from: m.from, to: m.to };
+        lastMoveDetail = {
+          san: m.san,
+          uci: moveToLan(m),
+          from: m.from,
+          to: m.to,
+          color: m.color === 'b' ? 'black' : 'white',
+          prevFen,
+          byEngine: true,
+        };
       } catch {
         // engine returned something unplayable here; fall through and let the player continue
       }
@@ -138,21 +147,20 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
       history: game.history(),
       captured: capturedPieces(game),
       lastMove,
+      lastMoveDetail,
       status: result ? 'over' : 'player-turn',
       result,
       evaluation,
     });
   }, [requestMove, config]);
 
-  // (Re)start the game whenever the position, side, or a New-game click changes. Bumping runId here
-  // discards any engine reply still in flight from the previous game.
   useEffect(() => {
     runIdRef.current += 1;
-    interrupt(); // drop a thinking engine from the previous game so the new one starts clean
+    interrupt();
     const game = new Chess(startFen);
     gameRef.current = game;
-    setOrientation(playerSide);
-    const engineToMove = game.turn() !== playerChar && !game.isGameOver();
+    setOrientation(playerSide === 'black' ? 'black' : 'white');
+    const engineToMove = !isBothSides && game.turn() !== playerChar && !game.isGameOver();
     dispatch({
       type: 'reset',
       fen: game.fen(),
@@ -166,37 +174,43 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startFen, playerSide, resetNonce]);
 
-  // In the guided phase, classify the player's move against the authored solution WITHOUT touching
-  // the live game (mirrors useChessLesson): a wrong-but-legal move gets feedback and snaps back; the
-  // right move is committed and play hands off to the engine. Returns true only if the move was made.
   const attemptGuidedMove = useCallback(
     (move) => {
       const game = gameRef.current;
       const fenBefore = game.fen();
       let playerLan;
       try {
-        playerLan = moveToLan(applyMove(new Chess(fenBefore), move)); // classify on a clone
+        playerLan = moveToLan(applyMove(new Chess(fenBefore), move));
       } catch {
-        return false; // illegal — snaps back
+        return false;
       }
       if (acceptableLans(fenBefore, guided.solution).has(playerLan)) {
         const m = applyMove(game, move);
         const result = gameResult(game);
+        const shouldScheduleEngine = !isBothSides && !result;
         dispatch({
           type: 'guided-correct',
           fen: game.fen(),
           history: game.history(),
           captured: capturedPieces(game),
           lastMove: { from: m.from, to: m.to },
-          status: result ? 'over' : 'engine-thinking',
+          lastMoveDetail: {
+            san: m.san,
+            uci: moveToLan(m),
+            from: m.from,
+            to: m.to,
+            color: m.color === 'b' ? 'black' : 'white',
+            prevFen: fenBefore,
+            byEngine: false,
+          },
+          status: result ? 'over' : shouldScheduleEngine ? 'engine-thinking' : 'player-turn',
           result,
           text: guided.explain || 'Correct!',
           evaluation: null,
         });
-        if (!result) scheduleEngineMove();
+        if (shouldScheduleEngine) scheduleEngineMove();
         return true;
       }
-      // Legal but wrong: use the specific diagnosis if this is a known misplay, else the generic note.
       const misplay = (guided.misplays ?? []).find((mp) => {
         try {
           return compileToLan(fenBefore, mp.san) === playerLan;
@@ -205,38 +219,48 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
         }
       });
       dispatch({ type: 'guided-wrong', text: misplay ? misplay.explain : guided.wrong || DEFAULT_WRONG });
-      return false; // live game untouched, piece snaps back
+      return false;
     },
-    [guided, scheduleEngineMove],
+    [guided, isBothSides, scheduleEngineMove],
   );
 
-  // Apply a legal player move (free play: any legal move is accepted), then hand off to the engine.
   const applyPlayerMove = useCallback(
     (move) => {
       if (state.status !== 'player-turn') return false;
       if (state.phase === 'guided' && guided) return attemptGuidedMove(move);
       const game = gameRef.current;
+      const fenBefore = game.fen();
       let m;
       try {
         m = applyMove(game, move);
       } catch {
-        return false; // illegal — react-chessboard snaps the piece back
+        return false;
       }
       const result = gameResult(game);
+      const shouldScheduleEngine = !isBothSides && !result;
       dispatch({
         type: 'sync',
         fen: game.fen(),
         history: game.history(),
         captured: capturedPieces(game),
         lastMove: { from: m.from, to: m.to },
-        status: result ? 'over' : 'engine-thinking',
+        lastMoveDetail: {
+          san: m.san,
+          uci: moveToLan(m),
+          from: m.from,
+          to: m.to,
+          color: m.color === 'b' ? 'black' : 'white',
+          prevFen: fenBefore,
+          byEngine: false,
+        },
+        status: result ? 'over' : shouldScheduleEngine ? 'engine-thinking' : 'player-turn',
         result,
         evaluation: null,
       });
-      if (!result) scheduleEngineMove();
+      if (shouldScheduleEngine) scheduleEngineMove();
       return true;
     },
-    [state.status, state.phase, guided, attemptGuidedMove, scheduleEngineMove],
+    [state.status, state.phase, guided, isBothSides, attemptGuidedMove, scheduleEngineMove],
   );
 
   const arePiecesDraggable = state.status === 'player-turn';
@@ -256,52 +280,55 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
   });
 
   const newGame = useCallback(() => {
-    runIdRef.current += 1; // drop any in-flight reply before the reset effect runs
+    runIdRef.current += 1;
     setResetNonce((n) => n + 1);
   }, []);
 
   const resign = useCallback(() => {
     runIdRef.current += 1;
-    interrupt(); // stop the engine from searching a position the game has abandoned
+    interrupt();
     const game = gameRef.current;
+    const resigningSide = isBothSides ? (game.turn() === 'b' ? 'black' : 'white') : playerSide;
     dispatch({
       type: 'sync',
       fen: game.fen(),
       history: game.history(),
       captured: capturedPieces(game),
       status: 'over',
-      result: { winner: opposite(playerSide), reason: 'You resigned' },
+      result: { winner: opposite(resigningSide), reason: 'You resigned' },
       evaluation: null,
     });
-  }, [playerSide, interrupt]);
+  }, [playerSide, isBothSides, interrupt]);
 
-  // Undo back to the player's turn: discard any in-flight reply, then take back the engine's reply
-  // (if it's already on the board) and the player's own move.
   const takeBack = useCallback(() => {
     runIdRef.current += 1;
-    interrupt(); // a reply may be in flight; drop it before we rewind and possibly re-ask
+    interrupt();
     const game = gameRef.current;
-    if (game.turn() === playerChar) game.undo(); // remove the engine's last move
-    game.undo(); // remove the player's last move
-    const engineToMove = game.turn() !== playerChar && !game.isGameOver();
+    if (isBothSides) {
+      game.undo();
+    } else {
+      if (game.turn() === playerChar) game.undo();
+      game.undo();
+    }
+    const engineToMove = !isBothSides && game.turn() !== playerChar && !game.isGameOver();
     dispatch({
       type: 'sync',
       fen: game.fen(),
       history: game.history(),
       captured: capturedPieces(game),
       lastMove: null,
+      lastMoveDetail: null,
       status: engineToMove ? 'engine-thinking' : 'player-turn',
       result: null,
       evaluation: null,
     });
     if (engineToMove) scheduleEngineMove();
-  }, [playerChar, scheduleEngineMove, interrupt]);
+  }, [isBothSides, playerChar, scheduleEngineMove, interrupt]);
 
   const flipBoard = useCallback(() => {
     setOrientation(opposite);
   }, []);
 
-  // Re-apply strength to the engine when the dial changes; takes effect on the engine's next move.
   useEffect(() => {
     setStrength(skillLevel);
   }, [skillLevel, setStrength]);
@@ -317,6 +344,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
     feedback: state.feedback,
     history: state.history,
     lastMove: state.lastMove,
+    lastMoveDetail: state.lastMoveDetail,
     captured: state.captured,
     evaluation: state.evaluation,
     selectedSquare,
@@ -328,6 +356,7 @@ export function useEngineGame({ fen, playerSide = 'white', skillLevel = 10, guid
     onPieceDrop,
     onPromotionPieceSelect,
     onSquareClick,
+    playMove: applyPlayerMove,
     newGame,
     resign,
     takeBack,

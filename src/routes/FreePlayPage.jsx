@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Chess } from 'chess.js';
+import { Link } from 'react-router-dom';
+import { BrainCircuit } from 'lucide-react';
 import { useEngineGame } from '../engine/useEngineGame.js';
 import { START_FEN } from '../lesson/moves.js';
 import EngineGameView from '../components/EngineGameView.jsx';
@@ -10,17 +12,21 @@ import SegmentedControl from '../components/ui/SegmentedControl.jsx';
 const SIDE_OPTIONS = [
   { value: 'white', label: 'White' },
   { value: 'black', label: 'Black' },
+  { value: 'both', label: 'Both Sides' },
 ];
 
-// Free play vs Stockfish: pick a side and strength, optionally load a FEN, and play a full game.
-// Changing the side or loaded position restarts the game (useEngineGame resets on those inputs);
-// changing strength takes effect on the engine's next move.
+// Free play vs Stockfish: pick a side (or Both Sides) and strength, optionally load a FEN, and play a full game.
 export default function FreePlayPage() {
   const [playerSide, setPlayerSide] = useState('white');
   const [skillLevel, setSkillLevel] = useState(4);
   const [startFen, setStartFen] = useState(START_FEN);
 
   const game = useEngineGame({ fen: startFen, playerSide, skillLevel });
+  const coachParams = new URLSearchParams({
+    fen: game.fen,
+    orientation: game.orientation,
+    side: playerSide,
+  });
 
   return (
     <div>
@@ -33,10 +39,13 @@ export default function FreePlayPage() {
             eyebrow="Free play"
             title="Play the engine"
             skillLevel={skillLevel}
-            onSkillLevelChange={setSkillLevel}
+            onSkillLevelChange={playerSide === 'both' ? null : setSkillLevel}
           >
             <SidePicker playerSide={playerSide} onChange={setPlayerSide} />
             <FenLoader startFen={startFen} onLoad={setStartFen} />
+            <Link to={`/coach?${coachParams.toString()}`} className="tao-btn-ghost w-full justify-center">
+              <BrainCircuit size={17} /> Open this position in Live Coach
+            </Link>
           </EnginePanel>
         }
       />
